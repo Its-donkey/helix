@@ -23,6 +23,12 @@
 -
 -
 
+## Changelog
+
+<!-- REQUIRED: Add your changes to CHANGELOG.md under the [Unreleased] section -->
+
+- [ ] I have updated CHANGELOG.md with my changes
+
 ## API Changes (if applicable)
 
 <!-- If adding/modifying Twitch API endpoints, describe the changes -->

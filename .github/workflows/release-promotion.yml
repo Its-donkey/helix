@@ -1,28 +1,20 @@
-name: Promote Release Branch
+name: Promote Release
 
 on:
   workflow_dispatch:
     inputs:
       action:
-        description: "promote (test -> vX) or archive (vX -> tag, start vY)"
+        description: "promote (test -> main) or archive (tag current main)"
         required: true
         default: promote
         type: choice
         options: [promote, archive]
-      target_branch:
-        description: "Release branch name (e.g., v1, v2)"
-        required: true
-        type: string
-      next_branch:
-        description: "Next release branch when archiving (e.g., v2)"
-        required: false
-        type: string
       tag_name:
-        description: "Tag to create/update when promoting (e.g., v1.0.0)"
+        description: "Tag to create when promoting (e.g., v0.3.0)"
         required: false
         type: string
       archive_tag:
-        description: "Tag to write when archiving (defaults to <target_branch>-archive)"
+        description: "Tag name when archiving (e.g., v1-archive)"
         required: false
         type: string
 
@@ -35,21 +27,28 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Promote test to target branch
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Promote test to main
         env:
-          TARGET_BRANCH: ${{ github.event.inputs.target_branch }}
           TAG_NAME: ${{ github.event.inputs.tag_name }}
         run: |
           set -euo pipefail
           git fetch origin
           git show-ref --verify --quiet refs/remotes/origin/test
 
-          # Reset/create the target release branch to the current test tip.
+          # Reset main to the current test tip
           git checkout origin/test
-          git checkout -B "$TARGET_BRANCH"
-          git push origin "$TARGET_BRANCH"
+          git checkout -B main
+          git push origin main --force
 
-          # Optional tag for the promotion.
+          # Create version tag if specified
           if [ -n "$TAG_NAME" ]; then
             git tag -f "$TAG_NAME" HEAD
             git push origin "$TAG_NAME" --force
@@ -63,25 +62,18 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Archive target branch and start next
+      - name: Archive current main
         env:
-          TARGET_BRANCH: ${{ github.event.inputs.target_branch }}
-          NEXT_BRANCH: ${{ github.event.inputs.next_branch }}
           ARCHIVE_TAG: ${{ github.event.inputs.archive_tag }}
         run: |
           set -euo pipefail
           git fetch origin
-          git show-ref --verify --quiet "refs/remotes/origin/$TARGET_BRANCH"
 
-          # Tag the archived release tip.
-          TAG_NAME=${ARCHIVE_TAG:-${TARGET_BRANCH}-archive}
-          git tag -f "$TAG_NAME" "origin/$TARGET_BRANCH"
-          git push origin "$TAG_NAME" --force
-
-          # Optionally start the next release branch from test.
-          if [ -n "${NEXT_BRANCH:-}" ]; then
-            git show-ref --verify --quiet refs/remotes/origin/test
-            git checkout origin/test
-            git checkout -B "$NEXT_BRANCH"
-            git push origin "$NEXT_BRANCH"
+          # Tag the current main for archive
+          if [ -z "${ARCHIVE_TAG:-}" ]; then
+            echo "Error: archive_tag is required"
+            exit 1
           fi
+
+          git tag -f "$ARCHIVE_TAG" origin/main
+          git push origin "$ARCHIVE_TAG" --force

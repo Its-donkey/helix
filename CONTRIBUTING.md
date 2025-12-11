@@ -78,7 +78,7 @@ We welcome feature suggestions! Please use the [feature request template](.githu
    git push origin feature/your-feature-name
    ```
 
-8. Open a Pull Request against the `main` branch
+8. Open a Pull Request against the `test` branch
 
 ## Coding Standards
 
@@ -115,19 +115,45 @@ When adding new Twitch API endpoints:
 - Follow the existing documentation format in `docs/`
 - Include code examples with proper error handling
 
+### Changelog
+
+All PRs must include updates to `CHANGELOG.md`:
+
+1. Add your changes under the `[Unreleased]` section
+2. Use the appropriate category: Added, Changed, Deprecated, Removed, Fixed, Security
+3. Write clear, concise descriptions of changes
+
 ## Pull Request Process
 
 1. Ensure all tests pass
 2. Update documentation as needed
-3. Fill out the PR template completely
-4. Link any related issues
-5. Request review from maintainers
+3. **Update CHANGELOG.md** with your changes under `[Unreleased]`
+4. Fill out the PR template completely
+5. Link any related issues
+6. Open PR against the `test` branch
+7. Request review from maintainers
 
 PRs will be reviewed for:
 - Code quality and style
 - Test coverage
 - Documentation completeness
+- Changelog entry
 - Compatibility with existing code
+
+## Release Process
+
+Releases are managed via GitHub Actions workflow dispatch:
+
+1. PRs are merged to `test` branch
+2. When ready to release, run the "Promote Release" workflow:
+   - Action: `promote`
+   - Tag: version tag (e.g., `v0.3.0`)
+3. This promotes `test` → `main` and creates the version tag
+4. The tag triggers the release workflow which creates a GitHub release
+
+To archive a major version before starting a new one:
+1. Run the "Promote Release" workflow with action: `archive`
+2. Provide an archive tag (e.g., `v1-archive`)
 
 ## Questions?
 
