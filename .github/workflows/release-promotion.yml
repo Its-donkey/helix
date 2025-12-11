@@ -18,6 +18,9 @@ on:
         required: false
         type: string
 
+permissions:
+  contents: write
+
 jobs:
   promote:
     if: ${{ github.event.inputs.action == 'promote' }}
