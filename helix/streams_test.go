@@ -38,7 +38,7 @@ func TestClient_GetStreams(t *testing.T) {
 			},
 			Pagination: &Pagination{Cursor: "next-cursor"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -75,7 +75,7 @@ func TestClient_GetStreams_WithFilters(t *testing.T) {
 		}
 
 		resp := Response[Stream]{Data: []Stream{}}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -103,7 +103,7 @@ func TestClient_GetStreams_ByUserIDs(t *testing.T) {
 				{ID: "stream2", UserID: "67890"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -136,7 +136,7 @@ func TestClient_GetFollowedStreams(t *testing.T) {
 				{ID: "stream2", UserID: "22222", Title: "Followed Stream 2"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -168,7 +168,7 @@ func TestClient_GetStreamKey(t *testing.T) {
 				{StreamKey: "live_12345_abcdefghij"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -195,7 +195,7 @@ func TestClient_CreateStreamMarker(t *testing.T) {
 		}
 
 		var body CreateStreamMarkerParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.UserID != "12345" {
 			t.Errorf("expected user_id=12345, got %s", body.UserID)
@@ -214,7 +214,7 @@ func TestClient_CreateStreamMarker(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -266,7 +266,7 @@ func TestClient_GetStreamMarkers(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

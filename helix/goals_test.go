@@ -45,7 +45,7 @@ func TestClient_GetCreatorGoals(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -73,7 +73,7 @@ func TestClient_GetCreatorGoals_NoGoals(t *testing.T) {
 		resp := Response[CreatorGoal]{
 			Data: []CreatorGoal{},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -103,7 +103,7 @@ func TestClient_GetCreatorGoals_DifferentTypes(t *testing.T) {
 						},
 					},
 				}
-				json.NewEncoder(w).Encode(resp)
+				_ = json.NewEncoder(w).Encode(resp)
 			})
 			defer server.Close()
 
@@ -159,7 +159,7 @@ func TestClient_GetHypeTrainEvents(t *testing.T) {
 			},
 			Pagination: &Pagination{Cursor: "next"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -197,7 +197,7 @@ func TestClient_GetHypeTrainEvents_WithPagination(t *testing.T) {
 			Data:       []HypeTrainEvent{},
 			Pagination: &Pagination{Cursor: "nextcursor"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -219,7 +219,7 @@ func TestClient_GetHypeTrainEvents_NoEvents(t *testing.T) {
 		resp := Response[HypeTrainEvent]{
 			Data: []HypeTrainEvent{},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -269,7 +269,7 @@ func TestClient_GetHypeTrainStatus(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -297,7 +297,7 @@ func TestClient_GetHypeTrainStatus_NoActiveTrain(t *testing.T) {
 		resp := Response[HypeTrainStatus]{
 			Data: []HypeTrainStatus{},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

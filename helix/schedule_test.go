@@ -44,7 +44,7 @@ func TestClient_GetChannelStreamSchedule(t *testing.T) {
 			},
 			Pagination: &Pagination{Cursor: "next"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -75,7 +75,7 @@ func TestClient_GetChannelStreamSchedule_WithVacation(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -113,7 +113,7 @@ func TestClient_GetChannelStreamSchedule_WithParams(t *testing.T) {
 		resp := ScheduleResponse{
 			Data: Schedule{Segments: []ScheduleSegment{}},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -234,7 +234,7 @@ func TestClient_CreateChannelStreamScheduleSegment(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -291,7 +291,7 @@ func TestClient_UpdateChannelStreamScheduleSegment(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

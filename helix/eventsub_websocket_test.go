@@ -47,7 +47,7 @@ func (m *mockWSServer) URL() string {
 func (m *mockWSServer) Close() {
 	m.mu.Lock()
 	if m.conn != nil {
-		m.conn.Close()
+		_ = m.conn.Close()
 	}
 	m.mu.Unlock()
 	m.server.Close()
@@ -260,7 +260,7 @@ func TestEventSubWebSocketClient_HandleNotification(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Connect failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Wait for notification
 	select {
@@ -338,7 +338,7 @@ func TestEventSubWebSocketClient_HandleKeepalive(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Connect failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	select {
 	case <-keepaliveCalled:
@@ -410,7 +410,7 @@ func TestEventSubWebSocketClient_HandleReconnect(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Connect failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	select {
 	case <-reconnectCalled:
@@ -485,7 +485,7 @@ func TestEventSubWebSocketClient_HandleRevocation(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Connect failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	select {
 	case <-revokeCalled:
@@ -567,7 +567,7 @@ func TestEventSubWebSocketClient_ConnectAlreadyConnected(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first Connect failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Second connect should return existing session ID
 	gotSessionID, err := client.Connect(ctx)
