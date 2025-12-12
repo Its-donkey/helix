@@ -24,7 +24,7 @@ func TestClient_GetConduits(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -51,7 +51,7 @@ func TestClient_CreateConduit(t *testing.T) {
 		}
 
 		var body CreateConduitParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.ShardCount != 10 {
 			t.Errorf("expected shard_count 10, got %d", body.ShardCount)
@@ -65,7 +65,7 @@ func TestClient_CreateConduit(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -89,7 +89,7 @@ func TestClient_UpdateConduit(t *testing.T) {
 		}
 
 		var body UpdateConduitParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.ID != "conduit123" {
 			t.Errorf("expected ID 'conduit123', got %s", body.ID)
@@ -103,7 +103,7 @@ func TestClient_UpdateConduit(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -168,7 +168,7 @@ func TestClient_GetConduitShards(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -191,7 +191,7 @@ func TestClient_UpdateConduitShards(t *testing.T) {
 		}
 
 		var body UpdateConduitShardsParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.ConduitID != "conduit123" {
 			t.Errorf("expected conduit_id 'conduit123', got %s", body.ConduitID)
@@ -205,7 +205,7 @@ func TestClient_UpdateConduitShards(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

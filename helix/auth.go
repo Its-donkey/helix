@@ -257,7 +257,7 @@ func (c *AuthClient) GetDeviceCode(ctx context.Context) (*DeviceCodeResponse, er
 	if err != nil {
 		return nil, fmt.Errorf("executing device code request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -400,7 +400,7 @@ func (c *AuthClient) ValidateToken(ctx context.Context, accessToken string) (*Va
 	if err != nil {
 		return nil, fmt.Errorf("executing validate request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -461,7 +461,7 @@ func (c *AuthClient) RevokeToken(ctx context.Context, accessToken string) error 
 	if err != nil {
 		return fmt.Errorf("executing revoke request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode == http.StatusOK {
 		return nil
@@ -512,7 +512,7 @@ func (c *AuthClient) requestToken(ctx context.Context, data url.Values) (*Token,
 	if err != nil {
 		return nil, fmt.Errorf("executing token request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -678,7 +678,7 @@ func (c *AuthClient) GetOpenIDConfiguration(ctx context.Context) (*OpenIDConfigu
 	if err != nil {
 		return nil, fmt.Errorf("executing OIDC config request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -775,7 +775,7 @@ func (c *AuthClient) ExchangeCodeForOIDCToken(ctx context.Context, code string) 
 	if err != nil {
 		return nil, fmt.Errorf("executing token request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -814,7 +814,7 @@ func (c *AuthClient) GetOIDCUserInfo(ctx context.Context, accessToken string) (*
 	if err != nil {
 		return nil, fmt.Errorf("executing userinfo request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -865,7 +865,7 @@ func (c *AuthClient) GetJWKS(ctx context.Context) (*JWKS, error) {
 	if err != nil {
 		return nil, fmt.Errorf("executing JWKS request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

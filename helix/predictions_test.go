@@ -54,7 +54,7 @@ func TestClient_GetPredictions(t *testing.T) {
 			},
 			Pagination: &Pagination{Cursor: "next"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -89,7 +89,7 @@ func TestClient_GetPredictions_ByIDs(t *testing.T) {
 				{ID: "pred2", Title: "Prediction 2"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -145,7 +145,7 @@ func TestClient_CreatePrediction(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -203,7 +203,7 @@ func TestClient_EndPrediction_Resolve(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -228,7 +228,7 @@ func TestClient_EndPrediction_Resolve(t *testing.T) {
 func TestClient_EndPrediction_Cancel(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var params EndPredictionParams
-		json.NewDecoder(r.Body).Decode(&params)
+		_ = json.NewDecoder(r.Body).Decode(&params)
 		if params.Status != "CANCELED" {
 			t.Errorf("expected status CANCELED, got %s", params.Status)
 		}
@@ -241,7 +241,7 @@ func TestClient_EndPrediction_Cancel(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -262,7 +262,7 @@ func TestClient_EndPrediction_Cancel(t *testing.T) {
 func TestClient_EndPrediction_Lock(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var params EndPredictionParams
-		json.NewDecoder(r.Body).Decode(&params)
+		_ = json.NewDecoder(r.Body).Decode(&params)
 		if params.Status != "LOCKED" {
 			t.Errorf("expected status LOCKED, got %s", params.Status)
 		}
@@ -276,7 +276,7 @@ func TestClient_EndPrediction_Lock(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

@@ -53,7 +53,7 @@ func TestClient_GetEventSubSubscriptions(t *testing.T) {
 			MaxTotalCost: 10000,
 			Pagination:   &Pagination{Cursor: "next"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -95,7 +95,7 @@ func TestClient_GetEventSubSubscriptions_WithFilters(t *testing.T) {
 			TotalCost:    0,
 			MaxTotalCost: 10000,
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -156,7 +156,7 @@ func TestClient_CreateEventSubSubscription_Webhook(t *testing.T) {
 			TotalCost:    1,
 			MaxTotalCost: 10000,
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -191,7 +191,7 @@ func TestClient_CreateEventSubSubscription_Webhook(t *testing.T) {
 func TestClient_CreateEventSubSubscription_WebSocket(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var params CreateEventSubSubscriptionParams
-		json.NewDecoder(r.Body).Decode(&params)
+		_ = json.NewDecoder(r.Body).Decode(&params)
 
 		if params.Transport.Method != "websocket" {
 			t.Errorf("expected method websocket, got %s", params.Transport.Method)
@@ -218,7 +218,7 @@ func TestClient_CreateEventSubSubscription_WebSocket(t *testing.T) {
 			TotalCost:    1,
 			MaxTotalCost: 10000,
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

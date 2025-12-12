@@ -30,7 +30,7 @@ func TestClient_CreateClip(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -58,7 +58,7 @@ func TestClient_CreateClip_WithDelay(t *testing.T) {
 				{ID: "clip123", EditURL: "https://clips.twitch.tv/clip123/edit"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -106,7 +106,7 @@ func TestClient_GetClips_ByBroadcaster(t *testing.T) {
 			},
 			Pagination: &Pagination{Cursor: "next"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -138,7 +138,7 @@ func TestClient_GetClips_ByGameID(t *testing.T) {
 				{ID: "clip2", GameID: "game123"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -168,7 +168,7 @@ func TestClient_GetClips_ByIDs(t *testing.T) {
 				{ID: "clip3"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -196,7 +196,7 @@ func TestClient_GetClips_Featured(t *testing.T) {
 				{ID: "featured1", IsFeatured: true},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -230,7 +230,7 @@ func TestClient_GetClips_DateRange(t *testing.T) {
 		}
 
 		resp := Response[Clip]{Data: []Clip{}}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -270,7 +270,7 @@ func TestClient_GetClipsDownload(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

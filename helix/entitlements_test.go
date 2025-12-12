@@ -36,7 +36,7 @@ func TestClient_GetDropsEntitlements(t *testing.T) {
 			},
 			Pagination: &Pagination{Cursor: "next-cursor"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -67,7 +67,7 @@ func TestClient_GetDropsEntitlements_ByID(t *testing.T) {
 				{ID: "entitlement1"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -93,7 +93,7 @@ func TestClient_UpdateDropsEntitlements(t *testing.T) {
 		}
 
 		var body UpdateDropsEntitlementsParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if len(body.EntitlementIDs) != 2 {
 			t.Errorf("expected 2 entitlement_ids, got %d", len(body.EntitlementIDs))
@@ -110,7 +110,7 @@ func TestClient_UpdateDropsEntitlements(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

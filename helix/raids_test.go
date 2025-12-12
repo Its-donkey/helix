@@ -35,7 +35,7 @@ func TestClient_StartRaid(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -65,7 +65,7 @@ func TestClient_StartRaid_MatureContent(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -87,7 +87,7 @@ func TestClient_StartRaid_NoResult(t *testing.T) {
 		resp := Response[Raid]{
 			Data: []Raid{},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

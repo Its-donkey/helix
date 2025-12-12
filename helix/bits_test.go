@@ -26,7 +26,7 @@ func TestClient_GetBitsLeaderboard(t *testing.T) {
 			},
 			Total: 3,
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -64,7 +64,7 @@ func TestClient_GetBitsLeaderboard_WithParams(t *testing.T) {
 			},
 			Total: 1,
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -93,7 +93,7 @@ func TestClient_GetBitsLeaderboard_WithStartTime(t *testing.T) {
 		resp := BitsLeaderboardResponse{
 			Data: []BitsLeaderboard{},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -158,7 +158,7 @@ func TestClient_GetCheermotes(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -191,7 +191,7 @@ func TestClient_GetCheermotes_Global(t *testing.T) {
 				{Prefix: "BibleThump", Type: "global_third_party"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

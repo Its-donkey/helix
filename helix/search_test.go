@@ -25,7 +25,7 @@ func TestClient_SearchCategories(t *testing.T) {
 			},
 			Pagination: &Pagination{Cursor: "next"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -54,7 +54,7 @@ func TestClient_SearchCategories_WithPagination(t *testing.T) {
 		resp := Response[SearchCategory]{
 			Data: []SearchCategory{},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -94,7 +94,7 @@ func TestClient_SearchChannels(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -125,7 +125,7 @@ func TestClient_SearchChannels_LiveOnly(t *testing.T) {
 				{ID: "123", DisplayName: "LiveStreamer", IsLive: true},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -157,7 +157,7 @@ func TestClient_SearchChannels_WithPagination(t *testing.T) {
 			Data:       []SearchChannel{},
 			Pagination: &Pagination{Cursor: "nextcursor"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

@@ -37,7 +37,7 @@ func TestClient_GetChannelTeams(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -59,7 +59,7 @@ func TestClient_GetChannelTeams_NoTeams(t *testing.T) {
 		resp := Response[ChannelTeam]{
 			Data: []ChannelTeam{},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -103,7 +103,7 @@ func TestClient_GetTeams_ByName(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -138,7 +138,7 @@ func TestClient_GetTeams_ByID(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -174,7 +174,7 @@ func TestClient_GetTeams_WithUsers(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

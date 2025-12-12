@@ -29,7 +29,7 @@ func TestClient_GetChatters(t *testing.T) {
 		}
 		total := 3
 		resp.Total = &total
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -65,7 +65,7 @@ func TestClient_GetChannelEmotes(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -95,7 +95,7 @@ func TestClient_GetGlobalEmotes(t *testing.T) {
 				{ID: "3", Name: "LUL"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -126,7 +126,7 @@ func TestClient_GetEmoteSets(t *testing.T) {
 				{ID: "emote2", Name: "Emote2", EmoteSetID: "set2"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -157,7 +157,7 @@ func TestClient_GetChannelChatBadges(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -186,7 +186,7 @@ func TestClient_GetGlobalChatBadges(t *testing.T) {
 				{SetID: "vip", Versions: []BadgeVersion{{ID: "1"}}},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -222,7 +222,7 @@ func TestClient_GetChatSettings(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -252,14 +252,14 @@ func TestClient_UpdateChatSettings(t *testing.T) {
 		}
 
 		var body UpdateChatSettingsParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		resp := Response[ChatSettings]{
 			Data: []ChatSettings{
 				{BroadcasterID: "12345", SlowMode: true, SlowModeWaitTime: 60},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -290,7 +290,7 @@ func TestClient_SendChatAnnouncement(t *testing.T) {
 		}
 
 		var body SendChatAnnouncementParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.Message != "Important announcement!" {
 			t.Errorf("expected message 'Important announcement!', got %s", body.Message)
@@ -364,7 +364,7 @@ func TestClient_GetUserChatColor(t *testing.T) {
 				{UserID: "67890", UserLogin: "user2", UserName: "User2", Color: "#00FF00"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -418,7 +418,7 @@ func TestClient_SendChatMessage(t *testing.T) {
 		}
 
 		var body SendChatMessageParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.Message != "Hello, chat!" {
 			t.Errorf("expected message 'Hello, chat!', got %s", body.Message)
@@ -432,7 +432,7 @@ func TestClient_SendChatMessage(t *testing.T) {
 				{MessageID: "msg123", IsSent: true},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -456,7 +456,7 @@ func TestClient_SendChatMessage(t *testing.T) {
 func TestClient_SendChatMessage_WithReply(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var body SendChatMessageParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.ReplyParentMessageID != "parent123" {
 			t.Errorf("expected reply_parent_message_id parent123, got %s", body.ReplyParentMessageID)
@@ -467,7 +467,7 @@ func TestClient_SendChatMessage_WithReply(t *testing.T) {
 				{MessageID: "reply456", IsSent: true},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -503,7 +503,7 @@ func TestClient_SendChatMessage_Dropped(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -552,7 +552,7 @@ func TestClient_GetSharedChatSession(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -577,7 +577,7 @@ func TestClient_GetSharedChatSession_NoSession(t *testing.T) {
 		resp := Response[SharedChatSession]{
 			Data: []SharedChatSession{},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -618,7 +618,7 @@ func TestClient_GetUserEmotes(t *testing.T) {
 			Template:   "https://static-cdn.jtvnw.net/emoticons/v2/{{id}}/{{format}}/{{theme_mode}}/{{scale}}",
 			Pagination: &Pagination{Cursor: "next-cursor"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -651,7 +651,7 @@ func TestClient_GetUserEmotes_WithBroadcaster(t *testing.T) {
 			Data:     []UserEmote{},
 			Template: "https://static-cdn.jtvnw.net/emoticons/v2/{{id}}/{{format}}/{{theme_mode}}/{{scale}}",
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
