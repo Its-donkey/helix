@@ -214,7 +214,7 @@ func TestClient_EndPoll_Terminate(t *testing.T) {
 func TestClient_EndPoll_Archive(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var params EndPollParams
-		json.NewDecoder(r.Body).Decode(&params)
+		_ = json.NewDecoder(r.Body).Decode(&params)
 		if params.Status != "ARCHIVED" {
 			t.Errorf("expected status ARCHIVED, got %s", params.Status)
 		}

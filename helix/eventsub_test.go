@@ -191,7 +191,7 @@ func TestClient_CreateEventSubSubscription_Webhook(t *testing.T) {
 func TestClient_CreateEventSubSubscription_WebSocket(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var params CreateEventSubSubscriptionParams
-		json.NewDecoder(r.Body).Decode(&params)
+		_ = json.NewDecoder(r.Body).Decode(&params)
 
 		if params.Transport.Method != "websocket" {
 			t.Errorf("expected method websocket, got %s", params.Transport.Method)

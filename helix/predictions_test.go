@@ -228,7 +228,7 @@ func TestClient_EndPrediction_Resolve(t *testing.T) {
 func TestClient_EndPrediction_Cancel(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var params EndPredictionParams
-		json.NewDecoder(r.Body).Decode(&params)
+		_ = json.NewDecoder(r.Body).Decode(&params)
 		if params.Status != "CANCELED" {
 			t.Errorf("expected status CANCELED, got %s", params.Status)
 		}

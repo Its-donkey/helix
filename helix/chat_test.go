@@ -29,7 +29,7 @@ func TestClient_GetChatters(t *testing.T) {
 		}
 		total := 3
 		resp.Total = &total
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -65,7 +65,7 @@ func TestClient_GetChannelEmotes(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -95,7 +95,7 @@ func TestClient_GetGlobalEmotes(t *testing.T) {
 				{ID: "3", Name: "LUL"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
