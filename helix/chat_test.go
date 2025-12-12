@@ -664,3 +664,177 @@ func TestClient_GetUserEmotes_WithBroadcaster(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestClient_GetChatters_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Unauthorized",
+			Status:  401,
+			Message: "Invalid access token",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.GetChatters(context.Background(), &GetChattersParams{
+		BroadcasterID: "12345",
+		ModeratorID:   "67890",
+	})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetGlobalEmotes_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Internal Server Error",
+			Status:  500,
+			Message: "Server error",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.GetGlobalEmotes(context.Background())
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetGlobalChatBadges_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Unauthorized",
+			Status:  401,
+			Message: "Invalid access token",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.GetGlobalChatBadges(context.Background())
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_SendChatMessage_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Bad Request",
+			Status:  400,
+			Message: "Invalid request",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.SendChatMessage(context.Background(), &SendChatMessageParams{
+		BroadcasterID: "12345",
+		SenderID:      "67890",
+		Message:       "Hello!",
+	})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_SendChatMessage_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[SendChatMessageResponse]{
+			Data: []SendChatMessageResponse{},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.SendChatMessage(context.Background(), &SendChatMessageParams{
+		BroadcasterID: "12345",
+		SenderID:      "67890",
+		Message:       "Hello!",
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil, got %+v", result)
+	}
+}
+
+func TestClient_GetChannelEmotes_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Unauthorized",
+			Status:  401,
+			Message: "Invalid access token",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.GetChannelEmotes(context.Background(), "12345")
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetChannelChatBadges_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Unauthorized",
+			Status:  401,
+			Message: "Invalid access token",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.GetChannelChatBadges(context.Background(), "12345")
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetChatSettings_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Unauthorized",
+			Status:  401,
+			Message: "Invalid access token",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.GetChatSettings(context.Background(), "12345", "67890")
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetSharedChatSession_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Not Found",
+			Status:  404,
+			Message: "No shared chat session",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.GetSharedChatSession(context.Background(), "12345")
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
