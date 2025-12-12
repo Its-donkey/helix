@@ -262,7 +262,7 @@ func TestClient_EndPrediction_Cancel(t *testing.T) {
 func TestClient_EndPrediction_Lock(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var params EndPredictionParams
-		json.NewDecoder(r.Body).Decode(&params)
+		_ = json.NewDecoder(r.Body).Decode(&params)
 		if params.Status != "LOCKED" {
 			t.Errorf("expected status LOCKED, got %s", params.Status)
 		}

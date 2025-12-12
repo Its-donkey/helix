@@ -57,7 +57,7 @@ func TestClient_SendWhisper_LongMessage(t *testing.T) {
 
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var params SendWhisperParams
-		json.NewDecoder(r.Body).Decode(&params)
+		_ = json.NewDecoder(r.Body).Decode(&params)
 		if params.Message != longMessage {
 			t.Errorf("message mismatch")
 		}
@@ -80,7 +80,7 @@ func TestClient_SendWhisper_LongMessage(t *testing.T) {
 func TestClient_SendWhisper_EmptyMessage(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var params SendWhisperParams
-		json.NewDecoder(r.Body).Decode(&params)
+		_ = json.NewDecoder(r.Body).Decode(&params)
 		if params.Message != "" {
 			t.Errorf("expected empty message, got %s", params.Message)
 		}
@@ -106,7 +106,7 @@ func TestClient_SendWhisper_SpecialCharacters(t *testing.T) {
 
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var params SendWhisperParams
-		json.NewDecoder(r.Body).Decode(&params)
+		_ = json.NewDecoder(r.Body).Decode(&params)
 		if params.Message != specialMessage {
 			t.Errorf("message mismatch: got %s", params.Message)
 		}
