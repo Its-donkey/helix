@@ -218,7 +218,7 @@ func TestClient_RateLimitRetry(t *testing.T) {
 			w.Header().Set("Ratelimit-Remaining", "0")
 			w.Header().Set("Ratelimit-Reset", fmt.Sprintf("%d", resetTime))
 			w.WriteHeader(http.StatusTooManyRequests)
-			json.NewEncoder(w).Encode(ErrorResponse{
+			_ = json.NewEncoder(w).Encode(ErrorResponse{
 				Error:   "Too Many Requests",
 				Status:  429,
 				Message: "Rate limit exceeded",
@@ -230,7 +230,7 @@ func TestClient_RateLimitRetry(t *testing.T) {
 		w.Header().Set("Ratelimit-Limit", "800")
 		w.Header().Set("Ratelimit-Remaining", "799")
 		w.Header().Set("Ratelimit-Reset", fmt.Sprintf("%d", time.Now().Add(time.Minute).Unix()))
-		json.NewEncoder(w).Encode(Response[User]{
+		_ = json.NewEncoder(w).Encode(Response[User]{
 			Data: []User{{ID: "12345", Login: "testuser"}},
 		})
 	})
@@ -264,7 +264,7 @@ func TestClient_RateLimitRetryDisabled(t *testing.T) {
 		w.Header().Set("Ratelimit-Remaining", "0")
 		w.Header().Set("Ratelimit-Reset", fmt.Sprintf("%d", resetTime))
 		w.WriteHeader(http.StatusTooManyRequests)
-		json.NewEncoder(w).Encode(ErrorResponse{
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
 			Error:   "Too Many Requests",
 			Status:  429,
 			Message: "Rate limit exceeded",
@@ -316,7 +316,7 @@ func TestClient_RateLimitMaxRetries(t *testing.T) {
 		w.Header().Set("Ratelimit-Remaining", "0")
 		w.Header().Set("Ratelimit-Reset", fmt.Sprintf("%d", resetTime))
 		w.WriteHeader(http.StatusTooManyRequests)
-		json.NewEncoder(w).Encode(ErrorResponse{
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
 			Error:   "Too Many Requests",
 			Status:  429,
 			Message: "Rate limit exceeded",
@@ -353,7 +353,7 @@ func TestClient_RateLimitContextCancellation(t *testing.T) {
 		w.Header().Set("Ratelimit-Remaining", "0")
 		w.Header().Set("Ratelimit-Reset", fmt.Sprintf("%d", resetTime))
 		w.WriteHeader(http.StatusTooManyRequests)
-		json.NewEncoder(w).Encode(ErrorResponse{
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
 			Error:   "Too Many Requests",
 			Status:  429,
 			Message: "Rate limit exceeded",
