@@ -42,7 +42,7 @@ func TestClient_GetBannedUsers(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -66,7 +66,7 @@ func TestClient_GetBannedUsers_WithFilters(t *testing.T) {
 		}
 
 		resp := Response[BannedUser]{Data: []BannedUser{}}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -97,7 +97,7 @@ func TestClient_BanUser(t *testing.T) {
 		}
 
 		var body BanUserParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.Data.UserID != "11111" {
 			t.Errorf("expected user_id=11111, got %s", body.Data.UserID)
@@ -117,7 +117,7 @@ func TestClient_BanUser(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -142,7 +142,7 @@ func TestClient_BanUser(t *testing.T) {
 func TestClient_BanUser_Permanent(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var body BanUserParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.Data.Duration != 0 {
 			t.Errorf("expected duration=0 for permanent ban, got %d", body.Data.Duration)
@@ -153,7 +153,7 @@ func TestClient_BanUser_Permanent(t *testing.T) {
 				{BroadcasterID: "12345", UserID: "11111"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -212,7 +212,7 @@ func TestClient_GetModerators(t *testing.T) {
 				{UserID: "22222", UserLogin: "mod2", UserName: "Mod2"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -336,7 +336,7 @@ func TestClient_GetBlockedTerms(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -363,7 +363,7 @@ func TestClient_AddBlockedTerm(t *testing.T) {
 		}
 
 		var body AddBlockedTermParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.Text != "newbadword" {
 			t.Errorf("expected text 'newbadword', got %s", body.Text)
@@ -374,7 +374,7 @@ func TestClient_AddBlockedTerm(t *testing.T) {
 				{ID: "newterm", Text: "newbadword"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -434,7 +434,7 @@ func TestClient_GetShieldModeStatus(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -458,7 +458,7 @@ func TestClient_UpdateShieldModeStatus(t *testing.T) {
 		}
 
 		var body UpdateShieldModeStatusParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if !body.IsActive {
 			t.Error("expected is_active to be true")
@@ -469,7 +469,7 @@ func TestClient_UpdateShieldModeStatus(t *testing.T) {
 				{IsActive: true},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -497,7 +497,7 @@ func TestClient_WarnChatUser(t *testing.T) {
 		}
 
 		var body WarnChatUserParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.Data.UserID != "11111" {
 			t.Errorf("expected user_id=11111, got %s", body.Data.UserID)
@@ -544,7 +544,7 @@ func TestClient_CheckAutoModStatus(t *testing.T) {
 				{MsgID: "msg2", IsPermitted: false},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -577,7 +577,7 @@ func TestClient_ManageHeldAutoModMessages(t *testing.T) {
 		}
 
 		var body ManageHeldAutoModMessageParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.UserID != "67890" {
 			t.Errorf("expected user_id=67890, got %s", body.UserID)
@@ -635,7 +635,7 @@ func TestClient_GetAutoModSettings(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -664,7 +664,7 @@ func TestClient_UpdateAutoModSettings(t *testing.T) {
 				{OverallLevel: &overallLevel},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -712,7 +712,7 @@ func TestClient_GetUnbanRequests(t *testing.T) {
 			},
 			Pagination: &Pagination{Cursor: "next-cursor"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -763,7 +763,7 @@ func TestClient_ResolveUnbanRequest(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -812,7 +812,7 @@ func TestClient_GetModeratedChannels(t *testing.T) {
 			},
 			Pagination: &Pagination{Cursor: "next-cursor"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

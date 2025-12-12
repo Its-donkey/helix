@@ -45,7 +45,7 @@ func TestClient_GetCharityCampaign(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -88,7 +88,7 @@ func TestClient_GetCharityDonations(t *testing.T) {
 			},
 			Pagination: &Pagination{Cursor: "next-cursor"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

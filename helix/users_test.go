@@ -28,7 +28,7 @@ func TestClient_GetUsers_ByID(t *testing.T) {
 				{ID: "67890", Login: "user2", DisplayName: "User2"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -63,7 +63,7 @@ func TestClient_GetUsers_ByLogin(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -90,7 +90,7 @@ func TestClient_GetUsers_NoParams(t *testing.T) {
 				{ID: "99999", Login: "authuser", DisplayName: "AuthUser"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -116,7 +116,7 @@ func TestClient_GetCurrentUser(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -136,7 +136,7 @@ func TestClient_GetCurrentUser(t *testing.T) {
 func TestClient_GetCurrentUser_NoUser(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		resp := Response[User]{Data: []User{}}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -166,7 +166,7 @@ func TestClient_UpdateUser(t *testing.T) {
 				{ID: "12345", Description: "New description"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -199,7 +199,7 @@ func TestClient_GetUserBlockList(t *testing.T) {
 				{UserID: "22222", UserLogin: "blocked2", DisplayName: "Blocked2"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -291,7 +291,7 @@ func TestClient_GetUserExtensions(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -335,7 +335,7 @@ func TestClient_GetUserActiveExtensions(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -374,7 +374,7 @@ func TestClient_GetUserActiveExtensions_NoUserID(t *testing.T) {
 				Component: map[string]ActiveExtension{},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -395,7 +395,7 @@ func TestClient_UpdateUserExtensions(t *testing.T) {
 		}
 
 		var body UpdateUserExtensionsParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.Data.Panel["1"].ID != "ext123" {
 			t.Errorf("expected panel slot 1 id=ext123, got %s", body.Data.Panel["1"].ID)
@@ -412,7 +412,7 @@ func TestClient_UpdateUserExtensions(t *testing.T) {
 				Component: map[string]ActiveExtension{},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -461,7 +461,7 @@ func TestClient_GetAuthorizationByUser(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

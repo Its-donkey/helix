@@ -53,7 +53,7 @@ func TestClient_GetEventSubSubscriptions(t *testing.T) {
 			MaxTotalCost: 10000,
 			Pagination:   &Pagination{Cursor: "next"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -95,7 +95,7 @@ func TestClient_GetEventSubSubscriptions_WithFilters(t *testing.T) {
 			TotalCost:    0,
 			MaxTotalCost: 10000,
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -156,7 +156,7 @@ func TestClient_CreateEventSubSubscription_Webhook(t *testing.T) {
 			TotalCost:    1,
 			MaxTotalCost: 10000,
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -218,7 +218,7 @@ func TestClient_CreateEventSubSubscription_WebSocket(t *testing.T) {
 			TotalCost:    1,
 			MaxTotalCost: 10000,
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

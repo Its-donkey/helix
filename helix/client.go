@@ -363,7 +363,7 @@ func (c *Client) doOnce(ctx context.Context, req *Request, result interface{}) e
 	if err != nil {
 		return fmt.Errorf("executing request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// Update rate limit info from headers
 	c.updateRateLimit(resp)

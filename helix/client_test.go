@@ -89,7 +89,7 @@ func TestClient_GetUsers(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -116,7 +116,7 @@ func TestClient_APIError(t *testing.T) {
 			Status:  401,
 			Message: "Invalid OAuth token",
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -156,7 +156,7 @@ func TestClient_Pagination(t *testing.T) {
 			resp.Pagination = &Pagination{Cursor: "next-page-cursor"}
 		}
 
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -184,7 +184,7 @@ func TestClient_GetRateLimitInfo(t *testing.T) {
 		w.Header().Set("Ratelimit-Reset", "1234567890")
 
 		resp := Response[User]{Data: []User{}}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

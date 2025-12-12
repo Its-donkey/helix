@@ -46,7 +46,7 @@ func TestClient_GetVideos_ByIDs(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -78,7 +78,7 @@ func TestClient_GetVideos_ByUserID(t *testing.T) {
 				{ID: "video2", UserID: "12345"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -106,7 +106,7 @@ func TestClient_GetVideos_ByGameID(t *testing.T) {
 				{ID: "video1"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -140,7 +140,7 @@ func TestClient_GetVideos_WithFilters(t *testing.T) {
 		}
 
 		resp := Response[Video]{Data: []Video{}}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -171,7 +171,7 @@ func TestClient_GetVideos_WithMutedSegments(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -206,7 +206,7 @@ func TestClient_DeleteVideos(t *testing.T) {
 		}{
 			Data: []string{"video1", "video2", "video3"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -231,7 +231,7 @@ func TestClient_GetVideos_WithPagination(t *testing.T) {
 			Data:       []Video{{ID: "1"}},
 			Pagination: &Pagination{Cursor: "nextpage"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

@@ -45,7 +45,7 @@ func TestClient_GetBroadcasterSubscriptions(t *testing.T) {
 			Points: 150,
 			Pagination: &Pagination{Cursor: "next"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -84,7 +84,7 @@ func TestClient_GetBroadcasterSubscriptions_FilterByUsers(t *testing.T) {
 			},
 			Total: 2,
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -118,7 +118,7 @@ func TestClient_GetBroadcasterSubscriptions_WithPagination(t *testing.T) {
 			Total:      0,
 			Pagination: &Pagination{Cursor: "nextcursor"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -162,7 +162,7 @@ func TestClient_CheckUserSubscription(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -184,7 +184,7 @@ func TestClient_CheckUserSubscription_NotSubscribed(t *testing.T) {
 		resp := Response[UserSubscription]{
 			Data: []UserSubscription{},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -212,7 +212,7 @@ func TestClient_CheckUserSubscription_GiftedSub(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

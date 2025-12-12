@@ -24,7 +24,7 @@ func TestClient_GetGames(t *testing.T) {
 				{ID: "456", Name: "Game 2", BoxArtURL: "https://example.com/2.jpg"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -58,7 +58,7 @@ func TestClient_GetGames_ByName(t *testing.T) {
 				{ID: "33214", Name: "Fortnite", BoxArtURL: "https://example.com/fortnite.jpg"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -86,7 +86,7 @@ func TestClient_GetGames_ByIGDB(t *testing.T) {
 				{ID: "123", Name: "Some Game", IGDBId: "12345"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -123,7 +123,7 @@ func TestClient_GetTopGames(t *testing.T) {
 			},
 			Pagination: &Pagination{Cursor: "next"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -149,7 +149,7 @@ func TestClient_GetTopGames_NilParams(t *testing.T) {
 				{ID: "1", Name: "Top Game"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

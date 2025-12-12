@@ -26,7 +26,7 @@ func TestClient_GetExtensionConfigurationSegment(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -51,7 +51,7 @@ func TestClient_SetExtensionConfigurationSegment(t *testing.T) {
 		}
 
 		var body SetExtensionConfigurationSegmentParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.ExtensionID != "ext123" {
 			t.Errorf("expected extension_id 'ext123', got %s", body.ExtensionID)
@@ -139,7 +139,7 @@ func TestClient_GetExtensionLiveChannels(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -175,7 +175,7 @@ func TestClient_GetExtensionSecrets(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -205,7 +205,7 @@ func TestClient_CreateExtensionSecret(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -271,7 +271,7 @@ func TestClient_GetExtensions(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -304,7 +304,7 @@ func TestClient_GetReleasedExtensions(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -336,7 +336,7 @@ func TestClient_GetExtensionBitsProducts(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -366,7 +366,7 @@ func TestClient_UpdateExtensionBitsProduct(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -418,7 +418,7 @@ func TestClient_GetExtensionTransactions(t *testing.T) {
 			},
 			Pagination: &Pagination{Cursor: "next-cursor"},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 

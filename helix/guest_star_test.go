@@ -24,7 +24,7 @@ func TestClient_GetChannelGuestStarSettings(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -48,7 +48,7 @@ func TestClient_UpdateChannelGuestStarSettings(t *testing.T) {
 		}
 
 		var body UpdateChannelGuestStarSettingsParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if *body.SlotCount != 6 {
 			t.Errorf("expected slot_count 6, got %d", *body.SlotCount)
@@ -93,7 +93,7 @@ func TestClient_GetGuestStarSession(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -124,7 +124,7 @@ func TestClient_CreateGuestStarSession(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -157,7 +157,7 @@ func TestClient_EndGuestStarSession(t *testing.T) {
 				{ID: "session123"},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
@@ -190,7 +190,7 @@ func TestClient_GetGuestStarInvites(t *testing.T) {
 				},
 			},
 		}
-		json.NewEncoder(w).Encode(resp)
+		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
