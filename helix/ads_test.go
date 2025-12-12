@@ -220,3 +220,82 @@ func TestClient_SnoozeNextAd_NoSnoozeAvailable(t *testing.T) {
 		t.Errorf("expected nil, got %+v", result)
 	}
 }
+
+func TestClient_StartCommercial_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[Commercial]{
+			Data: []Commercial{},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.StartCommercial(context.Background(), &StartCommercialParams{
+		BroadcasterID: "12345",
+		Length:        60,
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil, got %+v", result)
+	}
+}
+
+func TestClient_StartCommercial_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Unauthorized",
+			Status:  401,
+			Message: "Invalid access token",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.StartCommercial(context.Background(), &StartCommercialParams{
+		BroadcasterID: "12345",
+		Length:        60,
+	})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetAdSchedule_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Unauthorized",
+			Status:  401,
+			Message: "Invalid access token",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.GetAdSchedule(context.Background(), "12345")
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_SnoozeNextAd_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Unauthorized",
+			Status:  401,
+			Message: "Invalid access token",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.SnoozeNextAd(context.Background(), "12345")
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}

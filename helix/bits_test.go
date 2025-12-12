@@ -204,3 +204,76 @@ func TestClient_GetCheermotes_Global(t *testing.T) {
 		t.Fatalf("expected 2 cheermotes, got %d", len(resp.Data))
 	}
 }
+
+func TestClient_GetBitsLeaderboard_NilParams(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := BitsLeaderboardResponse{
+			Data:  []BitsLeaderboard{},
+			Total: 0,
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	_, err := client.GetBitsLeaderboard(context.Background(), nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_GetBitsLeaderboard_WithCount(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		count := r.URL.Query().Get("count")
+		if count == "" {
+			t.Error("expected count to be set")
+		}
+
+		resp := BitsLeaderboardResponse{
+			Data:  []BitsLeaderboard{},
+			Total: 0,
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	_, err := client.GetBitsLeaderboard(context.Background(), &GetBitsLeaderboardParams{
+		Count: 10,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_GetBitsLeaderboard_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Unauthorized",
+			Status:  401,
+			Message: "Invalid access token",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.GetBitsLeaderboard(context.Background(), nil)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetCheermotes_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_ = json.NewEncoder(w).Encode(ErrorResponse{
+			Error:   "Unauthorized",
+			Status:  401,
+			Message: "Invalid access token",
+		})
+	})
+	defer server.Close()
+
+	_, err := client.GetCheermotes(context.Background(), "12345")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
