@@ -252,7 +252,7 @@ func TestClient_UpdateChatSettings(t *testing.T) {
 		}
 
 		var body UpdateChatSettingsParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		resp := Response[ChatSettings]{
 			Data: []ChatSettings{
@@ -290,7 +290,7 @@ func TestClient_SendChatAnnouncement(t *testing.T) {
 		}
 
 		var body SendChatAnnouncementParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.Message != "Important announcement!" {
 			t.Errorf("expected message 'Important announcement!', got %s", body.Message)
@@ -418,7 +418,7 @@ func TestClient_SendChatMessage(t *testing.T) {
 		}
 
 		var body SendChatMessageParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.Message != "Hello, chat!" {
 			t.Errorf("expected message 'Hello, chat!', got %s", body.Message)
@@ -456,7 +456,7 @@ func TestClient_SendChatMessage(t *testing.T) {
 func TestClient_SendChatMessage_WithReply(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		var body SendChatMessageParams
-		json.NewDecoder(r.Body).Decode(&body)
+		_ = json.NewDecoder(r.Body).Decode(&body)
 
 		if body.ReplyParentMessageID != "parent123" {
 			t.Errorf("expected reply_parent_message_id parent123, got %s", body.ReplyParentMessageID)
