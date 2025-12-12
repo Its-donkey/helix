@@ -20,6 +20,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   promote:
@@ -38,23 +39,44 @@ jobs:
       - name: Run tests
         run: go test -v ./...
 
-      - name: Promote test to main
+      - name: Create promotion PR
         env:
           TAG_NAME: ${{ github.event.inputs.tag_name }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git fetch origin
-          git show-ref --verify --quiet refs/remotes/origin/test
 
-          # Reset main to the current test tip
-          git checkout origin/test
-          git checkout -B main
-          git push origin main --force
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --base main --head test --json number --jq '.[0].number' || echo "")
 
-          # Create version tag if specified
-          if [ -n "$TAG_NAME" ]; then
-            git tag -f "$TAG_NAME" HEAD
-            git push origin "$TAG_NAME" --force
+          if [ -n "$EXISTING_PR" ]; then
+            echo "PR #$EXISTING_PR already exists for test -> main"
+            echo "URL: https://github.com/${{ github.repository }}/pull/$EXISTING_PR"
+          else
+            # Create PR to merge test into main
+            PR_TITLE="Release: Promote test to main"
+            if [ -n "${TAG_NAME:-}" ]; then
+              PR_TITLE="Release ${TAG_NAME}: Promote test to main"
+            fi
+
+            PR_URL=$(gh pr create \
+              --base main \
+              --head test \
+              --title "$PR_TITLE" \
+              --body "## Summary
+
+          Automated promotion of test branch to main.
+
+          $(if [ -n "${TAG_NAME:-}" ]; then echo "**Version tag:** ${TAG_NAME}"; fi)
+
+          ## Test plan
+
+          - [x] All tests pass on test branch
+          - [ ] Review changes before merging
+
+          🤖 Generated with GitHub Actions")
+
+            echo "Created PR: $PR_URL"
           fi
 
   archive:
