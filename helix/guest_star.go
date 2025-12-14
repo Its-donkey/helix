@@ -7,11 +7,11 @@ import (
 
 // GuestStarSettings represents channel Guest Star settings.
 type GuestStarSettings struct {
-	IsModeratorSendLiveEnabled      bool   `json:"is_moderator_send_live_enabled"`
-	SlotCount                       int    `json:"slot_count"`
-	IsBrowserSourceAudioEnabled     bool   `json:"is_browser_source_audio_enabled"`
-	GroupLayout                     string `json:"group_layout"` // TILED_LAYOUT, SCREENSHARE_LAYOUT, HORIZONTAL_LAYOUT, VERTICAL_LAYOUT
-	BrowserSourceToken              string `json:"browser_source_token,omitempty"`
+	IsModeratorSendLiveEnabled  bool   `json:"is_moderator_send_live_enabled"`
+	SlotCount                   int    `json:"slot_count"`
+	IsBrowserSourceAudioEnabled bool   `json:"is_browser_source_audio_enabled"`
+	GroupLayout                 string `json:"group_layout"` // TILED_LAYOUT, SCREENSHARE_LAYOUT, HORIZONTAL_LAYOUT, VERTICAL_LAYOUT
+	BrowserSourceToken          string `json:"browser_source_token,omitempty"`
 }
 
 // GetChannelGuestStarSettings gets the Guest Star settings for a channel.
@@ -34,12 +34,12 @@ func (c *Client) GetChannelGuestStarSettings(ctx context.Context, broadcasterID,
 
 // UpdateChannelGuestStarSettingsParams contains parameters for UpdateChannelGuestStarSettings.
 type UpdateChannelGuestStarSettingsParams struct {
-	BroadcasterID                   string `json:"-"`
-	IsModeratorSendLiveEnabled      *bool  `json:"is_moderator_send_live_enabled,omitempty"`
-	SlotCount                       *int   `json:"slot_count,omitempty"`
-	IsBrowserSourceAudioEnabled     *bool  `json:"is_browser_source_audio_enabled,omitempty"`
-	GroupLayout                     string `json:"group_layout,omitempty"`
-	RegenerateBrowserSources        *bool  `json:"regenerate_browser_sources,omitempty"`
+	BroadcasterID               string `json:"-"`
+	IsModeratorSendLiveEnabled  *bool  `json:"is_moderator_send_live_enabled,omitempty"`
+	SlotCount                   *int   `json:"slot_count,omitempty"`
+	IsBrowserSourceAudioEnabled *bool  `json:"is_browser_source_audio_enabled,omitempty"`
+	GroupLayout                 string `json:"group_layout,omitempty"`
+	RegenerateBrowserSources    *bool  `json:"regenerate_browser_sources,omitempty"`
 }
 
 // UpdateChannelGuestStarSettings updates the Guest Star settings for a channel.
@@ -54,35 +54,35 @@ func (c *Client) UpdateChannelGuestStarSettings(ctx context.Context, params *Upd
 
 // GuestStarSession represents a Guest Star session.
 type GuestStarSession struct {
-	ID        string           `json:"id"`
-	Guests    []GuestStarGuest `json:"guests"`
+	ID     string           `json:"id"`
+	Guests []GuestStarGuest `json:"guests"`
 }
 
 // GuestStarGuest represents a guest in a Guest Star session.
 type GuestStarGuest struct {
-	SlotID               string `json:"slot_id"`
-	IsLive               bool   `json:"is_live"`
-	UserID               string `json:"user_id"`
-	UserDisplayName      string `json:"user_display_name"`
-	UserLogin            string `json:"user_login"`
-	Volume               int    `json:"volume"`
-	AssignedAt           string `json:"assigned_at"`
-	AudioSettings        GuestStarAudioSettings `json:"audio_settings"`
-	VideoSettings        GuestStarVideoSettings `json:"video_settings"`
+	SlotID          string                 `json:"slot_id"`
+	IsLive          bool                   `json:"is_live"`
+	UserID          string                 `json:"user_id"`
+	UserDisplayName string                 `json:"user_display_name"`
+	UserLogin       string                 `json:"user_login"`
+	Volume          int                    `json:"volume"`
+	AssignedAt      string                 `json:"assigned_at"`
+	AudioSettings   GuestStarAudioSettings `json:"audio_settings"`
+	VideoSettings   GuestStarVideoSettings `json:"video_settings"`
 }
 
 // GuestStarAudioSettings represents audio settings for a guest.
 type GuestStarAudioSettings struct {
-	IsHostEnabled    bool `json:"is_host_enabled"`
-	IsSelfMuted      bool `json:"is_self_muted"`
-	IsAvailable      bool `json:"is_available"`
+	IsHostEnabled bool `json:"is_host_enabled"`
+	IsSelfMuted   bool `json:"is_self_muted"`
+	IsAvailable   bool `json:"is_available"`
 }
 
 // GuestStarVideoSettings represents video settings for a guest.
 type GuestStarVideoSettings struct {
-	IsHostEnabled    bool `json:"is_host_enabled"`
-	IsSelfMuted      bool `json:"is_self_muted"`
-	IsAvailable      bool `json:"is_available"`
+	IsHostEnabled bool `json:"is_host_enabled"`
+	IsSelfMuted   bool `json:"is_self_muted"`
+	IsAvailable   bool `json:"is_available"`
 }
 
 // GetGuestStarSession gets the active Guest Star session for a channel.
@@ -140,13 +140,13 @@ func (c *Client) EndGuestStarSession(ctx context.Context, broadcasterID, session
 
 // GuestStarInvite represents a Guest Star invite.
 type GuestStarInvite struct {
-	UserID          string `json:"user_id"`
-	InvitedAt       string `json:"invited_at"`
-	Status          string `json:"status"` // INVITED, ACCEPTED, READY
-	IsVideoEnabled  bool   `json:"is_video_enabled"`
-	IsAudioEnabled  bool   `json:"is_audio_enabled"`
-	IsVideoAvailable bool  `json:"is_video_available"`
-	IsAudioAvailable bool  `json:"is_audio_available"`
+	UserID           string `json:"user_id"`
+	InvitedAt        string `json:"invited_at"`
+	Status           string `json:"status"` // INVITED, ACCEPTED, READY
+	IsVideoEnabled   bool   `json:"is_video_enabled"`
+	IsAudioEnabled   bool   `json:"is_audio_enabled"`
+	IsVideoAvailable bool   `json:"is_video_available"`
+	IsAudioAvailable bool   `json:"is_audio_available"`
 }
 
 // GetGuestStarInvites gets the pending invites for a Guest Star session.
@@ -207,10 +207,10 @@ func (c *Client) AssignGuestStarSlot(ctx context.Context, broadcasterID, moderat
 
 // UpdateGuestStarSlotParams contains parameters for UpdateGuestStarSlot.
 type UpdateGuestStarSlotParams struct {
-	BroadcasterID string `json:"-"`
-	ModeratorID   string `json:"-"`
-	SessionID     string `json:"-"`
-	SourceSlotID  string `json:"-"`
+	BroadcasterID     string `json:"-"`
+	ModeratorID       string `json:"-"`
+	SessionID         string `json:"-"`
+	SourceSlotID      string `json:"-"`
 	DestinationSlotID string `json:"-"`
 }
 

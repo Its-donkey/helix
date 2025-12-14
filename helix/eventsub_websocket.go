@@ -27,14 +27,14 @@ const (
 
 // WebSocket close codes from Twitch
 const (
-	WSCloseInternalError          = 4000 // Internal server error
-	WSCloseClientSentInbound      = 4001 // Client sent inbound traffic
-	WSCloseClientFailedPingPong   = 4002 // Client failed ping-pong
-	WSCloseConnectionUnused       = 4003 // Connection unused (no subscriptions within 10s)
-	WSCloseReconnectGraceExpired  = 4004 // Reconnect grace time expired
-	WSCloseNetworkTimeout         = 4005 // Network timeout
-	WSCloseNetworkError           = 4006 // Network error
-	WSCloseInvalidReconnect       = 4007 // Invalid reconnect
+	WSCloseInternalError         = 4000 // Internal server error
+	WSCloseClientSentInbound     = 4001 // Client sent inbound traffic
+	WSCloseClientFailedPingPong  = 4002 // Client failed ping-pong
+	WSCloseConnectionUnused      = 4003 // Connection unused (no subscriptions within 10s)
+	WSCloseReconnectGraceExpired = 4004 // Reconnect grace time expired
+	WSCloseNetworkTimeout        = 4005 // Network timeout
+	WSCloseNetworkError          = 4006 // Network error
+	WSCloseInvalidReconnect      = 4007 // Invalid reconnect
 )
 
 // WebSocketMessage represents a message received from EventSub WebSocket.
@@ -79,9 +79,9 @@ type WebSocketNotificationPayload struct {
 
 // EventSubWebSocketClient manages an EventSub WebSocket connection.
 type EventSubWebSocketClient struct {
-	url             string
-	conn            *websocket.Conn
-	sessionID       string
+	url              string
+	conn             *websocket.Conn
+	sessionID        string
 	keepaliveTimeout time.Duration
 
 	// Handlers
@@ -93,9 +93,9 @@ type EventSubWebSocketClient struct {
 	onKeepalive    func()
 
 	// State
-	mu          sync.RWMutex
-	connected   bool
-	stopChan    chan struct{}
+	mu           sync.RWMutex
+	connected    bool
+	stopChan     chan struct{}
 	reconnectURL string
 }
 
@@ -437,12 +437,12 @@ func ParseWSEvent[T any](eventData json.RawMessage) (*T, error) {
 
 // EventSubWebSocket provides a higher-level interface for EventSub WebSocket.
 type EventSubWebSocket struct {
-	client     *Client
-	ws         *EventSubWebSocketClient
-	sessionID  string
+	client    *Client
+	ws        *EventSubWebSocketClient
+	sessionID string
 
-	mu         sync.RWMutex
-	handlers   map[string]func(json.RawMessage)
+	mu       sync.RWMutex
+	handlers map[string]func(json.RawMessage)
 }
 
 // NewEventSubWebSocket creates a new high-level EventSub WebSocket manager.

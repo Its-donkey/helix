@@ -272,12 +272,12 @@ func TestJWTClaimsStructure(t *testing.T) {
 	jwt, _ := NewExtensionJWT("ext123", secret, "owner456")
 
 	claims := &ExtensionJWTClaims{
-		Exp:              time.Now().Add(time.Hour).Unix(),
-		UserID:           "user123",
-		Role:             ExtensionRoleBroadcaster,
-		ChannelID:        "channel456",
-		OpaqueUserID:     "U123",
-		IsUnlinked:       true,
+		Exp:               time.Now().Add(time.Hour).Unix(),
+		UserID:            "user123",
+		Role:              ExtensionRoleBroadcaster,
+		ChannelID:         "channel456",
+		OpaqueUserID:      "U123",
+		IsUnlinked:        true,
 		PubsubPermsListen: []string{"broadcast"},
 		PubsubPermsSend:   []string{"broadcast", "whisper-user123"},
 	}

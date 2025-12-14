@@ -74,17 +74,17 @@ type ChannelSubscriptionGiftEvent struct {
 type ChannelSubscriptionMessageEvent struct {
 	EventSubUser
 	EventSubBroadcaster
-	Tier              string                      `json:"tier"`
-	Message           SubscriptionMessage         `json:"message"`
-	CumulativeMonths  int                         `json:"cumulative_months"`
-	StreakMonths      int                         `json:"streak_months,omitempty"`
-	DurationMonths    int                         `json:"duration_months"`
+	Tier             string              `json:"tier"`
+	Message          SubscriptionMessage `json:"message"`
+	CumulativeMonths int                 `json:"cumulative_months"`
+	StreakMonths     int                 `json:"streak_months,omitempty"`
+	DurationMonths   int                 `json:"duration_months"`
 }
 
 // SubscriptionMessage represents the message in a subscription event.
 type SubscriptionMessage struct {
-	Text   string               `json:"text"`
-	Emotes []SubscriptionEmote  `json:"emotes,omitempty"`
+	Text   string              `json:"text"`
+	Emotes []SubscriptionEmote `json:"emotes,omitempty"`
 }
 
 // SubscriptionEmote represents an emote in a subscription message.
@@ -150,23 +150,23 @@ type ChannelModeratorRemoveEvent struct {
 
 // ChannelPointsRewardAddEvent is sent when a custom reward is created.
 type ChannelPointsRewardAddEvent struct {
-	ID                             string                   `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
-	IsEnabled                      bool                     `json:"is_enabled"`
-	IsPaused                       bool                     `json:"is_paused"`
-	IsInStock                      bool                     `json:"is_in_stock"`
-	Title                          string                   `json:"title"`
-	Cost                           int                      `json:"cost"`
-	Prompt                         string                   `json:"prompt"`
-	IsUserInputRequired            bool                     `json:"is_user_input_required"`
-	ShouldRedemptionsSkipQueue     bool                     `json:"should_redemptions_skip_request_queue"`
-	MaxPerStream                   EventSubMaxPerStream     `json:"max_per_stream"`
-	MaxPerUserPerStream            EventSubMaxPerStream     `json:"max_per_user_per_stream"`
-	BackgroundColor                string                   `json:"background_color"`
-	Image                          *EventSubImage           `json:"image"`
-	DefaultImage                   EventSubImage            `json:"default_image"`
-	GlobalCooldown                 EventSubGlobalCooldown   `json:"global_cooldown"`
-	CooldownExpiresAt              *time.Time               `json:"cooldown_expires_at"`
+	IsEnabled                        bool                   `json:"is_enabled"`
+	IsPaused                         bool                   `json:"is_paused"`
+	IsInStock                        bool                   `json:"is_in_stock"`
+	Title                            string                 `json:"title"`
+	Cost                             int                    `json:"cost"`
+	Prompt                           string                 `json:"prompt"`
+	IsUserInputRequired              bool                   `json:"is_user_input_required"`
+	ShouldRedemptionsSkipQueue       bool                   `json:"should_redemptions_skip_request_queue"`
+	MaxPerStream                     EventSubMaxPerStream   `json:"max_per_stream"`
+	MaxPerUserPerStream              EventSubMaxPerStream   `json:"max_per_user_per_stream"`
+	BackgroundColor                  string                 `json:"background_color"`
+	Image                            *EventSubImage         `json:"image"`
+	DefaultImage                     EventSubImage          `json:"default_image"`
+	GlobalCooldown                   EventSubGlobalCooldown `json:"global_cooldown"`
+	CooldownExpiresAt                *time.Time             `json:"cooldown_expires_at"`
 	RedemptionsRedeemedCurrentStream *int                   `json:"redemptions_redeemed_current_stream"`
 }
 
@@ -194,35 +194,35 @@ type ChannelPointsRewardUpdateEvent = ChannelPointsRewardAddEvent
 
 // ChannelPointsRewardRemoveEvent is sent when a custom reward is removed.
 type ChannelPointsRewardRemoveEvent struct {
-	ID                  string `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
-	IsEnabled           bool   `json:"is_enabled"`
-	IsPaused            bool   `json:"is_paused"`
-	IsInStock           bool   `json:"is_in_stock"`
-	Title               string `json:"title"`
-	Cost                int    `json:"cost"`
-	Prompt              string `json:"prompt"`
-	IsUserInputRequired bool   `json:"is_user_input_required"`
-	ShouldRedemptionsSkipQueue bool `json:"should_redemptions_skip_request_queue"`
-	CooldownExpiresAt   *time.Time `json:"cooldown_expires_at"`
-	RedemptionsRedeemedCurrentStream *int `json:"redemptions_redeemed_current_stream"`
-	MaxPerStream        EventSubMaxPerStream `json:"max_per_stream"`
-	MaxPerUserPerStream EventSubMaxPerStream `json:"max_per_user_per_stream"`
-	GlobalCooldown      EventSubGlobalCooldown `json:"global_cooldown"`
-	BackgroundColor     string `json:"background_color"`
-	Image               *EventSubImage `json:"image"`
-	DefaultImage        EventSubImage `json:"default_image"`
+	IsEnabled                        bool                   `json:"is_enabled"`
+	IsPaused                         bool                   `json:"is_paused"`
+	IsInStock                        bool                   `json:"is_in_stock"`
+	Title                            string                 `json:"title"`
+	Cost                             int                    `json:"cost"`
+	Prompt                           string                 `json:"prompt"`
+	IsUserInputRequired              bool                   `json:"is_user_input_required"`
+	ShouldRedemptionsSkipQueue       bool                   `json:"should_redemptions_skip_request_queue"`
+	CooldownExpiresAt                *time.Time             `json:"cooldown_expires_at"`
+	RedemptionsRedeemedCurrentStream *int                   `json:"redemptions_redeemed_current_stream"`
+	MaxPerStream                     EventSubMaxPerStream   `json:"max_per_stream"`
+	MaxPerUserPerStream              EventSubMaxPerStream   `json:"max_per_user_per_stream"`
+	GlobalCooldown                   EventSubGlobalCooldown `json:"global_cooldown"`
+	BackgroundColor                  string                 `json:"background_color"`
+	Image                            *EventSubImage         `json:"image"`
+	DefaultImage                     EventSubImage          `json:"default_image"`
 }
 
 // ChannelPointsRedemptionAddEvent is sent when a reward is redeemed.
 type ChannelPointsRedemptionAddEvent struct {
-	ID                   string    `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
 	EventSubUser
-	UserInput            string    `json:"user_input"`
-	Status               string    `json:"status"` // unfulfilled, fulfilled, canceled
-	Reward               EventSubReward `json:"reward"`
-	RedeemedAt           time.Time `json:"redeemed_at"`
+	UserInput  string         `json:"user_input"`
+	Status     string         `json:"status"` // unfulfilled, fulfilled, canceled
+	Reward     EventSubReward `json:"reward"`
+	RedeemedAt time.Time      `json:"redeemed_at"`
 }
 
 // EventSubReward represents reward details in redemption events.
@@ -240,7 +240,7 @@ type ChannelPointsRedemptionUpdateEvent = ChannelPointsRedemptionAddEvent
 
 // ChannelPollBeginEvent is sent when a poll begins.
 type ChannelPollBeginEvent struct {
-	ID                  string           `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
 	Title               string           `json:"title"`
 	Choices             []EventSubChoice `json:"choices"`
@@ -270,7 +270,7 @@ type ChannelPollProgressEvent = ChannelPollBeginEvent
 
 // ChannelPollEndEvent is sent when a poll ends.
 type ChannelPollEndEvent struct {
-	ID                  string           `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
 	Title               string           `json:"title"`
 	Choices             []EventSubChoice `json:"choices"`
@@ -285,12 +285,12 @@ type ChannelPollEndEvent struct {
 
 // ChannelPredictionBeginEvent is sent when a prediction begins.
 type ChannelPredictionBeginEvent struct {
-	ID                  string             `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
-	Title               string             `json:"title"`
-	Outcomes            []EventSubOutcome  `json:"outcomes"`
-	StartedAt           time.Time          `json:"started_at"`
-	LocksAt             time.Time          `json:"locks_at"`
+	Title     string            `json:"title"`
+	Outcomes  []EventSubOutcome `json:"outcomes"`
+	StartedAt time.Time         `json:"started_at"`
+	LocksAt   time.Time         `json:"locks_at"`
 }
 
 // EventSubOutcome represents a prediction outcome.
@@ -318,30 +318,30 @@ type ChannelPredictionLockEvent = ChannelPredictionBeginEvent
 
 // ChannelPredictionEndEvent is sent when a prediction ends.
 type ChannelPredictionEndEvent struct {
-	ID                  string            `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
-	Title               string            `json:"title"`
-	WinningOutcomeID    string            `json:"winning_outcome_id,omitempty"`
-	Outcomes            []EventSubOutcome `json:"outcomes"`
-	Status              string            `json:"status"` // resolved, canceled
-	StartedAt           time.Time         `json:"started_at"`
-	EndedAt             time.Time         `json:"ended_at"`
+	Title            string            `json:"title"`
+	WinningOutcomeID string            `json:"winning_outcome_id,omitempty"`
+	Outcomes         []EventSubOutcome `json:"outcomes"`
+	Status           string            `json:"status"` // resolved, canceled
+	StartedAt        time.Time         `json:"started_at"`
+	EndedAt          time.Time         `json:"ended_at"`
 }
 
 // Hype Train Events
 
 // ChannelHypeTrainBeginEvent is sent when a Hype Train begins.
 type ChannelHypeTrainBeginEvent struct {
-	ID                  string                     `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
-	Total               int                        `json:"total"`
-	Progress            int                        `json:"progress"`
-	Goal                int                        `json:"goal"`
-	TopContributions    []EventSubContribution     `json:"top_contributions"`
-	LastContribution    EventSubContribution       `json:"last_contribution"`
-	Level               int                        `json:"level"`
-	StartedAt           time.Time                  `json:"started_at"`
-	ExpiresAt           time.Time                  `json:"expires_at"`
+	Total            int                    `json:"total"`
+	Progress         int                    `json:"progress"`
+	Goal             int                    `json:"goal"`
+	TopContributions []EventSubContribution `json:"top_contributions"`
+	LastContribution EventSubContribution   `json:"last_contribution"`
+	Level            int                    `json:"level"`
+	StartedAt        time.Time              `json:"started_at"`
+	ExpiresAt        time.Time              `json:"expires_at"`
 }
 
 // EventSubContribution represents a Hype Train contribution.
@@ -356,24 +356,24 @@ type ChannelHypeTrainProgressEvent = ChannelHypeTrainBeginEvent
 
 // ChannelHypeTrainEndEvent is sent when a Hype Train ends.
 type ChannelHypeTrainEndEvent struct {
-	ID                  string                 `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
-	Level               int                    `json:"level"`
-	Total               int                    `json:"total"`
-	TopContributions    []EventSubContribution `json:"top_contributions"`
-	StartedAt           time.Time              `json:"started_at"`
-	EndedAt             time.Time              `json:"ended_at"`
-	CooldownEndsAt      time.Time              `json:"cooldown_ends_at"`
+	Level            int                    `json:"level"`
+	Total            int                    `json:"total"`
+	TopContributions []EventSubContribution `json:"top_contributions"`
+	StartedAt        time.Time              `json:"started_at"`
+	EndedAt          time.Time              `json:"ended_at"`
+	CooldownEndsAt   time.Time              `json:"cooldown_ends_at"`
 }
 
 // Stream Events
 
 // StreamOnlineEvent is sent when a stream goes online.
 type StreamOnlineEvent struct {
-	ID                   string    `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
-	Type                 string    `json:"type"` // live, playlist, watch_party, premiere, rerun
-	StartedAt            time.Time `json:"started_at"`
+	Type      string    `json:"type"` // live, playlist, watch_party, premiere, rerun
+	StartedAt time.Time `json:"started_at"`
 }
 
 // StreamOfflineEvent is sent when a stream goes offline.
@@ -385,12 +385,12 @@ type StreamOfflineEvent struct {
 
 // UserUpdateEvent is sent when a user updates their account.
 type UserUpdateEvent struct {
-	UserID      string `json:"user_id"`
-	UserLogin   string `json:"user_login"`
-	UserName    string `json:"user_name"`
-	Email       string `json:"email,omitempty"` // Requires user:read:email scope
-	EmailVerified bool `json:"email_verified,omitempty"`
-	Description string `json:"description"`
+	UserID        string `json:"user_id"`
+	UserLogin     string `json:"user_login"`
+	UserName      string `json:"user_name"`
+	Email         string `json:"email,omitempty"` // Requires user:read:email scope
+	EmailVerified bool   `json:"email_verified,omitempty"`
+	Description   string `json:"description"`
 }
 
 // Chat Events (for EventSub, not IRC)
@@ -398,17 +398,17 @@ type UserUpdateEvent struct {
 // ChannelChatMessageEvent is sent when a message is sent in chat.
 type ChannelChatMessageEvent struct {
 	EventSubBroadcaster
-	ChatterUserID    string               `json:"chatter_user_id"`
-	ChatterUserLogin string               `json:"chatter_user_login"`
-	ChatterUserName  string               `json:"chatter_user_name"`
-	MessageID        string               `json:"message_id"`
-	Message          ChatEventMessage     `json:"message"`
-	Color            string               `json:"color"`
-	Badges           []ChatEventBadge     `json:"badges"`
-	MessageType      string               `json:"message_type"` // text, channel_points_highlighted, channel_points_sub_only, user_intro, power_ups_message_effect, power_ups_gigantified_emote
-	Cheer            *ChatEventCheer      `json:"cheer,omitempty"`
-	Reply            *ChatEventReply      `json:"reply,omitempty"`
-	ChannelPointsCustomRewardID string    `json:"channel_points_custom_reward_id,omitempty"`
+	ChatterUserID               string           `json:"chatter_user_id"`
+	ChatterUserLogin            string           `json:"chatter_user_login"`
+	ChatterUserName             string           `json:"chatter_user_name"`
+	MessageID                   string           `json:"message_id"`
+	Message                     ChatEventMessage `json:"message"`
+	Color                       string           `json:"color"`
+	Badges                      []ChatEventBadge `json:"badges"`
+	MessageType                 string           `json:"message_type"` // text, channel_points_highlighted, channel_points_sub_only, user_intro, power_ups_message_effect, power_ups_gigantified_emote
+	Cheer                       *ChatEventCheer  `json:"cheer,omitempty"`
+	Reply                       *ChatEventReply  `json:"reply,omitempty"`
+	ChannelPointsCustomRewardID string           `json:"channel_points_custom_reward_id,omitempty"`
 	// Shared chat fields (null if not in shared chat or same channel)
 	SourceBroadcasterUserID    *string          `json:"source_broadcaster_user_id,omitempty"`
 	SourceBroadcasterUserLogin *string          `json:"source_broadcaster_user_login,omitempty"`
@@ -419,17 +419,17 @@ type ChannelChatMessageEvent struct {
 
 // ChatEventMessage represents a chat message structure.
 type ChatEventMessage struct {
-	Text      string             `json:"text"`
+	Text      string              `json:"text"`
 	Fragments []ChatEventFragment `json:"fragments"`
 }
 
 // ChatEventFragment represents a fragment of a chat message.
 type ChatEventFragment struct {
-	Type      string             `json:"type"` // text, cheermote, emote, mention
-	Text      string             `json:"text"`
+	Type      string              `json:"type"` // text, cheermote, emote, mention
+	Text      string              `json:"text"`
 	Cheermote *ChatEventCheermote `json:"cheermote,omitempty"`
-	Emote     *ChatEventEmote    `json:"emote,omitempty"`
-	Mention   *ChatEventMention  `json:"mention,omitempty"`
+	Emote     *ChatEventEmote     `json:"emote,omitempty"`
+	Mention   *ChatEventMention   `json:"mention,omitempty"`
 }
 
 // ChatEventCheermote represents a cheermote in a message.
@@ -441,9 +441,9 @@ type ChatEventCheermote struct {
 
 // ChatEventEmote represents an emote in a message.
 type ChatEventEmote struct {
-	ID         string `json:"id"`
-	EmoteSetID string `json:"emote_set_id"`
-	OwnerID    string `json:"owner_id"`
+	ID         string   `json:"id"`
+	EmoteSetID string   `json:"emote_set_id"`
+	OwnerID    string   `json:"owner_id"`
 	Format     []string `json:"format"` // static, animated
 }
 
@@ -486,17 +486,17 @@ type ChatEventReply struct {
 type AutomodMessageHoldEvent struct {
 	EventSubBroadcaster
 	EventSubUser
-	MessageID   string                `json:"message_id"`
-	Message     AutomodHeldMessage    `json:"message"`
-	HeldAt      time.Time             `json:"held_at"`
+	MessageID string             `json:"message_id"`
+	Message   AutomodHeldMessage `json:"message"`
+	HeldAt    time.Time          `json:"held_at"`
 	// V2 fields
-	Reason      string                `json:"reason,omitempty"` // "automod" or "blocked_term"
-	Automod     *AutomodCategoryInfo  `json:"automod,omitempty"`
-	BlockedTerm *BlockedTermInfo      `json:"blocked_term,omitempty"`
+	Reason      string               `json:"reason,omitempty"` // "automod" or "blocked_term"
+	Automod     *AutomodCategoryInfo `json:"automod,omitempty"`
+	BlockedTerm *BlockedTermInfo     `json:"blocked_term,omitempty"`
 	// V1 fields (deprecated in v2)
-	Level       int                   `json:"level,omitempty"`
-	Category    string                `json:"category,omitempty"`
-	Fragments   []AutomodFragment     `json:"fragments,omitempty"`
+	Level     int               `json:"level,omitempty"`
+	Category  string            `json:"category,omitempty"`
+	Fragments []AutomodFragment `json:"fragments,omitempty"`
 }
 
 // AutomodHeldMessage represents the message structure in automod events.
@@ -507,9 +507,9 @@ type AutomodHeldMessage struct {
 
 // AutomodCategoryInfo contains automod category information (v2).
 type AutomodCategoryInfo struct {
-	Category   string               `json:"category"`
-	Level      int                  `json:"level"`
-	Boundaries []AutomodBoundary    `json:"boundaries"`
+	Category   string            `json:"category"`
+	Level      int               `json:"level"`
+	Boundaries []AutomodBoundary `json:"boundaries"`
 }
 
 // AutomodBoundary represents text boundaries flagged by automod.
@@ -520,24 +520,24 @@ type AutomodBoundary struct {
 
 // BlockedTermInfo contains blocked term information (v2).
 type BlockedTermInfo struct {
-	TermsFound              []BlockedTermFound `json:"terms_found"`
-	OwnerBroadcasterUserID    string           `json:"owner_broadcaster_user_id"`
-	OwnerBroadcasterUserLogin string           `json:"owner_broadcaster_user_login"`
-	OwnerBroadcasterUserName  string           `json:"owner_broadcaster_user_name"`
+	TermsFound                []BlockedTermFound `json:"terms_found"`
+	OwnerBroadcasterUserID    string             `json:"owner_broadcaster_user_id"`
+	OwnerBroadcasterUserLogin string             `json:"owner_broadcaster_user_login"`
+	OwnerBroadcasterUserName  string             `json:"owner_broadcaster_user_name"`
 }
 
 // BlockedTermFound represents a found blocked term.
 type BlockedTermFound struct {
-	TermID     string          `json:"term_id"`
-	Boundary   AutomodBoundary `json:"boundary"`
+	TermID   string          `json:"term_id"`
+	Boundary AutomodBoundary `json:"boundary"`
 }
 
 // AutomodFragment represents a fragment in an automod message.
 type AutomodFragment struct {
-	Type     string            `json:"type"`
-	Text     string            `json:"text"`
-	Automod  *AutomodDetails   `json:"automod,omitempty"`
-	Emote    *ChatEventEmote   `json:"emote,omitempty"`
+	Type      string              `json:"type"`
+	Text      string              `json:"text"`
+	Automod   *AutomodDetails     `json:"automod,omitempty"`
+	Emote     *ChatEventEmote     `json:"emote,omitempty"`
 	Cheermote *ChatEventCheermote `json:"cheermote,omitempty"`
 }
 
@@ -566,32 +566,32 @@ type AutomodMessageUpdateEvent struct {
 type AutomodSettingsUpdateEvent struct {
 	EventSubBroadcaster
 	EventSubModerator
-	BulliedUsers           int `json:"bullying"`
-	Disability             int `json:"disability"`
-	Misogyny               int `json:"misogyny"`
-	OverallLevel           *int `json:"overall_level"`
-	RaceEthnicityReligion  int `json:"race_ethnicity_or_religion"`
-	SexBasedTerms          int `json:"sex_based_terms"`
-	SexualitySexGender     int `json:"sexuality_sex_or_gender"`
-	Swearing               int `json:"swearing"`
+	BulliedUsers          int  `json:"bullying"`
+	Disability            int  `json:"disability"`
+	Misogyny              int  `json:"misogyny"`
+	OverallLevel          *int `json:"overall_level"`
+	RaceEthnicityReligion int  `json:"race_ethnicity_or_religion"`
+	SexBasedTerms         int  `json:"sex_based_terms"`
+	SexualitySexGender    int  `json:"sexuality_sex_or_gender"`
+	Swearing              int  `json:"swearing"`
 }
 
 // AutomodTermsUpdateEvent is sent when automod terms are updated.
 type AutomodTermsUpdateEvent struct {
 	EventSubBroadcaster
 	EventSubModerator
-	Action        string   `json:"action"` // add_permitted, remove_permitted, add_blocked, remove_blocked
-	FromAutomod   bool     `json:"from_automod"`
-	Terms         []string `json:"terms"`
+	Action      string   `json:"action"` // add_permitted, remove_permitted, add_blocked, remove_blocked
+	FromAutomod bool     `json:"from_automod"`
+	Terms       []string `json:"terms"`
 }
 
 // Ad Break Events
 
 // ChannelAdBreakBeginEvent is sent when an ad break begins.
 type ChannelAdBreakBeginEvent struct {
-	DurationSeconds    int       `json:"duration_seconds"`
-	StartedAt          time.Time `json:"started_at"`
-	IsAutomatic        bool      `json:"is_automatic"`
+	DurationSeconds int       `json:"duration_seconds"`
+	StartedAt       time.Time `json:"started_at"`
+	IsAutomatic     bool      `json:"is_automatic"`
 	EventSubBroadcaster
 	RequesterUserID    string `json:"requester_user_id"`
 	RequesterUserLogin string `json:"requester_user_login"`
@@ -637,7 +637,7 @@ type ChannelWarningSendEvent struct {
 	EventSubBroadcaster
 	EventSubModerator
 	EventSubUser
-	Reason   *string  `json:"reason,omitempty"`
+	Reason         *string  `json:"reason,omitempty"`
 	ChatRulesCited []string `json:"chat_rules_cited,omitempty"`
 }
 
@@ -674,24 +674,24 @@ type ChannelUnbanRequestResolveEvent struct {
 type ChannelModerateEvent struct {
 	EventSubBroadcaster
 	EventSubModerator
-	Action            string                 `json:"action"`
-	Followers         *ModerateFollowers     `json:"followers,omitempty"`
-	Slow              *ModerateSlow          `json:"slow,omitempty"`
-	Vip               *ModerateUser          `json:"vip,omitempty"`
-	Unvip             *ModerateUser          `json:"unvip,omitempty"`
-	Mod               *ModerateUser          `json:"mod,omitempty"`
-	Unmod             *ModerateUser          `json:"unmod,omitempty"`
-	Ban               *ModerateBan           `json:"ban,omitempty"`
-	Unban             *ModerateUser          `json:"unban,omitempty"`
-	Timeout           *ModerateTimeout       `json:"timeout,omitempty"`
-	Untimeout         *ModerateUser          `json:"untimeout,omitempty"`
-	Raid              *ModerateRaid          `json:"raid,omitempty"`
-	Unraid            *ModerateRaid          `json:"unraid,omitempty"`
-	Delete            *ModerateDelete        `json:"delete,omitempty"`
-	AutomodTerms      *ModerateAutomodTerms  `json:"automod_terms,omitempty"`
-	UnbanRequest      *ModerateUnbanRequest  `json:"unban_request,omitempty"`
-	Warn              *ModerateWarn          `json:"warn,omitempty"`
-	SharedChatBan     *ModerateSharedChatBan `json:"shared_chat_ban,omitempty"`
+	Action            string                     `json:"action"`
+	Followers         *ModerateFollowers         `json:"followers,omitempty"`
+	Slow              *ModerateSlow              `json:"slow,omitempty"`
+	Vip               *ModerateUser              `json:"vip,omitempty"`
+	Unvip             *ModerateUser              `json:"unvip,omitempty"`
+	Mod               *ModerateUser              `json:"mod,omitempty"`
+	Unmod             *ModerateUser              `json:"unmod,omitempty"`
+	Ban               *ModerateBan               `json:"ban,omitempty"`
+	Unban             *ModerateUser              `json:"unban,omitempty"`
+	Timeout           *ModerateTimeout           `json:"timeout,omitempty"`
+	Untimeout         *ModerateUser              `json:"untimeout,omitempty"`
+	Raid              *ModerateRaid              `json:"raid,omitempty"`
+	Unraid            *ModerateRaid              `json:"unraid,omitempty"`
+	Delete            *ModerateDelete            `json:"delete,omitempty"`
+	AutomodTerms      *ModerateAutomodTerms      `json:"automod_terms,omitempty"`
+	UnbanRequest      *ModerateUnbanRequest      `json:"unban_request,omitempty"`
+	Warn              *ModerateWarn              `json:"warn,omitempty"`
+	SharedChatBan     *ModerateSharedChatBan     `json:"shared_chat_ban,omitempty"`
 	SharedChatTimeout *ModerateSharedChatTimeout `json:"shared_chat_timeout,omitempty"`
 	SharedChatDelete  *ModerateSharedChatDelete  `json:"shared_chat_delete,omitempty"`
 }
@@ -723,19 +723,19 @@ type ModerateBan struct {
 
 // ModerateTimeout represents timeout details.
 type ModerateTimeout struct {
-	UserID    string     `json:"user_id"`
-	UserLogin string     `json:"user_login"`
-	UserName  string     `json:"user_name"`
-	Reason    *string    `json:"reason,omitempty"`
-	ExpiresAt time.Time  `json:"expires_at"`
+	UserID    string    `json:"user_id"`
+	UserLogin string    `json:"user_login"`
+	UserName  string    `json:"user_name"`
+	Reason    *string   `json:"reason,omitempty"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
 // ModerateRaid represents raid details.
 type ModerateRaid struct {
-	UserID    string `json:"user_id"`
-	UserLogin string `json:"user_login"`
-	UserName  string `json:"user_name"`
-	ViewerCount int  `json:"viewer_count"`
+	UserID      string `json:"user_id"`
+	UserLogin   string `json:"user_login"`
+	UserName    string `json:"user_name"`
+	ViewerCount int    `json:"viewer_count"`
 }
 
 // ModerateDelete represents message deletion details.
@@ -757,19 +757,19 @@ type ModerateAutomodTerms struct {
 
 // ModerateUnbanRequest represents unban request resolution.
 type ModerateUnbanRequest struct {
-	IsApproved     bool    `json:"is_approved"`
-	UserID         string  `json:"user_id"`
-	UserLogin      string  `json:"user_login"`
-	UserName       string  `json:"user_name"`
+	IsApproved       bool    `json:"is_approved"`
+	UserID           string  `json:"user_id"`
+	UserLogin        string  `json:"user_login"`
+	UserName         string  `json:"user_name"`
 	ModeratorMessage *string `json:"moderator_message,omitempty"`
 }
 
 // ModerateWarn represents warning details.
 type ModerateWarn struct {
-	UserID    string   `json:"user_id"`
-	UserLogin string   `json:"user_login"`
-	UserName  string   `json:"user_name"`
-	Reason    *string  `json:"reason,omitempty"`
+	UserID         string   `json:"user_id"`
+	UserLogin      string   `json:"user_login"`
+	UserName       string   `json:"user_name"`
+	Reason         *string  `json:"reason,omitempty"`
 	ChatRulesCited []string `json:"chat_rules_cited,omitempty"`
 }
 
@@ -783,31 +783,31 @@ type ModerateSharedChatBan struct {
 
 // ModerateSharedChatTimeout represents a timeout in shared chat.
 type ModerateSharedChatTimeout struct {
-	UserID    string     `json:"user_id"`
-	UserLogin string     `json:"user_login"`
-	UserName  string     `json:"user_name"`
-	Reason    *string    `json:"reason,omitempty"`
-	ExpiresAt time.Time  `json:"expires_at"`
+	UserID    string    `json:"user_id"`
+	UserLogin string    `json:"user_login"`
+	UserName  string    `json:"user_name"`
+	Reason    *string   `json:"reason,omitempty"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
 // ModerateSharedChatDelete represents message deletion in shared chat.
 type ModerateSharedChatDelete struct {
-	UserID      string `json:"user_id"`
-	UserLogin   string `json:"user_login"`
-	UserName    string `json:"user_name"`
-	MessageID   string `json:"message_id"`
+	UserID    string `json:"user_id"`
+	UserLogin string `json:"user_login"`
+	UserName  string `json:"user_name"`
+	MessageID string `json:"message_id"`
 }
 
 // Shared Chat Events
 
 // ChannelSharedChatBeginEvent is sent when a shared chat session begins.
 type ChannelSharedChatBeginEvent struct {
-	SessionID     string `json:"session_id"`
+	SessionID string `json:"session_id"`
 	EventSubBroadcaster
-	HostBroadcasterUserID    string                    `json:"host_broadcaster_user_id"`
-	HostBroadcasterUserLogin string                    `json:"host_broadcaster_user_login"`
-	HostBroadcasterUserName  string                    `json:"host_broadcaster_user_name"`
-	Participants             []SharedChatParticipant   `json:"participants"`
+	HostBroadcasterUserID    string                  `json:"host_broadcaster_user_id"`
+	HostBroadcasterUserLogin string                  `json:"host_broadcaster_user_login"`
+	HostBroadcasterUserName  string                  `json:"host_broadcaster_user_name"`
+	Participants             []SharedChatParticipant `json:"participants"`
 }
 
 // ChannelSharedChatUpdateEvent is sent when a shared chat session is updated.
@@ -815,7 +815,7 @@ type ChannelSharedChatUpdateEvent = ChannelSharedChatBeginEvent
 
 // ChannelSharedChatEndEvent is sent when a shared chat session ends.
 type ChannelSharedChatEndEvent struct {
-	SessionID     string `json:"session_id"`
+	SessionID string `json:"session_id"`
 	EventSubBroadcaster
 	HostBroadcasterUserID    string `json:"host_broadcaster_user_id"`
 	HostBroadcasterUserLogin string `json:"host_broadcaster_user_login"`
@@ -826,20 +826,20 @@ type ChannelSharedChatEndEvent struct {
 
 // ChannelCharityDonationEvent is sent when a charity donation is made.
 type ChannelCharityDonationEvent struct {
-	ID           string `json:"id"`
-	CampaignID   string `json:"campaign_id"`
+	ID         string `json:"id"`
+	CampaignID string `json:"campaign_id"`
 	EventSubBroadcaster
 	EventSubUser
-	CharityName  string            `json:"charity_name"`
-	CharityDescription string      `json:"charity_description"`
-	CharityLogo  string            `json:"charity_logo"`
-	CharityWebsite string          `json:"charity_website"`
-	Amount       CharityAmount     `json:"amount"`
+	CharityName        string        `json:"charity_name"`
+	CharityDescription string        `json:"charity_description"`
+	CharityLogo        string        `json:"charity_logo"`
+	CharityWebsite     string        `json:"charity_website"`
+	Amount             CharityAmount `json:"amount"`
 }
 
 // ChannelCharityCampaignStartEvent is sent when a charity campaign starts.
 type ChannelCharityCampaignStartEvent struct {
-	ID           string `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
 	CharityName        string        `json:"charity_name"`
 	CharityDescription string        `json:"charity_description"`
@@ -855,7 +855,7 @@ type ChannelCharityCampaignProgressEvent = ChannelCharityCampaignStartEvent
 
 // ChannelCharityCampaignStopEvent is sent when a charity campaign stops.
 type ChannelCharityCampaignStopEvent struct {
-	ID           string `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
 	CharityName        string        `json:"charity_name"`
 	CharityDescription string        `json:"charity_description"`
@@ -870,13 +870,13 @@ type ChannelCharityCampaignStopEvent struct {
 
 // ChannelGoalBeginEvent is sent when a goal begins.
 type ChannelGoalBeginEvent struct {
-	ID           string    `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
-	Type         string    `json:"type"` // follower, subscription, subscription_count, new_subscription, new_subscription_count, new_bit, new_cheerer
-	Description  string    `json:"description"`
-	CurrentAmount int      `json:"current_amount"`
-	TargetAmount int       `json:"target_amount"`
-	StartedAt    time.Time `json:"started_at"`
+	Type          string    `json:"type"` // follower, subscription, subscription_count, new_subscription, new_subscription_count, new_bit, new_cheerer
+	Description   string    `json:"description"`
+	CurrentAmount int       `json:"current_amount"`
+	TargetAmount  int       `json:"target_amount"`
+	StartedAt     time.Time `json:"started_at"`
 }
 
 // ChannelGoalProgressEvent is sent when goal progress updates.
@@ -884,15 +884,15 @@ type ChannelGoalProgressEvent = ChannelGoalBeginEvent
 
 // ChannelGoalEndEvent is sent when a goal ends.
 type ChannelGoalEndEvent struct {
-	ID           string    `json:"id"`
+	ID string `json:"id"`
 	EventSubBroadcaster
-	Type         string    `json:"type"`
-	Description  string    `json:"description"`
-	CurrentAmount int      `json:"current_amount"`
-	TargetAmount int       `json:"target_amount"`
-	StartedAt    time.Time `json:"started_at"`
-	EndedAt      time.Time `json:"ended_at"`
-	IsAchieved   bool      `json:"is_achieved"`
+	Type          string    `json:"type"`
+	Description   string    `json:"description"`
+	CurrentAmount int       `json:"current_amount"`
+	TargetAmount  int       `json:"target_amount"`
+	StartedAt     time.Time `json:"started_at"`
+	EndedAt       time.Time `json:"ended_at"`
+	IsAchieved    bool      `json:"is_achieved"`
 }
 
 // Shield Mode Events
@@ -929,10 +929,10 @@ type ChannelShoutoutCreateEvent struct {
 // ChannelShoutoutReceiveEvent is sent when a shoutout is received.
 type ChannelShoutoutReceiveEvent struct {
 	EventSubBroadcaster
-	FromBroadcasterUserID    string `json:"from_broadcaster_user_id"`
-	FromBroadcasterUserLogin string `json:"from_broadcaster_user_login"`
-	FromBroadcasterUserName  string `json:"from_broadcaster_user_name"`
-	ViewerCount              int    `json:"viewer_count"`
+	FromBroadcasterUserID    string    `json:"from_broadcaster_user_id"`
+	FromBroadcasterUserLogin string    `json:"from_broadcaster_user_login"`
+	FromBroadcasterUserName  string    `json:"from_broadcaster_user_name"`
+	ViewerCount              int       `json:"viewer_count"`
 	StartedAt                time.Time `json:"started_at"`
 }
 
@@ -942,26 +942,26 @@ type ChannelShoutoutReceiveEvent struct {
 type ChannelSuspiciousUserMessageEvent struct {
 	EventSubBroadcaster
 	EventSubUser
-	LowTrustStatus string               `json:"low_trust_status"` // none, active_monitoring, restricted
-	SharedBanChannelIDs []string        `json:"shared_ban_channel_ids,omitempty"`
-	Types          []string             `json:"types"` // manual, ban_evader_detector, shared_channel_ban
-	BanEvasionEvaluation string         `json:"ban_evasion_evaluation"` // unknown, possible, likely
-	Message        SuspiciousUserMessage `json:"message"`
+	LowTrustStatus       string                `json:"low_trust_status"` // none, active_monitoring, restricted
+	SharedBanChannelIDs  []string              `json:"shared_ban_channel_ids,omitempty"`
+	Types                []string              `json:"types"`                  // manual, ban_evader_detector, shared_channel_ban
+	BanEvasionEvaluation string                `json:"ban_evasion_evaluation"` // unknown, possible, likely
+	Message              SuspiciousUserMessage `json:"message"`
 }
 
 // SuspiciousUserMessage represents a message from a suspicious user.
 type SuspiciousUserMessage struct {
-	MessageID string                `json:"message_id"`
-	Text      string                `json:"text"`
-	Fragments []SuspiciousFragment  `json:"fragments"`
+	MessageID string               `json:"message_id"`
+	Text      string               `json:"text"`
+	Fragments []SuspiciousFragment `json:"fragments"`
 }
 
 // SuspiciousFragment represents a fragment in a suspicious user message.
 type SuspiciousFragment struct {
-	Type      string             `json:"type"`
-	Text      string             `json:"text"`
+	Type      string              `json:"type"`
+	Text      string              `json:"text"`
 	Cheermote *ChatEventCheermote `json:"cheermote,omitempty"`
-	Emote     *ChatEventEmote    `json:"emote,omitempty"`
+	Emote     *ChatEventEmote     `json:"emote,omitempty"`
 }
 
 // ChannelSuspiciousUserUpdateEvent is sent when a suspicious user's status is updated.
@@ -976,9 +976,9 @@ type ChannelSuspiciousUserUpdateEvent struct {
 
 // ConduitShardDisabledEvent is sent when a conduit shard is disabled.
 type ConduitShardDisabledEvent struct {
-	ConduitID string                  `json:"conduit_id"`
-	ShardID   string                  `json:"shard_id"`
-	Status    string                  `json:"status"`
+	ConduitID string                     `json:"conduit_id"`
+	ShardID   string                     `json:"shard_id"`
+	Status    string                     `json:"status"`
 	Transport ConduitShardTransportEvent `json:"transport"`
 }
 
@@ -995,7 +995,7 @@ type ConduitShardTransportEvent struct {
 
 // DropEntitlementGrantEvent is sent when a drop entitlement is granted.
 type DropEntitlementGrantEvent struct {
-	ID string `json:"id"`
+	ID   string            `json:"id"`
 	Data []DropEntitlement `json:"data"`
 }
 
@@ -1017,8 +1017,8 @@ type DropEntitlement struct {
 
 // ExtensionBitsTransactionCreateEvent is sent when an extension bits transaction occurs.
 type ExtensionBitsTransactionCreateEvent struct {
-	ID                    string `json:"id"`
-	ExtensionClientID     string `json:"extension_client_id"`
+	ID                string `json:"id"`
+	ExtensionClientID string `json:"extension_client_id"`
 	EventSubBroadcaster
 	EventSubUser
 	Product ExtensionProduct `json:"product"`
@@ -1054,14 +1054,14 @@ type UserAuthorizationRevokeEvent struct {
 
 // UserWhisperMessageEvent is sent when a whisper is received.
 type UserWhisperMessageEvent struct {
-	FromUserID    string        `json:"from_user_id"`
-	FromUserLogin string        `json:"from_user_login"`
-	FromUserName  string        `json:"from_user_name"`
-	ToUserID      string        `json:"to_user_id"`
-	ToUserLogin   string        `json:"to_user_login"`
-	ToUserName    string        `json:"to_user_name"`
-	WhisperID     string        `json:"whisper_id"`
-	Whisper       WhisperBody   `json:"whisper"`
+	FromUserID    string      `json:"from_user_id"`
+	FromUserLogin string      `json:"from_user_login"`
+	FromUserName  string      `json:"from_user_name"`
+	ToUserID      string      `json:"to_user_id"`
+	ToUserLogin   string      `json:"to_user_login"`
+	ToUserName    string      `json:"to_user_name"`
+	WhisperID     string      `json:"whisper_id"`
+	Whisper       WhisperBody `json:"whisper"`
 }
 
 // WhisperBody represents the whisper message body.
@@ -1074,42 +1074,42 @@ type WhisperBody struct {
 // ChannelChatNotificationEvent is sent for various chat notifications.
 type ChannelChatNotificationEvent struct {
 	EventSubBroadcaster
-	ChatterUserID         string `json:"chatter_user_id"`
-	ChatterUserLogin      string `json:"chatter_user_login"`
-	ChatterUserName       string `json:"chatter_user_name"`
-	ChatterIsAnonymous    bool   `json:"chatter_is_anonymous"`
-	Color                 string `json:"color"`
-	Badges                []ChatEventBadge `json:"badges"`
-	SystemMessage         string `json:"system_message"`
-	MessageID             string `json:"message_id"`
-	Message               ChatEventMessage `json:"message"`
-	NoticeType            string `json:"notice_type"`
-	Sub                   *ChatNotificationSub `json:"sub,omitempty"`
-	Resub                 *ChatNotificationResub `json:"resub,omitempty"`
-	SubGift               *ChatNotificationSubGift `json:"sub_gift,omitempty"`
-	CommunitySubGift      *ChatNotificationCommunitySubGift `json:"community_sub_gift,omitempty"`
-	GiftPaidUpgrade       *ChatNotificationGiftPaidUpgrade `json:"gift_paid_upgrade,omitempty"`
-	PrimePaidUpgrade      *ChatNotificationPrimePaidUpgrade `json:"prime_paid_upgrade,omitempty"`
-	Raid                  *ChatNotificationRaid `json:"raid,omitempty"`
-	Unraid                *ChatNotificationUnraid `json:"unraid,omitempty"`
-	PayItForward          *ChatNotificationPayItForward `json:"pay_it_forward,omitempty"`
-	Announcement          *ChatNotificationAnnouncement `json:"announcement,omitempty"`
-	BitsBadgeTier         *ChatNotificationBitsBadgeTier `json:"bits_badge_tier,omitempty"`
-	CharityDonation       *ChatNotificationCharityDonation `json:"charity_donation,omitempty"`
-	SharedChatSub         *ChatNotificationSub `json:"shared_chat_sub,omitempty"`
-	SharedChatResub       *ChatNotificationResub `json:"shared_chat_resub,omitempty"`
-	SharedChatSubGift     *ChatNotificationSubGift `json:"shared_chat_sub_gift,omitempty"`
+	ChatterUserID              string                            `json:"chatter_user_id"`
+	ChatterUserLogin           string                            `json:"chatter_user_login"`
+	ChatterUserName            string                            `json:"chatter_user_name"`
+	ChatterIsAnonymous         bool                              `json:"chatter_is_anonymous"`
+	Color                      string                            `json:"color"`
+	Badges                     []ChatEventBadge                  `json:"badges"`
+	SystemMessage              string                            `json:"system_message"`
+	MessageID                  string                            `json:"message_id"`
+	Message                    ChatEventMessage                  `json:"message"`
+	NoticeType                 string                            `json:"notice_type"`
+	Sub                        *ChatNotificationSub              `json:"sub,omitempty"`
+	Resub                      *ChatNotificationResub            `json:"resub,omitempty"`
+	SubGift                    *ChatNotificationSubGift          `json:"sub_gift,omitempty"`
+	CommunitySubGift           *ChatNotificationCommunitySubGift `json:"community_sub_gift,omitempty"`
+	GiftPaidUpgrade            *ChatNotificationGiftPaidUpgrade  `json:"gift_paid_upgrade,omitempty"`
+	PrimePaidUpgrade           *ChatNotificationPrimePaidUpgrade `json:"prime_paid_upgrade,omitempty"`
+	Raid                       *ChatNotificationRaid             `json:"raid,omitempty"`
+	Unraid                     *ChatNotificationUnraid           `json:"unraid,omitempty"`
+	PayItForward               *ChatNotificationPayItForward     `json:"pay_it_forward,omitempty"`
+	Announcement               *ChatNotificationAnnouncement     `json:"announcement,omitempty"`
+	BitsBadgeTier              *ChatNotificationBitsBadgeTier    `json:"bits_badge_tier,omitempty"`
+	CharityDonation            *ChatNotificationCharityDonation  `json:"charity_donation,omitempty"`
+	SharedChatSub              *ChatNotificationSub              `json:"shared_chat_sub,omitempty"`
+	SharedChatResub            *ChatNotificationResub            `json:"shared_chat_resub,omitempty"`
+	SharedChatSubGift          *ChatNotificationSubGift          `json:"shared_chat_sub_gift,omitempty"`
 	SharedChatCommunitySubGift *ChatNotificationCommunitySubGift `json:"shared_chat_community_sub_gift,omitempty"`
-	SharedChatGiftPaidUpgrade  *ChatNotificationGiftPaidUpgrade `json:"shared_chat_gift_paid_upgrade,omitempty"`
+	SharedChatGiftPaidUpgrade  *ChatNotificationGiftPaidUpgrade  `json:"shared_chat_gift_paid_upgrade,omitempty"`
 	SharedChatPrimePaidUpgrade *ChatNotificationPrimePaidUpgrade `json:"shared_chat_prime_paid_upgrade,omitempty"`
-	SharedChatRaid        *ChatNotificationRaid `json:"shared_chat_raid,omitempty"`
-	SharedChatPayItForward *ChatNotificationPayItForward `json:"shared_chat_pay_it_forward,omitempty"`
-	SharedChatAnnouncement *ChatNotificationAnnouncement `json:"shared_chat_announcement,omitempty"`
-	SourceBroadcasterUserID    *string `json:"source_broadcaster_user_id,omitempty"`
-	SourceBroadcasterUserLogin *string `json:"source_broadcaster_user_login,omitempty"`
-	SourceBroadcasterUserName  *string `json:"source_broadcaster_user_name,omitempty"`
-	SourceMessageID            *string `json:"source_message_id,omitempty"`
-	SourceBadges               []ChatEventBadge `json:"source_badges,omitempty"`
+	SharedChatRaid             *ChatNotificationRaid             `json:"shared_chat_raid,omitempty"`
+	SharedChatPayItForward     *ChatNotificationPayItForward     `json:"shared_chat_pay_it_forward,omitempty"`
+	SharedChatAnnouncement     *ChatNotificationAnnouncement     `json:"shared_chat_announcement,omitempty"`
+	SourceBroadcasterUserID    *string                           `json:"source_broadcaster_user_id,omitempty"`
+	SourceBroadcasterUserLogin *string                           `json:"source_broadcaster_user_login,omitempty"`
+	SourceBroadcasterUserName  *string                           `json:"source_broadcaster_user_name,omitempty"`
+	SourceMessageID            *string                           `json:"source_message_id,omitempty"`
+	SourceBadges               []ChatEventBadge                  `json:"source_badges,omitempty"`
 }
 
 // ChatNotificationSub represents a sub notification.
@@ -1238,13 +1238,13 @@ type ChannelChatMessageDeleteEvent struct {
 // ChannelChatSettingsUpdateEvent is sent when chat settings are updated.
 type ChannelChatSettingsUpdateEvent struct {
 	EventSubBroadcaster
-	EmoteMode               bool  `json:"emote_mode"`
-	FollowerMode            bool  `json:"follower_mode"`
+	EmoteMode                   bool `json:"emote_mode"`
+	FollowerMode                bool `json:"follower_mode"`
 	FollowerModeDurationMinutes *int `json:"follower_mode_duration_minutes,omitempty"`
-	SlowMode                bool  `json:"slow_mode"`
-	SlowModeWaitTimeSeconds int   `json:"slow_mode_wait_time_seconds"`
-	SubscriberMode          bool  `json:"subscriber_mode"`
-	UniqueChatMode          bool  `json:"unique_chat_mode"`
+	SlowMode                    bool `json:"slow_mode"`
+	SlowModeWaitTimeSeconds     int  `json:"slow_mode_wait_time_seconds"`
+	SubscriberMode              bool `json:"subscriber_mode"`
+	UniqueChatMode              bool `json:"unique_chat_mode"`
 }
 
 // Chat User Message Hold Events
@@ -1253,8 +1253,8 @@ type ChannelChatSettingsUpdateEvent struct {
 type ChannelChatUserMessageHoldEvent struct {
 	EventSubBroadcaster
 	EventSubUser
-	MessageID string                    `json:"message_id"`
-	Message   ChatUserHoldMessage       `json:"message"`
+	MessageID string              `json:"message_id"`
+	Message   ChatUserHoldMessage `json:"message"`
 	// Shared chat fields
 	SourceBroadcasterUserID    *string `json:"source_broadcaster_user_id,omitempty"`
 	SourceBroadcasterUserLogin *string `json:"source_broadcaster_user_login,omitempty"`
@@ -1263,24 +1263,24 @@ type ChannelChatUserMessageHoldEvent struct {
 
 // ChatUserHoldMessage represents a held message.
 type ChatUserHoldMessage struct {
-	Text      string                  `json:"text"`
-	Fragments []ChatUserHoldFragment  `json:"fragments"`
+	Text      string                 `json:"text"`
+	Fragments []ChatUserHoldFragment `json:"fragments"`
 }
 
 // ChatUserHoldFragment represents a fragment in a held message.
 type ChatUserHoldFragment struct {
-	Type      string             `json:"type"`
-	Text      string             `json:"text"`
+	Type      string              `json:"type"`
+	Text      string              `json:"text"`
 	Cheermote *ChatEventCheermote `json:"cheermote,omitempty"`
-	Emote     *ChatEventEmote    `json:"emote,omitempty"`
+	Emote     *ChatEventEmote     `json:"emote,omitempty"`
 }
 
 // ChannelChatUserMessageUpdateEvent is sent when a held message status is updated.
 type ChannelChatUserMessageUpdateEvent struct {
 	EventSubBroadcaster
 	EventSubUser
-	Status    string `json:"status"` // approved, denied, invalid
-	MessageID string `json:"message_id"`
+	Status    string              `json:"status"` // approved, denied, invalid
+	MessageID string              `json:"message_id"`
 	Message   ChatUserHoldMessage `json:"message"`
 	// Shared chat fields
 	SourceBroadcasterUserID    *string `json:"source_broadcaster_user_id,omitempty"`
@@ -1294,18 +1294,18 @@ type ChannelChatUserMessageUpdateEvent struct {
 type ChannelPointsAutomaticRewardRedemptionAddEvent struct {
 	EventSubBroadcaster
 	EventSubUser
-	ID          string                         `json:"id"`
-	Reward      AutomaticRewardRedemption      `json:"reward"`
-	Message     AutomaticRewardMessage         `json:"message"`
-	UserInput   string                         `json:"user_input"`
-	RedeemedAt  time.Time                      `json:"redeemed_at"`
+	ID         string                    `json:"id"`
+	Reward     AutomaticRewardRedemption `json:"reward"`
+	Message    AutomaticRewardMessage    `json:"message"`
+	UserInput  string                    `json:"user_input"`
+	RedeemedAt time.Time                 `json:"redeemed_at"`
 }
 
 // AutomaticRewardRedemption represents an automatic reward.
 type AutomaticRewardRedemption struct {
-	Type            string `json:"type"` // single_message_bypass_sub_mode, send_highlighted_message, random_sub_emote_unlock, chosen_sub_emote_unlock, chosen_modified_sub_emote_unlock, message_effect, gigantify_an_emote, celebration
-	Cost            int    `json:"cost"`
-	UnlockedEmote   *UnlockedEmote `json:"unlocked_emote,omitempty"`
+	Type          string         `json:"type"` // single_message_bypass_sub_mode, send_highlighted_message, random_sub_emote_unlock, chosen_sub_emote_unlock, chosen_modified_sub_emote_unlock, message_effect, gigantify_an_emote, celebration
+	Cost          int            `json:"cost"`
+	UnlockedEmote *UnlockedEmote `json:"unlocked_emote,omitempty"`
 }
 
 // UnlockedEmote represents an unlocked emote reward.
@@ -1316,8 +1316,8 @@ type UnlockedEmote struct {
 
 // AutomaticRewardMessage represents an automatic reward message.
 type AutomaticRewardMessage struct {
-	Text   string                      `json:"text"`
-	Emotes []AutomaticRewardEmote      `json:"emotes"`
+	Text   string                 `json:"text"`
+	Emotes []AutomaticRewardEmote `json:"emotes"`
 }
 
 // AutomaticRewardEmote represents an emote in an automatic reward message.
@@ -1348,12 +1348,12 @@ type ChannelGuestStarSessionEndEvent struct {
 type ChannelGuestStarGuestUpdateEvent struct {
 	EventSubBroadcaster
 	EventSubModerator
-	SessionID       string  `json:"session_id"`
-	GuestUserID     string  `json:"guest_user_id"`
-	GuestUserLogin  string  `json:"guest_user_login"`
-	GuestUserName   string  `json:"guest_user_name"`
-	SlotID          string  `json:"slot_id"`
-	State           string  `json:"state"`
+	SessionID        string `json:"session_id"`
+	GuestUserID      string `json:"guest_user_id"`
+	GuestUserLogin   string `json:"guest_user_login"`
+	GuestUserName    string `json:"guest_user_name"`
+	SlotID           string `json:"slot_id"`
+	State            string `json:"state"`
 	HostVideoEnabled *bool  `json:"host_video_enabled,omitempty"`
 	HostAudioEnabled *bool  `json:"host_audio_enabled,omitempty"`
 	HostVolume       *int   `json:"host_volume,omitempty"`

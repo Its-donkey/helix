@@ -22,24 +22,24 @@ const (
 
 // EventSub headers
 const (
-	EventSubHeaderMessageID        = "Twitch-Eventsub-Message-Id"
-	EventSubHeaderMessageTimestamp = "Twitch-Eventsub-Message-Timestamp"
-	EventSubHeaderMessageSignature = "Twitch-Eventsub-Message-Signature"
-	EventSubHeaderMessageType      = "Twitch-Eventsub-Message-Type"
-	EventSubHeaderSubscriptionType = "Twitch-Eventsub-Subscription-Type"
+	EventSubHeaderMessageID           = "Twitch-Eventsub-Message-Id"
+	EventSubHeaderMessageTimestamp    = "Twitch-Eventsub-Message-Timestamp"
+	EventSubHeaderMessageSignature    = "Twitch-Eventsub-Message-Signature"
+	EventSubHeaderMessageType         = "Twitch-Eventsub-Message-Type"
+	EventSubHeaderSubscriptionType    = "Twitch-Eventsub-Subscription-Type"
 	EventSubHeaderSubscriptionVersion = "Twitch-Eventsub-Subscription-Version"
 )
 
 // EventSubWebhookMessage represents a message received from EventSub webhooks.
 type EventSubWebhookMessage struct {
-	MessageID        string
-	MessageTimestamp time.Time
-	MessageType      string
-	SubscriptionType string
+	MessageID           string
+	MessageTimestamp    time.Time
+	MessageType         string
+	SubscriptionType    string
 	SubscriptionVersion string
-	Subscription     EventSubSubscription
-	Challenge        string
-	Event            json.RawMessage
+	Subscription        EventSubSubscription
+	Challenge           string
+	Event               json.RawMessage
 }
 
 // EventSubWebhookPayload represents the JSON payload from EventSub.
@@ -342,11 +342,11 @@ func (d *MessageDeduplicator) Clear() {
 
 // Common revocation reasons
 const (
-	RevocationReasonAuthorizationRevoked     = "authorization_revoked"
-	RevocationReasonUserRemoved              = "user_removed"
-	RevocationReasonNotificationFailures     = "notification_failures_exceeded"
-	RevocationReasonVersionRemoved           = "version_removed"
-	RevocationReasonModeratorsChanged        = "moderator_removed"
+	RevocationReasonAuthorizationRevoked = "authorization_revoked"
+	RevocationReasonUserRemoved          = "user_removed"
+	RevocationReasonNotificationFailures = "notification_failures_exceeded"
+	RevocationReasonVersionRemoved       = "version_removed"
+	RevocationReasonModeratorsChanged    = "moderator_removed"
 )
 
 // GetRevocationReason extracts the revocation reason from a subscription status.

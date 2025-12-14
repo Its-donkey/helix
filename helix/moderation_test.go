@@ -768,11 +768,11 @@ func TestClient_ResolveUnbanRequest(t *testing.T) {
 	defer server.Close()
 
 	result, err := client.ResolveUnbanRequest(context.Background(), &ResolveUnbanRequestParams{
-		BroadcasterID:   "12345",
-		ModeratorID:     "67890",
-		UnbanRequestID:  "request123",
-		Status:          "approved",
-		ResolutionText:  "Appeal accepted",
+		BroadcasterID:  "12345",
+		ModeratorID:    "67890",
+		UnbanRequestID: "request123",
+		Status:         "approved",
+		ResolutionText: "Appeal accepted",
 	})
 
 	if err != nil {

@@ -42,14 +42,14 @@ func (c *Client) GetChannelInformation(ctx context.Context, params *GetChannelIn
 
 // ModifyChannelInformationParams contains parameters for ModifyChannelInformation.
 type ModifyChannelInformationParams struct {
-	BroadcasterID               string   `json:"-"`
-	GameID                      string   `json:"game_id,omitempty"`
-	BroadcasterLanguage         string   `json:"broadcaster_language,omitempty"`
-	Title                       string   `json:"title,omitempty"`
-	Delay                       *int     `json:"delay,omitempty"`
-	Tags                        []string `json:"tags,omitempty"`
+	BroadcasterID               string                              `json:"-"`
+	GameID                      string                              `json:"game_id,omitempty"`
+	BroadcasterLanguage         string                              `json:"broadcaster_language,omitempty"`
+	Title                       string                              `json:"title,omitempty"`
+	Delay                       *int                                `json:"delay,omitempty"`
+	Tags                        []string                            `json:"tags,omitempty"`
 	ContentClassificationLabels []ContentClassificationLabelSetting `json:"content_classification_labels,omitempty"`
-	IsBrandedContent            *bool    `json:"is_branded_content,omitempty"`
+	IsBrandedContent            *bool                               `json:"is_branded_content,omitempty"`
 }
 
 // ContentClassificationLabelSetting represents a content classification label setting for modifying a channel.

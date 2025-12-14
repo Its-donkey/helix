@@ -1,5 +1,5 @@
 # Twitch Helix API Client for Go
-
+[![Go Report Card](https://goreportcard.com/badge/github.com/Its-donkey/helix)](https://goreportcard.com/report/github.com/Its-donkey/helix)
 [![codecov](https://codecov.io/github/Its-donkey/helix/graph/badge.svg?token=UB85N281NS)](https://codecov.io/github/Its-donkey/helix)
 
 A comprehensive Go client library for the Twitch Helix API with full OAuth authentication support.
