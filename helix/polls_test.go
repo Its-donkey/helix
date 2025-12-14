@@ -120,12 +120,12 @@ func TestClient_CreatePoll(t *testing.T) {
 		resp := Response[Poll]{
 			Data: []Poll{
 				{
-					ID:               "newpoll",
-					BroadcasterID:    params.BroadcasterID,
-					Title:            params.Title,
-					Status:           "ACTIVE",
-					Duration:         params.Duration,
-					StartedAt:        time.Now(),
+					ID:                         "newpoll",
+					BroadcasterID:              params.BroadcasterID,
+					Title:                      params.Title,
+					Status:                     "ACTIVE",
+					Duration:                   params.Duration,
+					StartedAt:                  time.Now(),
 					ChannelPointsVotingEnabled: params.ChannelPointsVotingEnabled,
 					ChannelPointsPerVote:       params.ChannelPointsPerVote,
 					Choices: []PollChoice{
@@ -187,8 +187,8 @@ func TestClient_EndPoll_Terminate(t *testing.T) {
 		resp := Response[Poll]{
 			Data: []Poll{
 				{
-					ID:     params.ID,
-					Status: "TERMINATED",
+					ID:      params.ID,
+					Status:  "TERMINATED",
 					EndedAt: time.Now(),
 				},
 			},

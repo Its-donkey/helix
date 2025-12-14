@@ -72,10 +72,10 @@ func (c *Client) GetEventSubSubscriptions(ctx context.Context, params *GetEventS
 
 // CreateEventSubSubscriptionParams contains parameters for CreateEventSubSubscription.
 type CreateEventSubSubscriptionParams struct {
-	Type      string                        `json:"type"`
-	Version   string                        `json:"version"`
-	Condition map[string]string             `json:"condition"`
-	Transport CreateEventSubTransport       `json:"transport"`
+	Type      string                  `json:"type"`
+	Version   string                  `json:"version"`
+	Condition map[string]string       `json:"condition"`
+	Transport CreateEventSubTransport `json:"transport"`
 }
 
 // CreateEventSubTransport represents the transport when creating a subscription.

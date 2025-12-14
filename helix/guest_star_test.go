@@ -180,11 +180,11 @@ func TestClient_GetGuestStarInvites(t *testing.T) {
 		resp := Response[GuestStarInvite]{
 			Data: []GuestStarInvite{
 				{
-					UserID:        "67890",
-					InvitedAt:     "2024-01-15T12:00:00Z",
-					Status:        "INVITED",
-					IsAudioEnabled: true,
-					IsVideoEnabled: true,
+					UserID:           "67890",
+					InvitedAt:        "2024-01-15T12:00:00Z",
+					Status:           "INVITED",
+					IsAudioEnabled:   true,
+					IsVideoEnabled:   true,
 					IsAudioAvailable: true,
 					IsVideoAvailable: true,
 				},

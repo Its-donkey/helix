@@ -41,8 +41,8 @@ func TestClient_GetBroadcasterSubscriptions(t *testing.T) {
 					GifterName:    "Gifter",
 				},
 			},
-			Total:  100,
-			Points: 150,
+			Total:      100,
+			Points:     150,
 			Pagination: &Pagination{Cursor: "next"},
 		}
 		_ = json.NewEncoder(w).Encode(resp)

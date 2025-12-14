@@ -8,11 +8,11 @@ import (
 
 // Schedule represents a channel's stream schedule.
 type Schedule struct {
-	Segments     []ScheduleSegment `json:"segments"`
-	BroadcasterID    string        `json:"broadcaster_id"`
-	BroadcasterName  string        `json:"broadcaster_name"`
-	BroadcasterLogin string        `json:"broadcaster_login"`
-	Vacation         *Vacation     `json:"vacation,omitempty"`
+	Segments         []ScheduleSegment `json:"segments"`
+	BroadcasterID    string            `json:"broadcaster_id"`
+	BroadcasterName  string            `json:"broadcaster_name"`
+	BroadcasterLogin string            `json:"broadcaster_login"`
+	Vacation         *Vacation         `json:"vacation,omitempty"`
 }
 
 // ScheduleSegment represents a segment in a schedule.
@@ -104,11 +104,11 @@ func (c *Client) GetChannelICalendar(ctx context.Context, broadcasterID string) 
 
 // UpdateChannelStreamScheduleParams contains parameters for UpdateChannelStreamSchedule.
 type UpdateChannelStreamScheduleParams struct {
-	BroadcasterID     string `json:"-"`
-	IsVacationEnabled *bool  `json:"is_vacation_enabled,omitempty"`
+	BroadcasterID     string     `json:"-"`
+	IsVacationEnabled *bool      `json:"is_vacation_enabled,omitempty"`
 	VacationStartTime *time.Time `json:"vacation_start_time,omitempty"`
 	VacationEndTime   *time.Time `json:"vacation_end_time,omitempty"`
-	Timezone          string `json:"timezone,omitempty"`
+	Timezone          string     `json:"timezone,omitempty"`
 }
 
 // UpdateChannelStreamSchedule updates a channel's stream schedule settings.

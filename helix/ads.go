@@ -34,12 +34,12 @@ func (c *Client) StartCommercial(ctx context.Context, params *StartCommercialPar
 
 // AdSchedule represents the ad schedule for a channel.
 type AdSchedule struct {
-	NextAdAt          time.Time `json:"next_ad_at,omitempty"`
-	LastAdAt          time.Time `json:"last_ad_at,omitempty"`
-	Duration          int       `json:"duration"`
-	PrerollFreeTime   int       `json:"preroll_free_time"`
-	SnoozeCount       int       `json:"snooze_count"`
-	SnoozeRefreshAt   time.Time `json:"snooze_refresh_at,omitempty"`
+	NextAdAt        time.Time `json:"next_ad_at,omitempty"`
+	LastAdAt        time.Time `json:"last_ad_at,omitempty"`
+	Duration        int       `json:"duration"`
+	PrerollFreeTime int       `json:"preroll_free_time"`
+	SnoozeCount     int       `json:"snooze_count"`
+	SnoozeRefreshAt time.Time `json:"snooze_refresh_at,omitempty"`
 }
 
 // GetAdSchedule gets the ad schedule for a channel.

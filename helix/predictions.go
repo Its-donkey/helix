@@ -24,12 +24,12 @@ type Prediction struct {
 
 // PredictionOutcome represents an outcome of a prediction.
 type PredictionOutcome struct {
-	ID            string              `json:"id"`
-	Title         string              `json:"title"`
-	Users         int                 `json:"users"`
-	ChannelPoints int                 `json:"channel_points"`
+	ID            string                `json:"id"`
+	Title         string                `json:"title"`
+	Users         int                   `json:"users"`
+	ChannelPoints int                   `json:"channel_points"`
 	TopPredictors []PredictionPredictor `json:"top_predictors,omitempty"`
-	Color         string              `json:"color"`
+	Color         string                `json:"color"`
 }
 
 // PredictionPredictor represents a top predictor.
@@ -67,10 +67,10 @@ func (c *Client) GetPredictions(ctx context.Context, params *GetPredictionsParam
 
 // CreatePredictionParams contains parameters for CreatePrediction.
 type CreatePredictionParams struct {
-	BroadcasterID    string                     `json:"broadcaster_id"`
-	Title            string                     `json:"title"`
-	Outcomes         []CreatePredictionOutcome  `json:"outcomes"` // 2-10 outcomes
-	PredictionWindow int                        `json:"prediction_window"` // 30-1800 seconds
+	BroadcasterID    string                    `json:"broadcaster_id"`
+	Title            string                    `json:"title"`
+	Outcomes         []CreatePredictionOutcome `json:"outcomes"`          // 2-10 outcomes
+	PredictionWindow int                       `json:"prediction_window"` // 30-1800 seconds
 }
 
 // CreatePredictionOutcome represents an outcome when creating a prediction.
@@ -95,7 +95,7 @@ func (c *Client) CreatePrediction(ctx context.Context, params *CreatePredictionP
 type EndPredictionParams struct {
 	BroadcasterID    string `json:"broadcaster_id"`
 	ID               string `json:"id"`
-	Status           string `json:"status"` // RESOLVED, CANCELED, or LOCKED
+	Status           string `json:"status"`                       // RESOLVED, CANCELED, or LOCKED
 	WinningOutcomeID string `json:"winning_outcome_id,omitempty"` // Required if status is RESOLVED
 }
 

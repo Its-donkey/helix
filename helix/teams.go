@@ -8,16 +8,16 @@ import (
 
 // Team represents a Twitch team.
 type Team struct {
-	ID              string     `json:"id"`
-	TeamName        string     `json:"team_name"`
-	TeamDisplayName string     `json:"team_display_name"`
-	Info            string     `json:"info"`
-	ThumbnailURL    string     `json:"thumbnail_url"`
-	BackgroundImageURL string  `json:"background_image_url"`
-	Banner          string     `json:"banner"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-	Users           []TeamUser `json:"users,omitempty"`
+	ID                 string     `json:"id"`
+	TeamName           string     `json:"team_name"`
+	TeamDisplayName    string     `json:"team_display_name"`
+	Info               string     `json:"info"`
+	ThumbnailURL       string     `json:"thumbnail_url"`
+	BackgroundImageURL string     `json:"background_image_url"`
+	Banner             string     `json:"banner"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
+	Users              []TeamUser `json:"users,omitempty"`
 }
 
 // TeamUser represents a user in a team.
@@ -29,18 +29,18 @@ type TeamUser struct {
 
 // ChannelTeam represents a team that a channel belongs to.
 type ChannelTeam struct {
-	BroadcasterID    string    `json:"broadcaster_id"`
-	BroadcasterLogin string    `json:"broadcaster_login"`
-	BroadcasterName  string    `json:"broadcaster_name"`
-	BackgroundImageURL string  `json:"background_image_url"`
-	Banner           string    `json:"banner"`
-	CreatedAt        time.Time `json:"created_at"`
-	UpdatedAt        time.Time `json:"updated_at"`
-	Info             string    `json:"info"`
-	ThumbnailURL     string    `json:"thumbnail_url"`
-	TeamName         string    `json:"team_name"`
-	TeamDisplayName  string    `json:"team_display_name"`
-	ID               string    `json:"id"`
+	BroadcasterID      string    `json:"broadcaster_id"`
+	BroadcasterLogin   string    `json:"broadcaster_login"`
+	BroadcasterName    string    `json:"broadcaster_name"`
+	BackgroundImageURL string    `json:"background_image_url"`
+	Banner             string    `json:"banner"`
+	CreatedAt          time.Time `json:"created_at"`
+	UpdatedAt          time.Time `json:"updated_at"`
+	Info               string    `json:"info"`
+	ThumbnailURL       string    `json:"thumbnail_url"`
+	TeamName           string    `json:"team_name"`
+	TeamDisplayName    string    `json:"team_display_name"`
+	ID                 string    `json:"id"`
 }
 
 // GetChannelTeams gets the teams a broadcaster belongs to.

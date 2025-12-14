@@ -15,8 +15,8 @@ type Game struct {
 
 // GetGamesParams contains parameters for GetGames.
 type GetGamesParams struct {
-	IDs   []string // Game IDs (max 100)
-	Names []string // Game names (max 100)
+	IDs     []string // Game IDs (max 100)
+	Names   []string // Game names (max 100)
 	IGDBIDs []string // IGDB IDs (max 100)
 }
 

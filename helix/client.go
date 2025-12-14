@@ -29,8 +29,8 @@ type TokenProvider interface {
 // Client is a Twitch Helix API client.
 type Client struct {
 	clientID      string
-	authClient    *AuthClient    // For full auth client functionality
-	tokenProvider TokenProvider  // For token-only providers (e.g., extension JWT)
+	authClient    *AuthClient   // For full auth client functionality
+	tokenProvider TokenProvider // For token-only providers (e.g., extension JWT)
 	httpClient    *http.Client
 
 	// Rate limiting
@@ -40,18 +40,18 @@ type Client struct {
 	rateMu             sync.Mutex
 
 	// Retry configuration
-	maxRetries      int           // Maximum retries on 429 (default: 3)
-	retryEnabled    bool          // Whether to auto-retry on 429 (default: true)
-	maxRetryWait    time.Duration // Maximum wait time for retry (default: 60s)
-	baseRetryDelay  time.Duration // Base delay for exponential backoff (default: 1s)
-	useExpBackoff   bool          // Use exponential backoff instead of reset time (default: false)
+	maxRetries     int           // Maximum retries on 429 (default: 3)
+	retryEnabled   bool          // Whether to auto-retry on 429 (default: true)
+	maxRetryWait   time.Duration // Maximum wait time for retry (default: 60s)
+	baseRetryDelay time.Duration // Base delay for exponential backoff (default: 1s)
+	useExpBackoff  bool          // Use exponential backoff instead of reset time (default: false)
 
 	// Middleware
 	middleware []Middleware
 
 	// Cache
-	cache       Cache
-	cacheTTL    time.Duration
+	cache        Cache
+	cacheTTL     time.Duration
 	cacheEnabled bool
 
 	// Base URL (can be overridden for testing)
@@ -139,11 +139,11 @@ type Request struct {
 
 // Response represents a generic API response.
 type Response[T any] struct {
-	Data       []T         `json:"data"`
-	Pagination *Pagination `json:"pagination,omitempty"`
-	Total      *int        `json:"total,omitempty"`
-	TotalCost  *int        `json:"total_cost,omitempty"`
-	MaxTotalCost *int      `json:"max_total_cost,omitempty"`
+	Data         []T         `json:"data"`
+	Pagination   *Pagination `json:"pagination,omitempty"`
+	Total        *int        `json:"total,omitempty"`
+	TotalCost    *int        `json:"total_cost,omitempty"`
+	MaxTotalCost *int        `json:"max_total_cost,omitempty"`
 }
 
 // Pagination contains pagination information.
@@ -171,9 +171,9 @@ func (e *APIError) Error() string {
 
 // RateLimitError is returned when the API rate limit is exceeded and retries are exhausted.
 type RateLimitError struct {
-	ResetAt   time.Time // When the rate limit resets
-	Remaining int       // Points remaining (usually 0)
-	Limit     int       // Total bucket size
+	ResetAt    time.Time     // When the rate limit resets
+	Remaining  int           // Points remaining (usually 0)
+	Limit      int           // Total bucket size
 	RetryAfter time.Duration // How long until reset
 }
 

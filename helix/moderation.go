@@ -45,9 +45,9 @@ func (c *Client) GetBannedUsers(ctx context.Context, params *GetBannedUsersParam
 
 // BanUserParams contains parameters for BanUser.
 type BanUserParams struct {
-	BroadcasterID string        `json:"-"`
-	ModeratorID   string        `json:"-"`
-	Data          BanUserData   `json:"data"`
+	BroadcasterID string      `json:"-"`
+	ModeratorID   string      `json:"-"`
+	Data          BanUserData `json:"data"`
 }
 
 // BanUserData contains the ban data.
@@ -285,8 +285,8 @@ func (c *Client) UpdateShieldModeStatus(ctx context.Context, params *UpdateShiel
 
 // WarnChatUserParams contains parameters for WarnChatUser.
 type WarnChatUserParams struct {
-	BroadcasterID string         `json:"-"`
-	ModeratorID   string         `json:"-"`
+	BroadcasterID string           `json:"-"`
+	ModeratorID   string           `json:"-"`
 	Data          WarnChatUserData `json:"data"`
 }
 
@@ -308,14 +308,14 @@ func (c *Client) WarnChatUser(ctx context.Context, params *WarnChatUserParams) e
 
 // AutoModStatus represents the AutoMod status of a message.
 type AutoModStatus struct {
-	MsgID     string `json:"msg_id"`
-	IsPermitted bool `json:"is_permitted"`
+	MsgID       string `json:"msg_id"`
+	IsPermitted bool   `json:"is_permitted"`
 }
 
 // CheckAutoModStatusParams contains parameters for CheckAutoModStatus.
 type CheckAutoModStatusParams struct {
-	BroadcasterID string                  `json:"-"`
-	Data          []AutoModStatusMessage  `json:"data"`
+	BroadcasterID string                 `json:"-"`
+	Data          []AutoModStatusMessage `json:"data"`
 }
 
 // AutoModStatusMessage represents a message to check.
