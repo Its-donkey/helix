@@ -26,14 +26,14 @@ const (
 // ExtensionJWTClaims represents the claims in a Twitch Extension JWT.
 type ExtensionJWTClaims struct {
 	// Required claims
-	Exp    int64            `json:"exp"`              // Expiration time (Unix timestamp)
-	UserID string           `json:"user_id"`          // Twitch user ID
-	Role   ExtensionJWTRole `json:"role"`             // User's role
+	Exp    int64            `json:"exp"`     // Expiration time (Unix timestamp)
+	UserID string           `json:"user_id"` // Twitch user ID
+	Role   ExtensionJWTRole `json:"role"`    // User's role
 
 	// Optional claims
-	ChannelID    string `json:"channel_id,omitempty"`    // Channel ID for channel-specific operations
+	ChannelID    string `json:"channel_id,omitempty"`     // Channel ID for channel-specific operations
 	OpaqueUserID string `json:"opaque_user_id,omitempty"` // Opaque user identifier
-	IsUnlinked   bool   `json:"is_unlinked,omitempty"`   // Whether user has not shared identity
+	IsUnlinked   bool   `json:"is_unlinked,omitempty"`    // Whether user has not shared identity
 
 	// PubSub specific
 	PubsubPermsListen []string `json:"pubsub_perms_listen,omitempty"` // Channels to listen to

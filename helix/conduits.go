@@ -71,8 +71,8 @@ func (c *Client) DeleteConduit(ctx context.Context, conduitID string) error {
 
 // ConduitShard represents a shard in a conduit.
 type ConduitShard struct {
-	ID        string               `json:"id"`
-	Status    string               `json:"status"`
+	ID        string                `json:"id"`
+	Status    string                `json:"status"`
 	Transport ConduitShardTransport `json:"transport"`
 }
 
@@ -117,14 +117,14 @@ func (c *Client) GetConduitShards(ctx context.Context, params *GetConduitShardsP
 
 // UpdateConduitShardsParams contains parameters for UpdateConduitShards.
 type UpdateConduitShardsParams struct {
-	ConduitID string                      `json:"conduit_id"`
-	Shards    []UpdateConduitShardParams  `json:"shards"`
+	ConduitID string                     `json:"conduit_id"`
+	Shards    []UpdateConduitShardParams `json:"shards"`
 }
 
 // UpdateConduitShardParams represents parameters for a single shard update.
 type UpdateConduitShardParams struct {
-	ID        string                         `json:"id"`
-	Transport UpdateConduitShardTransport    `json:"transport"`
+	ID        string                      `json:"id"`
+	Transport UpdateConduitShardTransport `json:"transport"`
 }
 
 // UpdateConduitShardTransport represents transport parameters for shard update.

@@ -34,25 +34,25 @@ func (c *Client) GetCreatorGoals(ctx context.Context, broadcasterID string) (*Re
 
 // HypeTrainEvent represents a hype train event.
 type HypeTrainEvent struct {
-	ID               string              `json:"id"`
-	EventType        string              `json:"event_type"`
-	EventTimestamp   time.Time           `json:"event_timestamp"`
-	Version          string              `json:"version"`
-	EventData        HypeTrainEventData  `json:"event_data"`
+	ID             string             `json:"id"`
+	EventType      string             `json:"event_type"`
+	EventTimestamp time.Time          `json:"event_timestamp"`
+	Version        string             `json:"version"`
+	EventData      HypeTrainEventData `json:"event_data"`
 }
 
 // HypeTrainEventData contains the hype train event data.
 type HypeTrainEventData struct {
-	ID               string                `json:"id"`
-	BroadcasterID    string                `json:"broadcaster_id"`
-	CooldownEndTime  time.Time             `json:"cooldown_end_time"`
-	ExpiresAt        time.Time             `json:"expires_at"`
-	Goal             int                   `json:"goal"`
-	LastContribution HypeTrainContribution `json:"last_contribution"`
-	Level            int                   `json:"level"`
-	StartedAt        time.Time             `json:"started_at"`
+	ID               string                  `json:"id"`
+	BroadcasterID    string                  `json:"broadcaster_id"`
+	CooldownEndTime  time.Time               `json:"cooldown_end_time"`
+	ExpiresAt        time.Time               `json:"expires_at"`
+	Goal             int                     `json:"goal"`
+	LastContribution HypeTrainContribution   `json:"last_contribution"`
+	Level            int                     `json:"level"`
+	StartedAt        time.Time               `json:"started_at"`
 	TopContributions []HypeTrainContribution `json:"top_contributions"`
-	Total            int                   `json:"total"`
+	Total            int                     `json:"total"`
 }
 
 // HypeTrainContribution represents a contribution to a hype train.
@@ -85,16 +85,16 @@ func (c *Client) GetHypeTrainEvents(ctx context.Context, params *GetHypeTrainEve
 
 // HypeTrainStatus represents the current hype train status.
 type HypeTrainStatus struct {
-	ID              string    `json:"id"`
-	BroadcasterID   string    `json:"broadcaster_id"`
-	Level           int       `json:"level"`
-	Total           int       `json:"total"`
-	Goal            int       `json:"goal"`
+	ID               string                  `json:"id"`
+	BroadcasterID    string                  `json:"broadcaster_id"`
+	Level            int                     `json:"level"`
+	Total            int                     `json:"total"`
+	Goal             int                     `json:"goal"`
 	TopContributions []HypeTrainContribution `json:"top_contributions"`
 	LastContribution HypeTrainContribution   `json:"last_contribution"`
-	StartedAt       time.Time `json:"started_at"`
-	ExpiresAt       time.Time `json:"expires_at"`
-	CooldownEndTime time.Time `json:"cooldown_end_time"`
+	StartedAt        time.Time               `json:"started_at"`
+	ExpiresAt        time.Time               `json:"expires_at"`
+	CooldownEndTime  time.Time               `json:"cooldown_end_time"`
 }
 
 // GetHypeTrainStatus gets the current hype train status for a channel.

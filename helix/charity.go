@@ -7,16 +7,16 @@ import (
 
 // CharityCampaign represents a charity campaign.
 type CharityCampaign struct {
-	ID               string        `json:"id"`
-	BroadcasterID    string        `json:"broadcaster_id"`
-	BroadcasterLogin string        `json:"broadcaster_login"`
-	BroadcasterName  string        `json:"broadcaster_name"`
-	CharityName      string        `json:"charity_name"`
-	CharityDescription string      `json:"charity_description"`
-	CharityLogo      string        `json:"charity_logo"`
-	CharityWebsite   string        `json:"charity_website"`
-	CurrentAmount    CharityAmount `json:"current_amount"`
-	TargetAmount     CharityAmount `json:"target_amount"`
+	ID                 string        `json:"id"`
+	BroadcasterID      string        `json:"broadcaster_id"`
+	BroadcasterLogin   string        `json:"broadcaster_login"`
+	BroadcasterName    string        `json:"broadcaster_name"`
+	CharityName        string        `json:"charity_name"`
+	CharityDescription string        `json:"charity_description"`
+	CharityLogo        string        `json:"charity_logo"`
+	CharityWebsite     string        `json:"charity_website"`
+	CurrentAmount      CharityAmount `json:"current_amount"`
+	TargetAmount       CharityAmount `json:"target_amount"`
 }
 
 // CharityAmount represents a monetary amount for charity.
@@ -44,12 +44,12 @@ func (c *Client) GetCharityCampaign(ctx context.Context, broadcasterID string) (
 
 // CharityDonation represents a donation to a charity campaign.
 type CharityDonation struct {
-	ID               string        `json:"id"`
-	CampaignID       string        `json:"campaign_id"`
-	UserID           string        `json:"user_id"`
-	UserLogin        string        `json:"user_login"`
-	UserName         string        `json:"user_name"`
-	Amount           CharityAmount `json:"amount"`
+	ID         string        `json:"id"`
+	CampaignID string        `json:"campaign_id"`
+	UserID     string        `json:"user_id"`
+	UserLogin  string        `json:"user_login"`
+	UserName   string        `json:"user_name"`
+	Amount     CharityAmount `json:"amount"`
 }
 
 // GetCharityDonationsParams contains parameters for GetCharityDonations.

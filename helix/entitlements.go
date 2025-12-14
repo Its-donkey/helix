@@ -8,21 +8,21 @@ import (
 
 // DropsEntitlement represents a drops entitlement.
 type DropsEntitlement struct {
-	ID               string    `json:"id"`
-	BenefitID        string    `json:"benefit_id"`
-	Timestamp        time.Time `json:"timestamp"`
-	UserID           string    `json:"user_id"`
-	GameID           string    `json:"game_id"`
-	FulfillmentStatus string   `json:"fulfillment_status"` // CLAIMED, FULFILLED
-	LastUpdated      time.Time `json:"last_updated"`
+	ID                string    `json:"id"`
+	BenefitID         string    `json:"benefit_id"`
+	Timestamp         time.Time `json:"timestamp"`
+	UserID            string    `json:"user_id"`
+	GameID            string    `json:"game_id"`
+	FulfillmentStatus string    `json:"fulfillment_status"` // CLAIMED, FULFILLED
+	LastUpdated       time.Time `json:"last_updated"`
 }
 
 // GetDropsEntitlementsParams contains parameters for GetDropsEntitlements.
 type GetDropsEntitlementsParams struct {
-	ID                string   // Entitlement ID
-	UserID            string   // Filter by user
-	GameID            string   // Filter by game
-	FulfillmentStatus string   // CLAIMED, FULFILLED
+	ID                string // Entitlement ID
+	UserID            string // Filter by user
+	GameID            string // Filter by game
+	FulfillmentStatus string // CLAIMED, FULFILLED
 	*PaginationParams
 }
 
@@ -55,7 +55,7 @@ func (c *Client) GetDropsEntitlements(ctx context.Context, params *GetDropsEntit
 
 // UpdateDropsEntitlementsParams contains parameters for UpdateDropsEntitlements.
 type UpdateDropsEntitlementsParams struct {
-	EntitlementIDs    []string `json:"entitlement_ids"` // Max 100
+	EntitlementIDs    []string `json:"entitlement_ids"`    // Max 100
 	FulfillmentStatus string   `json:"fulfillment_status"` // CLAIMED, FULFILLED
 }
 

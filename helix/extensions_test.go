@@ -19,10 +19,10 @@ func TestClient_GetExtensionConfigurationSegment(t *testing.T) {
 		resp := Response[ExtensionConfigurationSegment]{
 			Data: []ExtensionConfigurationSegment{
 				{
-					Segment:        "broadcaster",
-					BroadcasterID:  "12345",
-					Content:        `{"setting": "value"}`,
-					Version:        "1.0",
+					Segment:       "broadcaster",
+					BroadcasterID: "12345",
+					Content:       `{"setting": "value"}`,
+					Version:       "1.0",
 				},
 			},
 		}
@@ -253,21 +253,21 @@ func TestClient_GetExtensions(t *testing.T) {
 		resp := Response[Extension]{
 			Data: []Extension{
 				{
-					ID:                       "ext123",
-					Name:                     "Test Extension",
-					Version:                  "1.0.0",
-					State:                    "Released",
-					AuthorName:               "TestDev",
-					CanInstall:               true,
-					HasChatSupport:           true,
-					ConfigurationLocation:    "hosted",
-					Description:              "A test extension",
-					EULAToSURL:               "https://example.com/eula",
-					IconURL:                  "https://example.com/icon.png",
-					PrivacyPolicyURL:         "https://example.com/privacy",
-					RequestIdentityLink:      false,
+					ID:                        "ext123",
+					Name:                      "Test Extension",
+					Version:                   "1.0.0",
+					State:                     "Released",
+					AuthorName:                "TestDev",
+					CanInstall:                true,
+					HasChatSupport:            true,
+					ConfigurationLocation:     "hosted",
+					Description:               "A test extension",
+					EULAToSURL:                "https://example.com/eula",
+					IconURL:                   "https://example.com/icon.png",
+					PrivacyPolicyURL:          "https://example.com/privacy",
+					RequestIdentityLink:       false,
 					SubscriptionsSupportLevel: "optional",
-					Summary:                  "Test summary",
+					Summary:                   "Test summary",
 				},
 			},
 		}
@@ -327,8 +327,8 @@ func TestClient_GetExtensionBitsProducts(t *testing.T) {
 		resp := Response[ExtensionBitsProduct]{
 			Data: []ExtensionBitsProduct{
 				{
-					SKU:        "product123",
-					Cost:       ExtensionBitsCost{Amount: 100, Type: "bits"},
+					SKU:           "product123",
+					Cost:          ExtensionBitsCost{Amount: 100, Type: "bits"},
 					InDevelopment: false,
 					DisplayName:   "Test Product",
 					Expiration:    "",

@@ -8,26 +8,26 @@ import (
 
 // CustomReward represents a channel points custom reward.
 type CustomReward struct {
-	BroadcasterID                     string           `json:"broadcaster_id"`
-	BroadcasterLogin                  string           `json:"broadcaster_login"`
-	BroadcasterName                   string           `json:"broadcaster_name"`
-	ID                                string           `json:"id"`
-	Title                             string           `json:"title"`
-	Prompt                            string           `json:"prompt"`
-	Cost                              int              `json:"cost"`
-	Image                             *RewardImage     `json:"image,omitempty"`
-	DefaultImage                      RewardImage      `json:"default_image"`
-	BackgroundColor                   string           `json:"background_color"`
-	IsEnabled                         bool             `json:"is_enabled"`
-	IsUserInputRequired               bool             `json:"is_user_input_required"`
-	MaxPerStreamSetting               MaxPerStream     `json:"max_per_stream_setting"`
+	BroadcasterID                     string              `json:"broadcaster_id"`
+	BroadcasterLogin                  string              `json:"broadcaster_login"`
+	BroadcasterName                   string              `json:"broadcaster_name"`
+	ID                                string              `json:"id"`
+	Title                             string              `json:"title"`
+	Prompt                            string              `json:"prompt"`
+	Cost                              int                 `json:"cost"`
+	Image                             *RewardImage        `json:"image,omitempty"`
+	DefaultImage                      RewardImage         `json:"default_image"`
+	BackgroundColor                   string              `json:"background_color"`
+	IsEnabled                         bool                `json:"is_enabled"`
+	IsUserInputRequired               bool                `json:"is_user_input_required"`
+	MaxPerStreamSetting               MaxPerStream        `json:"max_per_stream_setting"`
 	MaxPerUserPerStreamSetting        MaxPerUserPerStream `json:"max_per_user_per_stream_setting"`
-	GlobalCooldownSetting             GlobalCooldown   `json:"global_cooldown_setting"`
-	IsPaused                          bool             `json:"is_paused"`
-	IsInStock                         bool             `json:"is_in_stock"`
-	ShouldRedemptionsSkipRequestQueue bool             `json:"should_redemptions_skip_request_queue"`
-	RedemptionsRedeemedCurrentStream  int              `json:"redemptions_redeemed_current_stream,omitempty"`
-	CooldownExpiresAt                 *time.Time       `json:"cooldown_expires_at,omitempty"`
+	GlobalCooldownSetting             GlobalCooldown      `json:"global_cooldown_setting"`
+	IsPaused                          bool                `json:"is_paused"`
+	IsInStock                         bool                `json:"is_in_stock"`
+	ShouldRedemptionsSkipRequestQueue bool                `json:"should_redemptions_skip_request_queue"`
+	RedemptionsRedeemedCurrentStream  int                 `json:"redemptions_redeemed_current_stream,omitempty"`
+	CooldownExpiresAt                 *time.Time          `json:"cooldown_expires_at,omitempty"`
 }
 
 // RewardImage represents images for a reward.
@@ -57,8 +57,8 @@ type GlobalCooldown struct {
 
 // GetCustomRewardsParams contains parameters for GetCustomRewards.
 type GetCustomRewardsParams struct {
-	BroadcasterID       string
-	IDs                 []string // Reward IDs (max 50)
+	BroadcasterID         string
+	IDs                   []string // Reward IDs (max 50)
 	OnlyManageableRewards bool
 }
 
@@ -220,7 +220,7 @@ func (c *Client) GetCustomRewardRedemptions(ctx context.Context, params *GetCust
 type UpdateRedemptionStatusParams struct {
 	BroadcasterID string   `json:"-"`
 	RewardID      string   `json:"-"`
-	IDs           []string `json:"-"` // Redemption IDs (max 50)
+	IDs           []string `json:"-"`      // Redemption IDs (max 50)
 	Status        string   `json:"status"` // CANCELED or FULFILLED
 }
 

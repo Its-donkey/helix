@@ -24,14 +24,14 @@ func TestClient_GetCharityCampaign(t *testing.T) {
 		resp := Response[CharityCampaign]{
 			Data: []CharityCampaign{
 				{
-					ID:               "campaign123",
-					BroadcasterID:    "12345",
-					BroadcasterLogin: "testuser",
-					BroadcasterName:  "TestUser",
-					CharityName:      "Test Charity",
+					ID:                 "campaign123",
+					BroadcasterID:      "12345",
+					BroadcasterLogin:   "testuser",
+					BroadcasterName:    "TestUser",
+					CharityName:        "Test Charity",
 					CharityDescription: "A test charity",
-					CharityLogo:      "https://example.com/logo.png",
-					CharityWebsite:   "https://example.com",
+					CharityLogo:        "https://example.com/logo.png",
+					CharityWebsite:     "https://example.com",
 					CurrentAmount: CharityAmount{
 						Value:         1000,
 						DecimalPlaces: 2,

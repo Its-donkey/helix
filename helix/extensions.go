@@ -7,10 +7,10 @@ import (
 
 // ExtensionConfigurationSegment represents a configuration segment.
 type ExtensionConfigurationSegment struct {
-	Segment        string `json:"segment"` // broadcaster, developer, global
-	BroadcasterID  string `json:"broadcaster_id,omitempty"`
-	Content        string `json:"content"`
-	Version        string `json:"version"`
+	Segment       string `json:"segment"` // broadcaster, developer, global
+	BroadcasterID string `json:"broadcaster_id,omitempty"`
+	Content       string `json:"content"`
+	Version       string `json:"version"`
 }
 
 // GetExtensionConfigurationSegmentParams contains parameters for GetExtensionConfigurationSegment.
@@ -56,9 +56,9 @@ func (c *Client) SetExtensionConfigurationSegment(ctx context.Context, params *S
 
 // SetExtensionRequiredConfigurationParams contains parameters for SetExtensionRequiredConfiguration.
 type SetExtensionRequiredConfigurationParams struct {
-	ExtensionID              string `json:"-"`
-	ExtensionVersion         string `json:"extension_version"`
-	RequiredConfiguration    string `json:"required_configuration"`
+	ExtensionID           string `json:"-"`
+	ExtensionVersion      string `json:"extension_version"`
+	RequiredConfiguration string `json:"required_configuration"`
 }
 
 // SetExtensionRequiredConfiguration sets the required configuration for an extension.
@@ -72,10 +72,10 @@ func (c *Client) SetExtensionRequiredConfiguration(ctx context.Context, params *
 
 // SendExtensionPubSubMessageParams contains parameters for SendExtensionPubSubMessage.
 type SendExtensionPubSubMessageParams struct {
-	Target          []string `json:"target"` // broadcast, global, whisper-<user_id>
-	BroadcasterID   string   `json:"broadcaster_id"`
-	IsGlobalBroadcast bool   `json:"is_global_broadcast,omitempty"`
-	Message         string   `json:"message"`
+	Target            []string `json:"target"` // broadcast, global, whisper-<user_id>
+	BroadcasterID     string   `json:"broadcaster_id"`
+	IsGlobalBroadcast bool     `json:"is_global_broadcast,omitempty"`
+	Message           string   `json:"message"`
 }
 
 // SendExtensionPubSubMessage sends a PubSub message for an extension.
@@ -114,8 +114,8 @@ func (c *Client) GetExtensionLiveChannels(ctx context.Context, params *GetExtens
 
 // ExtensionSecret represents an extension secret.
 type ExtensionSecret struct {
-	FormatVersion int                    `json:"format_version"`
-	Secrets       []ExtensionSecretData  `json:"secrets"`
+	FormatVersion int                   `json:"format_version"`
+	Secrets       []ExtensionSecretData `json:"secrets"`
 }
 
 // ExtensionSecretData represents the secret data.
@@ -156,9 +156,9 @@ func (c *Client) CreateExtensionSecret(ctx context.Context, extensionID string, 
 
 // SendExtensionChatMessageParams contains parameters for SendExtensionChatMessage.
 type SendExtensionChatMessageParams struct {
-	BroadcasterID string `json:"broadcaster_id"`
-	Text          string `json:"text"`
-	ExtensionID   string `json:"extension_id"`
+	BroadcasterID    string `json:"broadcaster_id"`
+	Text             string `json:"text"`
+	ExtensionID      string `json:"extension_id"`
 	ExtensionVersion string `json:"extension_version"`
 }
 
@@ -170,44 +170,44 @@ func (c *Client) SendExtensionChatMessage(ctx context.Context, params *SendExten
 
 // Extension represents a Twitch extension.
 type Extension struct {
-	AuthorName             string                `json:"author_name"`
-	BitsEnabled            bool                  `json:"bits_enabled"`
-	CanInstall             bool                  `json:"can_install"`
-	ConfigurationLocation  string                `json:"configuration_location"`
-	Description            string                `json:"description"`
-	EULAToSURL             string                `json:"eula_tos_url"`
-	HasChatSupport         bool                  `json:"has_chat_support"`
-	IconURL                string                `json:"icon_url"`
-	IconURLs               map[string]string     `json:"icon_urls"`
-	ID                     string                `json:"id"`
-	Name                   string                `json:"name"`
-	PrivacyPolicyURL       string                `json:"privacy_policy_url"`
-	RequestIdentityLink    bool                  `json:"request_identity_link"`
-	ScreenshotURLs         []string              `json:"screenshot_urls"`
-	State                  string                `json:"state"`
-	SubscriptionsSupportLevel string             `json:"subscriptions_support_level"`
-	Summary                string                `json:"summary"`
-	SupportEmail           string                `json:"support_email"`
-	Version                string                `json:"version"`
-	ViewerSummary          string                `json:"viewer_summary"`
-	Views                  ExtensionViews        `json:"views"`
-	AllowlistedConfigURLs  []string              `json:"allowlisted_config_urls"`
-	AllowlistedPanelURLs   []string              `json:"allowlisted_panel_urls"`
+	AuthorName                string            `json:"author_name"`
+	BitsEnabled               bool              `json:"bits_enabled"`
+	CanInstall                bool              `json:"can_install"`
+	ConfigurationLocation     string            `json:"configuration_location"`
+	Description               string            `json:"description"`
+	EULAToSURL                string            `json:"eula_tos_url"`
+	HasChatSupport            bool              `json:"has_chat_support"`
+	IconURL                   string            `json:"icon_url"`
+	IconURLs                  map[string]string `json:"icon_urls"`
+	ID                        string            `json:"id"`
+	Name                      string            `json:"name"`
+	PrivacyPolicyURL          string            `json:"privacy_policy_url"`
+	RequestIdentityLink       bool              `json:"request_identity_link"`
+	ScreenshotURLs            []string          `json:"screenshot_urls"`
+	State                     string            `json:"state"`
+	SubscriptionsSupportLevel string            `json:"subscriptions_support_level"`
+	Summary                   string            `json:"summary"`
+	SupportEmail              string            `json:"support_email"`
+	Version                   string            `json:"version"`
+	ViewerSummary             string            `json:"viewer_summary"`
+	Views                     ExtensionViews    `json:"views"`
+	AllowlistedConfigURLs     []string          `json:"allowlisted_config_urls"`
+	AllowlistedPanelURLs      []string          `json:"allowlisted_panel_urls"`
 }
 
 // ExtensionViews represents the views configuration for an extension.
 type ExtensionViews struct {
-	Mobile      ExtensionView `json:"mobile,omitempty"`
-	Panel       ExtensionView `json:"panel,omitempty"`
+	Mobile       ExtensionView `json:"mobile,omitempty"`
+	Panel        ExtensionView `json:"panel,omitempty"`
 	VideoOverlay ExtensionView `json:"video_overlay,omitempty"`
-	Component   ExtensionView `json:"component,omitempty"`
+	Component    ExtensionView `json:"component,omitempty"`
 }
 
 // ExtensionView represents a single view configuration.
 type ExtensionView struct {
-	ViewerURL string `json:"viewer_url"`
-	Height    int    `json:"height,omitempty"`
-	CanLinkExternalContent bool `json:"can_link_external_content,omitempty"`
+	ViewerURL              string `json:"viewer_url"`
+	Height                 int    `json:"height,omitempty"`
+	CanLinkExternalContent bool   `json:"can_link_external_content,omitempty"`
 }
 
 // GetExtensions gets information about extensions.
@@ -243,12 +243,12 @@ func (c *Client) GetReleasedExtensions(ctx context.Context, extensionID, extensi
 
 // ExtensionBitsProduct represents an extension Bits product.
 type ExtensionBitsProduct struct {
-	SKU           string             `json:"sku"`
-	Cost          ExtensionBitsCost  `json:"cost"`
-	InDevelopment bool               `json:"in_development"`
-	DisplayName   string             `json:"display_name"`
-	Expiration    string             `json:"expiration,omitempty"`
-	IsBroadcast   bool               `json:"is_broadcast"`
+	SKU           string            `json:"sku"`
+	Cost          ExtensionBitsCost `json:"cost"`
+	InDevelopment bool              `json:"in_development"`
+	DisplayName   string            `json:"display_name"`
+	Expiration    string            `json:"expiration,omitempty"`
+	IsBroadcast   bool              `json:"is_broadcast"`
 }
 
 // ExtensionBitsCost represents the cost of an extension Bits product.
@@ -279,12 +279,12 @@ func (c *Client) GetExtensionBitsProducts(ctx context.Context, params *GetExtens
 
 // UpdateExtensionBitsProductParams contains parameters for UpdateExtensionBitsProduct.
 type UpdateExtensionBitsProductParams struct {
-	SKU           string `json:"sku"`
+	SKU           string            `json:"sku"`
 	Cost          ExtensionBitsCost `json:"cost"`
-	DisplayName   string `json:"display_name"`
-	InDevelopment bool   `json:"in_development,omitempty"`
-	Expiration    string `json:"expiration,omitempty"`
-	IsBroadcast   bool   `json:"is_broadcast,omitempty"`
+	DisplayName   string            `json:"display_name"`
+	InDevelopment bool              `json:"in_development,omitempty"`
+	Expiration    string            `json:"expiration,omitempty"`
+	IsBroadcast   bool              `json:"is_broadcast,omitempty"`
 }
 
 // UpdateExtensionBitsProduct updates an extension Bits product.
@@ -299,15 +299,15 @@ func (c *Client) UpdateExtensionBitsProduct(ctx context.Context, params *UpdateE
 
 // ExtensionTransaction represents an extension transaction.
 type ExtensionTransaction struct {
-	ID               string                    `json:"id"`
-	Timestamp        string                    `json:"timestamp"`
-	BroadcasterID    string                    `json:"broadcaster_id"`
-	BroadcasterLogin string                    `json:"broadcaster_login"`
-	BroadcasterName  string                    `json:"broadcaster_name"`
-	UserID           string                    `json:"user_id"`
-	UserLogin        string                    `json:"user_login"`
-	UserName         string                    `json:"user_name"`
-	ProductType      string                    `json:"product_type"`
+	ID               string                      `json:"id"`
+	Timestamp        string                      `json:"timestamp"`
+	BroadcasterID    string                      `json:"broadcaster_id"`
+	BroadcasterLogin string                      `json:"broadcaster_login"`
+	BroadcasterName  string                      `json:"broadcaster_name"`
+	UserID           string                      `json:"user_id"`
+	UserLogin        string                      `json:"user_login"`
+	UserName         string                      `json:"user_name"`
+	ProductType      string                      `json:"product_type"`
 	ProductData      ExtensionTransactionProduct `json:"product_data"`
 }
 

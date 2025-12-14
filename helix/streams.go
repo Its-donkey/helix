@@ -26,11 +26,11 @@ type Stream struct {
 
 // GetStreamsParams contains parameters for GetStreams.
 type GetStreamsParams struct {
-	UserIDs   []string // Filter by user IDs (max 100)
+	UserIDs    []string // Filter by user IDs (max 100)
 	UserLogins []string // Filter by user logins (max 100)
-	GameIDs   []string // Filter by game IDs (max 100)
-	Type      string   // "all" or "live"
-	Language  []string // Filter by language
+	GameIDs    []string // Filter by game IDs (max 100)
+	Type       string   // "all" or "live"
+	Language   []string // Filter by language
 	*PaginationParams
 }
 

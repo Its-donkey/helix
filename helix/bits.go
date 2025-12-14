@@ -17,9 +17,9 @@ type BitsLeaderboard struct {
 
 // BitsLeaderboardResponse represents the response from GetBitsLeaderboard.
 type BitsLeaderboardResponse struct {
-	Data       []BitsLeaderboard `json:"data"`
-	DateRange  DateRange         `json:"date_range"`
-	Total      int               `json:"total"`
+	Data      []BitsLeaderboard `json:"data"`
+	DateRange DateRange         `json:"date_range"`
+	Total     int               `json:"total"`
 }
 
 // DateRange represents a date range.
@@ -64,22 +64,22 @@ func (c *Client) GetBitsLeaderboard(ctx context.Context, params *GetBitsLeaderbo
 
 // Cheermote represents a cheermote.
 type Cheermote struct {
-	Prefix       string           `json:"prefix"`
-	Tiers        []CheermoteTier  `json:"tiers"`
-	Type         string           `json:"type"`
-	Order        int              `json:"order"`
-	LastUpdated  time.Time        `json:"last_updated"`
-	IsCharitable bool             `json:"is_charitable"`
+	Prefix       string          `json:"prefix"`
+	Tiers        []CheermoteTier `json:"tiers"`
+	Type         string          `json:"type"`
+	Order        int             `json:"order"`
+	LastUpdated  time.Time       `json:"last_updated"`
+	IsCharitable bool            `json:"is_charitable"`
 }
 
 // CheermoteTier represents a tier of a cheermote.
 type CheermoteTier struct {
-	MinBits        int               `json:"min_bits"`
-	ID             string            `json:"id"`
-	Color          string            `json:"color"`
-	Images         CheermoteImages   `json:"images"`
-	CanCheer       bool              `json:"can_cheer"`
-	ShowInBitsCard bool              `json:"show_in_bits_card"`
+	MinBits        int             `json:"min_bits"`
+	ID             string          `json:"id"`
+	Color          string          `json:"color"`
+	Images         CheermoteImages `json:"images"`
+	CanCheer       bool            `json:"can_cheer"`
+	ShowInBitsCard bool            `json:"show_in_bits_card"`
 }
 
 // CheermoteImages contains the images for a cheermote tier.
