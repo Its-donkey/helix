@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -1797,9 +1798,9 @@ func TestAuthClient_GetJWKS_InvalidJSON(t *testing.T) {
 }
 
 func TestAuthClient_AutoRefresh_ImmediateRefresh(t *testing.T) {
-	refreshCount := 0
+	var refreshCount int64
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		refreshCount++
+		atomic.AddInt64(&refreshCount, 1)
 		resp := Token{
 			AccessToken:  "new-access-token",
 			RefreshToken: "new-refresh-token",
@@ -1833,7 +1834,7 @@ func TestAuthClient_AutoRefresh_ImmediateRefresh(t *testing.T) {
 	// Wait for refresh to happen
 	time.Sleep(500 * time.Millisecond)
 
-	if refreshCount == 0 {
+	if atomic.LoadInt64(&refreshCount) == 0 {
 		t.Error("expected at least one refresh call")
 	}
 }
