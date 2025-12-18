@@ -132,27 +132,27 @@ type AuthClient struct {
 	mu         sync.RWMutex
 
 	// Configurable endpoints (for testing). These default to the Twitch constants.
-	tokenEndpoint      string
-	validateEndpoint   string
-	revokeEndpoint     string
-	deviceEndpoint     string
-	openIDConfigURL    string
-	userInfoEndpoint   string
-	jwksEndpoint       string
+	tokenEndpoint    string
+	validateEndpoint string
+	revokeEndpoint   string
+	deviceEndpoint   string
+	openIDConfigURL  string
+	userInfoEndpoint string
+	jwksEndpoint     string
 }
 
 // NewAuthClient creates a new OAuth client with the given configuration.
 func NewAuthClient(config AuthConfig) *AuthClient {
 	return &AuthClient{
-		config:             config,
-		httpClient:         &http.Client{Timeout: 30 * time.Second},
-		tokenEndpoint:      TokenEndpoint,
-		validateEndpoint:   ValidateEndpoint,
-		revokeEndpoint:     RevokeEndpoint,
-		deviceEndpoint:     DeviceEndpoint,
-		openIDConfigURL:    OpenIDConfigurationEndpoint,
-		userInfoEndpoint:   UserInfoEndpoint,
-		jwksEndpoint:       JWKSEndpoint,
+		config:           config,
+		httpClient:       &http.Client{Timeout: 30 * time.Second},
+		tokenEndpoint:    TokenEndpoint,
+		validateEndpoint: ValidateEndpoint,
+		revokeEndpoint:   RevokeEndpoint,
+		deviceEndpoint:   DeviceEndpoint,
+		openIDConfigURL:  OpenIDConfigurationEndpoint,
+		userInfoEndpoint: UserInfoEndpoint,
+		jwksEndpoint:     JWKSEndpoint,
 	}
 }
 
