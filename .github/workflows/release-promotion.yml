@@ -9,8 +9,18 @@ on:
         default: promote
         type: choice
         options: [promote, archive]
+      release_type:
+        description: "Version bump type (auto-increments from latest tag)"
+        required: false
+        default: patch
+        type: choice
+        options:
+          - patch    # v0.3.1 -> v0.3.2 (bug fixes)
+          - minor    # v0.3.1 -> v0.4.0 (new features)
+          - major    # v0.3.1 -> v1.0.0 (breaking changes)
+          - custom   # Use tag_name input instead
       tag_name:
-        description: "Tag to create when promoting (e.g., v0.3.0)"
+        description: "Custom tag (only used when release_type is 'custom')"
         required: false
         type: string
       archive_tag:
@@ -32,16 +42,102 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version: '1.23'
 
       - name: Run tests
         run: go test -v ./...
 
-      - name: Create promotion PR
+      - name: Calculate next version
+        id: version
         env:
-          TAG_NAME: ${{ github.event.inputs.tag_name }}
+          RELEASE_TYPE: ${{ github.event.inputs.release_type }}
+          CUSTOM_TAG: ${{ github.event.inputs.tag_name }}
+        run: |
+          set -euo pipefail
+
+          # Get latest tag
+          LATEST_TAG=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+
+          if [ "$RELEASE_TYPE" = "custom" ]; then
+            if [ -z "${CUSTOM_TAG:-}" ]; then
+              echo "Error: tag_name is required when release_type is 'custom'"
+              exit 1
+            fi
+            NEXT_TAG="$CUSTOM_TAG"
+          else
+            # Parse version components
+            VERSION="${LATEST_TAG#v}"
+            MAJOR=$(echo "$VERSION" | cut -d. -f1)
+            MINOR=$(echo "$VERSION" | cut -d. -f2)
+            PATCH=$(echo "$VERSION" | cut -d. -f3)
+
+            case "$RELEASE_TYPE" in
+              major)
+                MAJOR=$((MAJOR + 1))
+                MINOR=0
+                PATCH=0
+                ;;
+              minor)
+                MINOR=$((MINOR + 1))
+                PATCH=0
+                ;;
+              patch)
+                PATCH=$((PATCH + 1))
+                ;;
+            esac
+
+            NEXT_TAG="v${MAJOR}.${MINOR}.${PATCH}"
+          fi
+
+          echo "Next tag: $NEXT_TAG"
+          echo "tag=$NEXT_TAG" >> $GITHUB_OUTPUT
+
+      - name: Check CHANGELOG updated
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          VERSION="${TAG_NAME#v}"
+
+          # Check if version exists in CHANGELOG
+          if grep -qE "^## \[${VERSION}\]" CHANGELOG.md; then
+            echo "✅ CHANGELOG.md contains entry for version ${VERSION}"
+            exit 0
+          fi
+
+          # Check if [Unreleased] section has content
+          UNRELEASED_CONTENT=$(sed -n '/^## \[Unreleased\]/,/^## \[/p' CHANGELOG.md | grep -E '^- ' || true)
+
+          if [ -n "$UNRELEASED_CONTENT" ]; then
+            echo "⚠️  CHANGELOG.md has unreleased changes but no entry for ${VERSION}"
+            echo ""
+            echo "Please update CHANGELOG.md before releasing:"
+            echo "  1. Rename [Unreleased] section to [${VERSION}] - $(date +%Y-%m-%d)"
+            echo "  2. Add a new empty [Unreleased] section at the top"
+            echo ""
+            echo "Unreleased changes found:"
+            echo "$UNRELEASED_CONTENT"
+            exit 1
+          fi
+
+          echo "❌ CHANGELOG.md has no entry for version ${VERSION} and no unreleased changes"
+          echo ""
+          echo "Please add a changelog entry before releasing:"
+          echo "  ## [${VERSION}] - $(date +%Y-%m-%d)"
+          echo ""
+          echo "  ### Added/Changed/Fixed"
+          echo "  - Your changes here"
+          exit 1
+
+      - name: Create promotion PR
+        id: pr
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+          RELEASE_TYPE: ${{ github.event.inputs.release_type }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
@@ -52,12 +148,11 @@ jobs:
           if [ -n "$EXISTING_PR" ]; then
             echo "PR #$EXISTING_PR already exists for test -> main"
             echo "URL: https://github.com/${{ github.repository }}/pull/$EXISTING_PR"
+            echo "number=$EXISTING_PR" >> $GITHUB_OUTPUT
+            echo "created=false" >> $GITHUB_OUTPUT
           else
             # Create PR to merge test into main
-            PR_TITLE="Release: Promote test to main"
-            if [ -n "${TAG_NAME:-}" ]; then
-              PR_TITLE="Release ${TAG_NAME}: Promote test to main"
-            fi
+            PR_TITLE="Release ${TAG_NAME}: Promote test to main"
 
             PR_URL=$(gh pr create \
               --base main \
@@ -67,7 +162,8 @@ jobs:
 
           Automated promotion of test branch to main.
 
-          $(if [ -n "${TAG_NAME:-}" ]; then echo "**Version tag:** ${TAG_NAME}"; fi)
+          **Version:** ${TAG_NAME}
+          **Release type:** ${RELEASE_TYPE}
 
           ## Test plan
 
@@ -76,8 +172,43 @@ jobs:
 
           🤖 Generated with GitHub Actions")
 
+            # Extract PR number from URL
+            PR_NUMBER=$(echo "$PR_URL" | grep -oE '[0-9]+$')
             echo "Created PR: $PR_URL"
+            echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
+            echo "created=true" >> $GITHUB_OUTPUT
           fi
+
+      - name: Add PR link to CHANGELOG
+        if: steps.pr.outputs.created == 'true'
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          VERSION="${TAG_NAME#v}"
+          REPO="${{ github.repository }}"
+          PR_LINK="([#${PR_NUMBER}](https://github.com/${REPO}/pull/${PR_NUMBER}))"
+
+          # Check if PR link already exists in changelog
+          if grep -qE "^## \[${VERSION}\].*#${PR_NUMBER}" CHANGELOG.md; then
+            echo "PR link already exists in CHANGELOG.md"
+            exit 0
+          fi
+
+          # Add PR link to the version line
+          sed -i "s/^## \[${VERSION}\] - \([0-9-]*\)$/## [${VERSION}] - \1 ${PR_LINK}/" CHANGELOG.md
+
+          # Commit and push the change
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "Add PR #${PR_NUMBER} link to CHANGELOG for ${TAG_NAME}"
+          git push origin test
+
+          echo "✅ Added PR #${PR_NUMBER} link to CHANGELOG.md"
 
   archive:
     if: ${{ github.event.inputs.action == 'archive' }}
