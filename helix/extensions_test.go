@@ -436,3 +436,279 @@ func TestClient_GetExtensionTransactions(t *testing.T) {
 		t.Errorf("expected SKU 'product123', got %s", resp.Data[0].ProductData.SKU)
 	}
 }
+
+func TestClient_GetExtensions_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetExtensions(context.Background(), "ext123", "")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetReleasedExtensions_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetReleasedExtensions(context.Background(), "ext123", "")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetExtensionConfigurationSegment_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetExtensionConfigurationSegment(context.Background(), &GetExtensionConfigurationSegmentParams{
+		ExtensionID: "ext123",
+		Segment:     []string{"broadcaster"},
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_SetExtensionConfigurationSegment_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	err := client.SetExtensionConfigurationSegment(context.Background(), &SetExtensionConfigurationSegmentParams{
+		ExtensionID: "ext123",
+		Segment:     "broadcaster",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_SetExtensionRequiredConfiguration_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	err := client.SetExtensionRequiredConfiguration(context.Background(), &SetExtensionRequiredConfigurationParams{
+		ExtensionID:      "ext123",
+		ExtensionVersion: "1.0.0",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_SendExtensionPubSubMessage_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	err := client.SendExtensionPubSubMessage(context.Background(), &SendExtensionPubSubMessageParams{
+		Target:  []string{"broadcast"},
+		Message: "test",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetExtensionLiveChannels_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetExtensionLiveChannels(context.Background(), &GetExtensionLiveChannelsParams{
+		ExtensionID: "ext123",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetExtensionSecrets_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetExtensionSecrets(context.Background(), "ext123")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreateExtensionSecret_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.CreateExtensionSecret(context.Background(), "ext123", 300)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_SendExtensionChatMessage_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	err := client.SendExtensionChatMessage(context.Background(), &SendExtensionChatMessageParams{
+		BroadcasterID:    "12345",
+		Text:             "Hello!",
+		ExtensionID:      "ext123",
+		ExtensionVersion: "1.0.0",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetExtensionBitsProducts_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetExtensionBitsProducts(context.Background(), &GetExtensionBitsProductsParams{})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_UpdateExtensionBitsProduct_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.UpdateExtensionBitsProduct(context.Background(), &UpdateExtensionBitsProductParams{
+		SKU:         "product123",
+		Cost:        ExtensionBitsCost{Amount: 100, Type: "bits"},
+		DisplayName: "Test",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetExtensionTransactions_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetExtensionTransactions(context.Background(), &GetExtensionTransactionsParams{
+		ExtensionID: "ext123",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetExtensions_WithVersion(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		extensionVersion := r.URL.Query().Get("extension_version")
+		if extensionVersion != "1.0.0" {
+			t.Errorf("expected extension_version=1.0.0, got %s", extensionVersion)
+		}
+
+		resp := Response[Extension]{
+			Data: []Extension{
+				{ID: "ext123", Version: "1.0.0"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.GetExtensions(context.Background(), "ext123", "1.0.0")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Data) != 1 {
+		t.Fatalf("expected 1 extension, got %d", len(resp.Data))
+	}
+}
+
+func TestClient_GetReleasedExtensions_WithVersion(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		extensionVersion := r.URL.Query().Get("extension_version")
+		if extensionVersion != "2.0.0" {
+			t.Errorf("expected extension_version=2.0.0, got %s", extensionVersion)
+		}
+
+		resp := Response[Extension]{
+			Data: []Extension{
+				{ID: "ext123", Version: "2.0.0"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.GetReleasedExtensions(context.Background(), "ext123", "2.0.0")
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Data) != 1 {
+		t.Fatalf("expected 1 extension, got %d", len(resp.Data))
+	}
+}
+
+func TestClient_GetExtensionTransactions_WithIDs(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		ids := r.URL.Query()["id"]
+		if len(ids) != 2 {
+			t.Errorf("expected 2 ids, got %d", len(ids))
+		}
+
+		resp := Response[ExtensionTransaction]{
+			Data: []ExtensionTransaction{
+				{ID: "tx1"},
+				{ID: "tx2"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.GetExtensionTransactions(context.Background(), &GetExtensionTransactionsParams{
+		ExtensionID: "ext123",
+		IDs:         []string{"tx1", "tx2"},
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Data) != 2 {
+		t.Fatalf("expected 2 transactions, got %d", len(resp.Data))
+	}
+}

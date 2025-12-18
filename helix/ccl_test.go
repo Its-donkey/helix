@@ -102,3 +102,16 @@ func TestClient_GetContentClassificationLabels_NoParams(t *testing.T) {
 		t.Fatalf("expected 1 label, got %d", len(resp.Data))
 	}
 }
+
+func TestClient_GetContentClassificationLabels_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetContentClassificationLabels(context.Background(), nil)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}

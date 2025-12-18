@@ -23,6 +23,11 @@ on:
         description: "Custom tag (only used when release_type is 'custom')"
         required: false
         type: string
+      auto_merge:
+        description: "Auto-merge PR and create release tag"
+        required: false
+        default: false
+        type: boolean
       archive_tag:
         description: "Tag name when archiving (e.g., v1-archive)"
         required: false
@@ -209,6 +214,36 @@ jobs:
           git push origin test
 
           echo "✅ Added PR #${PR_NUMBER} link to CHANGELOG.md"
+
+      - name: Auto-merge PR and create tag
+        if: ${{ github.event.inputs.auto_merge == 'true' }}
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          echo "🔄 Merging PR #${PR_NUMBER}..."
+
+          # Wait for any status checks to complete
+          sleep 5
+
+          # Merge the PR
+          gh pr merge "$PR_NUMBER" --merge --delete-branch=false
+
+          echo "✅ PR #${PR_NUMBER} merged to main"
+
+          # Fetch latest main
+          git fetch origin main
+
+          # Create and push tag on main
+          echo "🏷️  Creating tag ${TAG_NAME} on main..."
+          git tag "$TAG_NAME" origin/main
+          git push origin "$TAG_NAME"
+
+          echo "✅ Tag ${TAG_NAME} created and pushed"
+          echo "🚀 Release workflow will be triggered automatically"
 
   archive:
     if: ${{ github.event.inputs.action == 'archive' }}

@@ -130,13 +130,54 @@ type AuthClient struct {
 	httpClient *http.Client
 	token      *Token
 	mu         sync.RWMutex
+
+	// Configurable endpoints (for testing). These default to the Twitch constants.
+	tokenEndpoint      string
+	validateEndpoint   string
+	revokeEndpoint     string
+	deviceEndpoint     string
+	openIDConfigURL    string
+	userInfoEndpoint   string
+	jwksEndpoint       string
 }
 
 // NewAuthClient creates a new OAuth client with the given configuration.
 func NewAuthClient(config AuthConfig) *AuthClient {
 	return &AuthClient{
-		config:     config,
-		httpClient: &http.Client{Timeout: 30 * time.Second},
+		config:             config,
+		httpClient:         &http.Client{Timeout: 30 * time.Second},
+		tokenEndpoint:      TokenEndpoint,
+		validateEndpoint:   ValidateEndpoint,
+		revokeEndpoint:     RevokeEndpoint,
+		deviceEndpoint:     DeviceEndpoint,
+		openIDConfigURL:    OpenIDConfigurationEndpoint,
+		userInfoEndpoint:   UserInfoEndpoint,
+		jwksEndpoint:       JWKSEndpoint,
+	}
+}
+
+// SetEndpoints sets custom endpoints (primarily for testing).
+func (c *AuthClient) SetEndpoints(token, validate, revoke, device, openIDConfig, userInfo, jwks string) {
+	if token != "" {
+		c.tokenEndpoint = token
+	}
+	if validate != "" {
+		c.validateEndpoint = validate
+	}
+	if revoke != "" {
+		c.revokeEndpoint = revoke
+	}
+	if device != "" {
+		c.deviceEndpoint = device
+	}
+	if openIDConfig != "" {
+		c.openIDConfigURL = openIDConfig
+	}
+	if userInfo != "" {
+		c.userInfoEndpoint = userInfo
+	}
+	if jwks != "" {
+		c.jwksEndpoint = jwks
 	}
 }
 
@@ -247,7 +288,7 @@ func (c *AuthClient) GetDeviceCode(ctx context.Context) (*DeviceCodeResponse, er
 		"scopes":    {strings.Join(c.config.Scopes, " ")},
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, DeviceEndpoint, strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.deviceEndpoint, strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("creating device code request: %w", err)
 	}
@@ -390,7 +431,7 @@ func (c *AuthClient) RefreshCurrentToken(ctx context.Context) (*Token, error) {
 
 // ValidateToken validates an access token.
 func (c *AuthClient) ValidateToken(ctx context.Context, accessToken string) (*ValidationResponse, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, ValidateEndpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.validateEndpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating validate request: %w", err)
 	}
@@ -451,7 +492,7 @@ func (c *AuthClient) RevokeToken(ctx context.Context, accessToken string) error 
 		"token":     {accessToken},
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, RevokeEndpoint, strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.revokeEndpoint, strings.NewReader(data.Encode()))
 	if err != nil {
 		return fmt.Errorf("creating revoke request: %w", err)
 	}
@@ -502,7 +543,7 @@ func (c *AuthClient) RevokeCurrentToken(ctx context.Context) error {
 
 // requestToken makes a token request to the Twitch token endpoint.
 func (c *AuthClient) requestToken(ctx context.Context, data url.Values) (*Token, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, TokenEndpoint, strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.tokenEndpoint, strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("creating token request: %w", err)
 	}
@@ -669,7 +710,7 @@ const (
 
 // GetOpenIDConfiguration fetches the OIDC discovery document.
 func (c *AuthClient) GetOpenIDConfiguration(ctx context.Context) (*OpenIDConfiguration, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, OpenIDConfigurationEndpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.openIDConfigURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating OIDC config request: %w", err)
 	}
@@ -765,7 +806,7 @@ func (c *AuthClient) ExchangeCodeForOIDCToken(ctx context.Context, code string) 
 		"redirect_uri":  {c.config.RedirectURI},
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, TokenEndpoint, strings.NewReader(data.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.tokenEndpoint, strings.NewReader(data.Encode()))
 	if err != nil {
 		return nil, fmt.Errorf("creating token request: %w", err)
 	}
@@ -803,7 +844,7 @@ func (c *AuthClient) ExchangeCodeForOIDCToken(ctx context.Context, code string) 
 
 // GetOIDCUserInfo fetches user information from the OIDC UserInfo endpoint.
 func (c *AuthClient) GetOIDCUserInfo(ctx context.Context, accessToken string) (*OIDCUserInfo, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, UserInfoEndpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.userInfoEndpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating userinfo request: %w", err)
 	}
@@ -856,7 +897,7 @@ func (c *AuthClient) GetCurrentOIDCUserInfo(ctx context.Context) (*OIDCUserInfo,
 
 // GetJWKS fetches the JSON Web Key Set for validating ID tokens.
 func (c *AuthClient) GetJWKS(ctx context.Context) (*JWKS, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, JWKSEndpoint, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.jwksEndpoint, nil)
 	if err != nil {
 		return nil, fmt.Errorf("creating JWKS request: %w", err)
 	}

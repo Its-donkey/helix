@@ -631,3 +631,278 @@ func TestClient_MiddlewareExecution(t *testing.T) {
 		t.Error("expected middleware to be called")
 	}
 }
+
+func TestClient_CacheHit(t *testing.T) {
+	requestCount := 0
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		resp := Response[User]{
+			Data: []User{{ID: "123", Login: "test"}},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	cache := NewMemoryCache(100)
+	client.cache = cache
+	client.cacheTTL = time.Minute
+	client.cacheEnabled = true
+
+	// First request should hit the server
+	resp1, err := client.GetUsers(context.Background(), &GetUsersParams{IDs: []string{"123"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if requestCount != 1 {
+		t.Errorf("expected 1 request, got %d", requestCount)
+	}
+
+	// Second request should be cached
+	resp2, err := client.GetUsers(context.Background(), &GetUsersParams{IDs: []string{"123"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if requestCount != 1 {
+		t.Errorf("expected 1 request (cached), got %d", requestCount)
+	}
+
+	// Verify same data
+	if resp1.Data[0].ID != resp2.Data[0].ID {
+		t.Error("expected same data from cache")
+	}
+}
+
+func TestClient_CacheBypass_NoCacheContext(t *testing.T) {
+	requestCount := 0
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		resp := Response[User]{
+			Data: []User{{ID: "123", Login: "test"}},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	cache := NewMemoryCache(100)
+	client.cache = cache
+	client.cacheTTL = time.Minute
+	client.cacheEnabled = true
+
+	// First request
+	_, err := client.GetUsers(context.Background(), &GetUsersParams{IDs: []string{"123"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Second request with NoCacheContext should bypass cache
+	ctx := NoCacheContext(context.Background())
+	_, err = client.GetUsers(ctx, &GetUsersParams{IDs: []string{"123"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if requestCount != 2 {
+		t.Errorf("expected 2 requests (cache bypassed), got %d", requestCount)
+	}
+}
+
+func TestClient_CacheHit_NilResult(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[User]{
+			Data: []User{{ID: "123", Login: "test"}},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	cache := NewMemoryCache(100)
+	client.cache = cache
+	client.cacheTTL = time.Minute
+	client.cacheEnabled = true
+
+	// First request to populate cache
+	_, err := client.GetUsers(context.Background(), &GetUsersParams{IDs: []string{"123"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Second request with nil result (just checking cache exists)
+	req := &Request{
+		Method:   "GET",
+		Endpoint: "/users",
+		Query:    url.Values{"id": []string{"123"}},
+	}
+	err = client.Do(context.Background(), req, nil)
+	if err != nil {
+		t.Fatalf("unexpected error with nil result: %v", err)
+	}
+}
+
+func TestClient_DoOnce_MarshalError(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[User]{Data: []User{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	// Use a channel as body which cannot be marshaled to JSON
+	req := &Request{
+		Method:   "POST",
+		Endpoint: "/test",
+		Body:     make(chan int), // channels can't be marshaled
+	}
+
+	var result Response[User]
+	err := client.Do(context.Background(), req, &result)
+	if err == nil {
+		t.Error("expected marshal error")
+	}
+}
+
+func TestClient_DoOnce_InvalidURL(t *testing.T) {
+	authClient := NewAuthClient(AuthConfig{
+		ClientID: "test-client-id",
+	})
+	authClient.SetToken(&Token{AccessToken: "test"})
+
+	client := NewClient("test-client-id", authClient, WithBaseURL("://invalid"))
+
+	req := &Request{
+		Method:   "GET",
+		Endpoint: "/test",
+	}
+
+	var result Response[User]
+	err := client.Do(context.Background(), req, &result)
+	if err == nil {
+		t.Error("expected URL error")
+	}
+}
+
+func TestClient_DoOnce_TokenProvider(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer provider-token" {
+			t.Errorf("expected Authorization header with provider token")
+		}
+		resp := Response[User]{Data: []User{{ID: "123"}}}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	provider := &mockTokenProvider{token: &Token{AccessToken: "provider-token"}}
+	client := NewClient("test-client-id", nil, WithBaseURL(server.URL))
+	client.tokenProvider = provider
+
+	req := &Request{
+		Method:   "GET",
+		Endpoint: "/users",
+	}
+
+	var result Response[User]
+	err := client.Do(context.Background(), req, &result)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+type mockTokenProvider struct {
+	token *Token
+}
+
+func (m *mockTokenProvider) GetToken() *Token {
+	return m.token
+}
+
+func TestClient_DoOnce_NoAuth(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "" {
+			t.Error("expected no Authorization header")
+		}
+		resp := Response[User]{Data: []User{{ID: "123"}}}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewClient("test-client-id", nil, WithBaseURL(server.URL))
+
+	req := &Request{
+		Method:   "GET",
+		Endpoint: "/users",
+	}
+
+	var result Response[User]
+	err := client.Do(context.Background(), req, &result)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_DoOnce_UnmarshalableErrorResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("not json"))
+	}))
+	defer server.Close()
+
+	authClient := NewAuthClient(AuthConfig{ClientID: "test"})
+	authClient.SetToken(&Token{AccessToken: "test"})
+	client := NewClient("test-client-id", authClient, WithBaseURL(server.URL))
+
+	req := &Request{
+		Method:   "GET",
+		Endpoint: "/test",
+	}
+
+	var result Response[User]
+	err := client.Do(context.Background(), req, &result)
+	if err == nil {
+		t.Error("expected error")
+	}
+
+	apiErr, ok := err.(*APIError)
+	if !ok {
+		t.Fatalf("expected *APIError, got %T", err)
+	}
+	if apiErr.ErrorType != "unknown" {
+		t.Errorf("expected error type 'unknown', got %s", apiErr.ErrorType)
+	}
+}
+
+func TestClient_WaitForRateLimit_Success(t *testing.T) {
+	authClient := NewAuthClient(AuthConfig{
+		ClientID: "test-client-id",
+	})
+
+	client := NewClient("test-client-id", authClient)
+	client.rateLimitRemaining = 0
+	client.rateLimitReset = time.Now().Add(50 * time.Millisecond)
+
+	start := time.Now()
+	err := client.WaitForRateLimit(context.Background())
+	elapsed := time.Since(start)
+
+	if err != nil {
+		t.Errorf("unexpected error: %v", err)
+	}
+	if elapsed < 40*time.Millisecond {
+		t.Errorf("expected to wait, elapsed: %v", elapsed)
+	}
+}
+
+func TestClient_MiddlewareError(t *testing.T) {
+	mw := func(ctx context.Context, req *Request, next MiddlewareNext) (*MiddlewareResponse, error) {
+		return nil, fmt.Errorf("middleware error")
+	}
+
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewEncoder(w).Encode(Response[User]{Data: []User{}})
+	})
+	defer server.Close()
+
+	client.middleware = append(client.middleware, mw)
+
+	_, err := client.GetUsers(context.Background(), nil)
+	if err == nil {
+		t.Error("expected middleware error")
+	}
+}

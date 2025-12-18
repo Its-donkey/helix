@@ -281,3 +281,146 @@ func TestClient_GetStreamMarkers(t *testing.T) {
 		t.Fatalf("expected 1 result, got %d", len(resp.Data))
 	}
 }
+
+func TestClient_GetStreams_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetStreams(context.Background(), &GetStreamsParams{})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetFollowedStreams_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetFollowedStreams(context.Background(), &GetFollowedStreamsParams{UserID: "12345"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetStreamKey_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetStreamKey(context.Background(), "12345")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetStreamKey_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[StreamKey]{Data: []StreamKey{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.GetStreamKey(context.Background(), "12345")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil for empty response, got %v", result)
+	}
+}
+
+func TestClient_CreateStreamMarker_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"stream not live"}`))
+	})
+	defer server.Close()
+
+	_, err := client.CreateStreamMarker(context.Background(), &CreateStreamMarkerParams{UserID: "12345"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreateStreamMarker_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[StreamMarker]{Data: []StreamMarker{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.CreateStreamMarker(context.Background(), &CreateStreamMarkerParams{UserID: "12345"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil for empty response, got %v", result)
+	}
+}
+
+func TestClient_GetStreamMarkers_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetStreamMarkers(context.Background(), &GetStreamMarkersParams{VideoID: "video123"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetStreamMarkers_ByUserID(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		userID := r.URL.Query().Get("user_id")
+		if userID != "12345" {
+			t.Errorf("expected user_id=12345, got %s", userID)
+		}
+		resp := Response[VideoStreamMarkers]{Data: []VideoStreamMarkers{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	_, err := client.GetStreamMarkers(context.Background(), &GetStreamMarkersParams{UserID: "12345"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_GetStreams_ByLanguage(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		languages := r.URL.Query()["language"]
+		if len(languages) != 2 {
+			t.Errorf("expected 2 languages, got %d", len(languages))
+		}
+
+		resp := Response[Stream]{
+			Data: []Stream{
+				{ID: "stream1", Language: "en"},
+				{ID: "stream2", Language: "de"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.GetStreams(context.Background(), &GetStreamsParams{
+		Language: []string{"en", "de"},
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Data) != 2 {
+		t.Fatalf("expected 2 streams, got %d", len(resp.Data))
+	}
+}

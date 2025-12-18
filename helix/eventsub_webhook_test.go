@@ -297,3 +297,424 @@ func TestMessageDeduplicator(t *testing.T) {
 		t.Error("after clear, should not be duplicate")
 	}
 }
+
+func TestMessageDeduplicator_Cleanup(t *testing.T) {
+	// Test cleanup when at capacity
+	dedup := NewMessageDeduplicator(time.Millisecond, 2)
+
+	// Add first message
+	dedup.IsDuplicate("msg-1")
+	// Wait for it to expire
+	time.Sleep(5 * time.Millisecond)
+
+	// Add more messages to reach capacity and trigger cleanup
+	dedup.IsDuplicate("msg-2")
+	dedup.IsDuplicate("msg-3") // This should trigger cleanup of expired msg-1
+
+	// msg-1 should have been cleaned up since it was expired
+	if dedup.IsDuplicate("msg-1") {
+		t.Error("expired msg-1 should not be duplicate after cleanup")
+	}
+}
+
+func TestEventSubMiddleware(t *testing.T) {
+	secret := "test-secret"
+	maxAge := 10 * time.Minute
+
+	middleware := EventSubMiddleware(secret, maxAge)
+
+	t.Run("valid request", func(t *testing.T) {
+		// Create a handler that will be called if signature is valid
+		called := false
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			called = true
+			w.WriteHeader(http.StatusOK)
+		})
+
+		handler := middleware(nextHandler)
+
+		body := []byte(`{"subscription":{},"event":{}}`)
+		messageID := "msg-123"
+		timestamp := time.Now().UTC().Format(time.RFC3339)
+
+		req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+		req.Header.Set(EventSubHeaderMessageID, messageID)
+		req.Header.Set(EventSubHeaderMessageTimestamp, timestamp)
+
+		// Create valid signature
+		message := messageID + timestamp + string(body)
+		mac := hmac.New(sha256.New, []byte(secret))
+		mac.Write([]byte(message))
+		signature := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+		req.Header.Set(EventSubHeaderMessageSignature, signature)
+
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if !called {
+			t.Error("expected next handler to be called")
+		}
+		if w.Code != http.StatusOK {
+			t.Errorf("expected status 200, got %d", w.Code)
+		}
+	})
+
+	t.Run("invalid signature", func(t *testing.T) {
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Error("next handler should not be called for invalid signature")
+		})
+
+		handler := middleware(nextHandler)
+
+		body := []byte(`{"subscription":{}}`)
+		req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+		req.Header.Set(EventSubHeaderMessageID, "msg-123")
+		req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+		req.Header.Set(EventSubHeaderMessageSignature, "sha256=invalid")
+
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusForbidden {
+			t.Errorf("expected status 403, got %d", w.Code)
+		}
+	})
+
+	t.Run("expired timestamp", func(t *testing.T) {
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Error("next handler should not be called for expired timestamp")
+		})
+
+		handler := middleware(nextHandler)
+
+		body := []byte(`{"subscription":{}}`)
+		messageID := "msg-123"
+		timestamp := time.Now().Add(-15 * time.Minute).UTC().Format(time.RFC3339)
+
+		req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+		req.Header.Set(EventSubHeaderMessageID, messageID)
+		req.Header.Set(EventSubHeaderMessageTimestamp, timestamp)
+
+		// Create valid signature with expired timestamp
+		message := messageID + timestamp + string(body)
+		mac := hmac.New(sha256.New, []byte(secret))
+		mac.Write([]byte(message))
+		signature := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+		req.Header.Set(EventSubHeaderMessageSignature, signature)
+
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("invalid timestamp format", func(t *testing.T) {
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Error("next handler should not be called for invalid timestamp")
+		})
+
+		handler := middleware(nextHandler)
+
+		body := []byte(`{"subscription":{}}`)
+		messageID := "msg-123"
+		timestamp := "invalid-timestamp"
+
+		req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+		req.Header.Set(EventSubHeaderMessageID, messageID)
+		req.Header.Set(EventSubHeaderMessageTimestamp, timestamp)
+
+		// Create signature with invalid timestamp
+		message := messageID + timestamp + string(body)
+		mac := hmac.New(sha256.New, []byte(secret))
+		mac.Write([]byte(message))
+		signature := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+		req.Header.Set(EventSubHeaderMessageSignature, signature)
+
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+	})
+}
+
+func TestGetRevocationReason(t *testing.T) {
+	tests := []struct {
+		name     string
+		status   string
+		expected string
+	}{
+		{
+			name:     "authorization_revoked status",
+			status:   "authorization_revoked",
+			expected: RevocationReasonAuthorizationRevoked,
+		},
+		{
+			name:     "authorization_revoked with details",
+			status:   "authorization_revoked_by_user",
+			expected: RevocationReasonAuthorizationRevoked,
+		},
+		{
+			name:     "user_removed status",
+			status:   "user_removed",
+			expected: "user_removed",
+		},
+		{
+			name:     "notification_failures_exceeded status",
+			status:   "notification_failures_exceeded",
+			expected: "notification_failures_exceeded",
+		},
+		{
+			name:     "other status",
+			status:   "some_other_reason",
+			expected: "some_other_reason",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			subscription := EventSubSubscription{Status: tt.status}
+			result := GetRevocationReason(subscription)
+			if result != tt.expected {
+				t.Errorf("expected %s, got %s", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestEventSubWebhookHandler_MethodNotAllowed(t *testing.T) {
+	handler := NewEventSubWebhookHandler()
+
+	req := httptest.NewRequest(http.MethodGet, "/webhook", nil)
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusMethodNotAllowed {
+		t.Errorf("expected status 405, got %d", w.Code)
+	}
+}
+
+func TestEventSubWebhookHandler_InvalidPayloadJSON(t *testing.T) {
+	handler := NewEventSubWebhookHandler()
+
+	body := []byte(`{invalid json}`)
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+	req.Header.Set(EventSubHeaderMessageID, "msg-123")
+	req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+	req.Header.Set(EventSubHeaderMessageType, EventSubMessageTypeNotification)
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestEventSubWebhookHandler_InvalidTimestamp(t *testing.T) {
+	handler := NewEventSubWebhookHandler()
+
+	body := []byte(`{"subscription":{}}`)
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+	req.Header.Set(EventSubHeaderMessageID, "msg-123")
+	req.Header.Set(EventSubHeaderMessageTimestamp, "invalid-timestamp")
+	req.Header.Set(EventSubHeaderMessageType, EventSubMessageTypeNotification)
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestEventSubWebhookHandler_UnknownMessageType(t *testing.T) {
+	handler := NewEventSubWebhookHandler()
+
+	body := []byte(`{"subscription":{}}`)
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+	req.Header.Set(EventSubHeaderMessageID, "msg-123")
+	req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+	req.Header.Set(EventSubHeaderMessageType, "unknown_type")
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400, got %d", w.Code)
+	}
+}
+
+func TestEventSubWebhookHandler_VerificationRejected(t *testing.T) {
+	handler := NewEventSubWebhookHandler(
+		WithVerificationHandler(func(msg *EventSubWebhookMessage) bool {
+			return false // Reject the subscription
+		}),
+	)
+
+	payload := EventSubWebhookPayload{
+		Subscription: EventSubSubscription{
+			ID:   "sub123",
+			Type: EventSubTypeStreamOnline,
+		},
+		Challenge: "test-challenge",
+	}
+	body, _ := json.Marshal(payload)
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+	req.Header.Set(EventSubHeaderMessageID, "msg-123")
+	req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+	req.Header.Set(EventSubHeaderMessageType, EventSubMessageTypeVerification)
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400 for rejected verification, got %d", w.Code)
+	}
+}
+
+func TestEventSubWebhookHandler_NotificationWithoutHandler(t *testing.T) {
+	// Test notification without a handler configured
+	handler := NewEventSubWebhookHandler()
+
+	payload := EventSubWebhookPayload{
+		Subscription: EventSubSubscription{
+			ID:   "sub123",
+			Type: EventSubTypeStreamOnline,
+		},
+		Event: []byte(`{"id":"event123"}`),
+	}
+	body, _ := json.Marshal(payload)
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+	req.Header.Set(EventSubHeaderMessageID, "msg-123")
+	req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+	req.Header.Set(EventSubHeaderMessageType, EventSubMessageTypeNotification)
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("expected status 204, got %d", w.Code)
+	}
+}
+
+func TestEventSubWebhookHandler_RevocationWithoutHandler(t *testing.T) {
+	// Test revocation without a handler configured
+	handler := NewEventSubWebhookHandler()
+
+	payload := EventSubWebhookPayload{
+		Subscription: EventSubSubscription{
+			ID:     "sub123",
+			Type:   EventSubTypeStreamOnline,
+			Status: "authorization_revoked",
+		},
+	}
+	body, _ := json.Marshal(payload)
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+	req.Header.Set(EventSubHeaderMessageID, "msg-123")
+	req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+	req.Header.Set(EventSubHeaderMessageType, EventSubMessageTypeRevocation)
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("expected status 204, got %d", w.Code)
+	}
+}
+
+func TestEventSubWebhookHandler_MissingSignatureHeaders(t *testing.T) {
+	handler := NewEventSubWebhookHandler(
+		WithWebhookSecret("test-secret"),
+	)
+
+	body := []byte(`{"subscription":{}}`)
+
+	// Test missing message ID
+	t.Run("missing message ID", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+		req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+		req.Header.Set(EventSubHeaderMessageSignature, "sha256=something")
+
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusForbidden {
+			t.Errorf("expected status 403, got %d", w.Code)
+		}
+	})
+
+	// Test missing timestamp
+	t.Run("missing timestamp", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+		req.Header.Set(EventSubHeaderMessageID, "msg-123")
+		req.Header.Set(EventSubHeaderMessageSignature, "sha256=something")
+
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusForbidden {
+			t.Errorf("expected status 403, got %d", w.Code)
+		}
+	})
+
+	// Test missing signature
+	t.Run("missing signature", func(t *testing.T) {
+		req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+		req.Header.Set(EventSubHeaderMessageID, "msg-123")
+		req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusForbidden {
+			t.Errorf("expected status 403, got %d", w.Code)
+		}
+	})
+}
+
+func TestParseEventSubEvent_Error(t *testing.T) {
+	msg := &EventSubWebhookMessage{
+		Event: []byte(`{invalid json}`),
+	}
+
+	_, err := ParseEventSubEvent[StreamOnlineEvent](msg)
+	if err == nil {
+		t.Error("expected error for invalid JSON, got nil")
+	}
+}
+
+func TestEventSubWebhookHandler_VerificationWithoutHandler(t *testing.T) {
+	// Test verification without a handler - should accept by default
+	handler := NewEventSubWebhookHandler()
+
+	payload := EventSubWebhookPayload{
+		Subscription: EventSubSubscription{
+			ID:   "sub123",
+			Type: EventSubTypeStreamOnline,
+		},
+		Challenge: "test-challenge",
+	}
+	body, _ := json.Marshal(payload)
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+	req.Header.Set(EventSubHeaderMessageID, "msg-123")
+	req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+	req.Header.Set(EventSubHeaderMessageType, EventSubMessageTypeVerification)
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Errorf("expected status 200, got %d", w.Code)
+	}
+	if w.Body.String() != "test-challenge" {
+		t.Errorf("expected challenge response, got %s", w.Body.String())
+	}
+}

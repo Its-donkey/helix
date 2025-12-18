@@ -310,3 +310,44 @@ func TestClient_GetHypeTrainStatus_NoActiveTrain(t *testing.T) {
 		t.Error("expected nil status, got non-nil")
 	}
 }
+
+func TestClient_GetCreatorGoals_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetCreatorGoals(context.Background(), "12345")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetHypeTrainEvents_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetHypeTrainEvents(context.Background(), &GetHypeTrainEventsParams{
+		BroadcasterID: "12345",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetHypeTrainStatus_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetHypeTrainStatus(context.Background(), "12345")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}

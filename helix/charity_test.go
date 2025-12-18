@@ -106,3 +106,49 @@ func TestClient_GetCharityDonations(t *testing.T) {
 		t.Errorf("expected user_login 'donor1', got %s", resp.Data[0].UserLogin)
 	}
 }
+
+func TestClient_GetCharityCampaign_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetCharityCampaign(context.Background(), "12345")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetCharityCampaign_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[CharityCampaign]{
+			Data: []CharityCampaign{},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.GetCharityCampaign(context.Background(), "12345")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp != nil {
+		t.Error("expected nil, got campaign")
+	}
+}
+
+func TestClient_GetCharityDonations_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetCharityDonations(context.Background(), &GetCharityDonationsParams{
+		BroadcasterID: "12345",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}

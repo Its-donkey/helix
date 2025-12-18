@@ -827,3 +827,376 @@ func TestClient_GetModeratedChannels(t *testing.T) {
 		t.Fatalf("expected 2 moderated channels, got %d", len(resp.Data))
 	}
 }
+
+func TestClient_BanUser_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.BanUser(context.Background(), &BanUserParams{BroadcasterID: "12345", ModeratorID: "12345", Data: BanUserData{UserID: "67890"}})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetModerators_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetModerators(context.Background(), &GetModeratorsParams{BroadcasterID: "12345"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_AddBlockedTerm_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.AddBlockedTerm(context.Background(), &AddBlockedTermParams{BroadcasterID: "12345", ModeratorID: "12345", Text: "badword"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetShieldModeStatus_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetShieldModeStatus(context.Background(), "12345", "12345")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_UpdateShieldModeStatus_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.UpdateShieldModeStatus(context.Background(), &UpdateShieldModeStatusParams{BroadcasterID: "12345", ModeratorID: "12345", IsActive: true})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetAutoModSettings_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetAutoModSettings(context.Background(), "12345", "12345")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_UpdateAutoModSettings_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.UpdateAutoModSettings(context.Background(), &UpdateAutoModSettingsParams{BroadcasterID: "12345", ModeratorID: "12345"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetBannedUsers_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetBannedUsers(context.Background(), &GetBannedUsersParams{BroadcasterID: "12345"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetBlockedTerms_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetBlockedTerms(context.Background(), &GetBlockedTermsParams{BroadcasterID: "12345", ModeratorID: "12345"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CheckAutoModStatus_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.CheckAutoModStatus(context.Background(), &CheckAutoModStatusParams{
+		BroadcasterID: "12345",
+		Data:          []AutoModStatusMessage{{MsgID: "1", MsgText: "test"}},
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetUnbanRequests_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetUnbanRequests(context.Background(), &GetUnbanRequestsParams{
+		BroadcasterID: "12345",
+		ModeratorID:   "12345",
+		Status:        "pending",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_ResolveUnbanRequest_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.ResolveUnbanRequest(context.Background(), &ResolveUnbanRequestParams{
+		BroadcasterID:  "12345",
+		ModeratorID:    "12345",
+		UnbanRequestID: "req123",
+		Status:         "approved",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetModeratedChannels_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetModeratedChannels(context.Background(), &GetModeratedChannelsParams{UserID: "12345"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_BanUser_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[BanUserResponse]{Data: []BanUserResponse{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.BanUser(context.Background(), &BanUserParams{
+		BroadcasterID: "12345",
+		ModeratorID:   "12345",
+		Data:          BanUserData{UserID: "67890"},
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result, got %+v", result)
+	}
+}
+
+func TestClient_GetModerators_WithUserIDs(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		userIDs := r.URL.Query()["user_id"]
+		if len(userIDs) != 2 {
+			t.Errorf("expected 2 user_ids, got %d", len(userIDs))
+		}
+
+		resp := Response[Moderator]{
+			Data: []Moderator{
+				{UserID: "11111", UserLogin: "mod1", UserName: "Mod1"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.GetModerators(context.Background(), &GetModeratorsParams{
+		BroadcasterID: "12345",
+		UserIDs:       []string{"11111", "22222"},
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Data) != 1 {
+		t.Fatalf("expected 1 moderator, got %d", len(resp.Data))
+	}
+}
+
+func TestClient_AddBlockedTerm_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[BlockedTerm]{Data: []BlockedTerm{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.AddBlockedTerm(context.Background(), &AddBlockedTermParams{
+		BroadcasterID: "12345",
+		ModeratorID:   "12345",
+		Text:          "badword",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result, got %+v", result)
+	}
+}
+
+func TestClient_GetShieldModeStatus_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[ShieldModeStatus]{Data: []ShieldModeStatus{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.GetShieldModeStatus(context.Background(), "12345", "12345")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result, got %+v", result)
+	}
+}
+
+func TestClient_UpdateShieldModeStatus_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[ShieldModeStatus]{Data: []ShieldModeStatus{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.UpdateShieldModeStatus(context.Background(), &UpdateShieldModeStatusParams{
+		BroadcasterID: "12345",
+		ModeratorID:   "12345",
+		IsActive:      true,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result, got %+v", result)
+	}
+}
+
+func TestClient_GetAutoModSettings_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[AutoModSettings]{Data: []AutoModSettings{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.GetAutoModSettings(context.Background(), "12345", "12345")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result, got %+v", result)
+	}
+}
+
+func TestClient_UpdateAutoModSettings_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[AutoModSettings]{Data: []AutoModSettings{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.UpdateAutoModSettings(context.Background(), &UpdateAutoModSettingsParams{
+		BroadcasterID: "12345",
+		ModeratorID:   "12345",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result, got %+v", result)
+	}
+}
+
+func TestClient_ResolveUnbanRequest_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[UnbanRequest]{Data: []UnbanRequest{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.ResolveUnbanRequest(context.Background(), &ResolveUnbanRequestParams{
+		BroadcasterID:  "12345",
+		ModeratorID:    "12345",
+		UnbanRequestID: "req123",
+		Status:         "approved",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result, got %+v", result)
+	}
+}
+
+func TestClient_GetUnbanRequests_WithUserID(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		userID := r.URL.Query().Get("user_id")
+		if userID != "67890" {
+			t.Errorf("expected user_id=67890, got %s", userID)
+		}
+
+		resp := Response[UnbanRequest]{
+			Data: []UnbanRequest{
+				{ID: "req1", UserID: "67890", Status: "pending"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.GetUnbanRequests(context.Background(), &GetUnbanRequestsParams{
+		BroadcasterID: "12345",
+		ModeratorID:   "12345",
+		Status:        "pending",
+		UserID:        "67890",
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Data) != 1 {
+		t.Fatalf("expected 1 request, got %d", len(resp.Data))
+	}
+}

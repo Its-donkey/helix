@@ -247,3 +247,31 @@ func TestClient_GetVideos_WithPagination(t *testing.T) {
 		t.Errorf("expected cursor 'nextpage', got %s", resp.Pagination.Cursor)
 	}
 }
+
+func TestClient_GetVideos_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetVideos(context.Background(), &GetVideosParams{
+		IDs: []string{"video1"},
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_DeleteVideos_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.DeleteVideos(context.Background(), []string{"video1"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}

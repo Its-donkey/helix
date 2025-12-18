@@ -339,3 +339,244 @@ func TestClient_UpdateGuestStarSlotSettings(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestClient_GetChannelGuestStarSettings_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetChannelGuestStarSettings(context.Background(), "12345", "67890")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetChannelGuestStarSettings_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[GuestStarSettings]{
+			Data: []GuestStarSettings{},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.GetChannelGuestStarSettings(context.Background(), "12345", "67890")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp != nil {
+		t.Error("expected nil, got settings")
+	}
+}
+
+func TestClient_UpdateChannelGuestStarSettings_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	err := client.UpdateChannelGuestStarSettings(context.Background(), &UpdateChannelGuestStarSettingsParams{
+		BroadcasterID: "12345",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetGuestStarSession_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetGuestStarSession(context.Background(), "12345", "67890")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetGuestStarSession_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[GuestStarSession]{
+			Data: []GuestStarSession{},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.GetGuestStarSession(context.Background(), "12345", "67890")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp != nil {
+		t.Error("expected nil, got session")
+	}
+}
+
+func TestClient_CreateGuestStarSession_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.CreateGuestStarSession(context.Background(), "12345")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreateGuestStarSession_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[GuestStarSession]{
+			Data: []GuestStarSession{},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.CreateGuestStarSession(context.Background(), "12345")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp != nil {
+		t.Error("expected nil, got session")
+	}
+}
+
+func TestClient_EndGuestStarSession_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
+	})
+	defer server.Close()
+
+	_, err := client.EndGuestStarSession(context.Background(), "12345", "session123")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_EndGuestStarSession_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[GuestStarSession]{
+			Data: []GuestStarSession{},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.EndGuestStarSession(context.Background(), "12345", "session123")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp != nil {
+		t.Error("expected nil, got session")
+	}
+}
+
+func TestClient_GetGuestStarInvites_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetGuestStarInvites(context.Background(), "12345", "67890", "session123")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_SendGuestStarInvite_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	err := client.SendGuestStarInvite(context.Background(), "12345", "67890", "session123", "99999")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_DeleteGuestStarInvite_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
+	})
+	defer server.Close()
+
+	err := client.DeleteGuestStarInvite(context.Background(), "12345", "67890", "session123", "99999")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_AssignGuestStarSlot_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusConflict)
+		_, _ = w.Write([]byte(`{"error":"conflict"}`))
+	})
+	defer server.Close()
+
+	err := client.AssignGuestStarSlot(context.Background(), "12345", "67890", "session123", "99999", "1")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_UpdateGuestStarSlot_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	err := client.UpdateGuestStarSlot(context.Background(), &UpdateGuestStarSlotParams{
+		BroadcasterID:     "12345",
+		ModeratorID:       "67890",
+		SessionID:         "session123",
+		SourceSlotID:      "1",
+		DestinationSlotID: "2",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_DeleteGuestStarSlot_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
+	})
+	defer server.Close()
+
+	err := client.DeleteGuestStarSlot(context.Background(), "12345", "67890", "session123", "99999", "1")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_UpdateGuestStarSlotSettings_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	err := client.UpdateGuestStarSlotSettings(context.Background(), &UpdateGuestStarSlotSettingsParams{
+		BroadcasterID: "12345",
+		ModeratorID:   "67890",
+		SessionID:     "session123",
+		SlotID:        "1",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}

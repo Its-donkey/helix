@@ -293,3 +293,96 @@ func TestClient_EndPrediction_Lock(t *testing.T) {
 		t.Errorf("expected status LOCKED, got %s", result.Status)
 	}
 }
+
+func TestClient_GetPredictions_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetPredictions(context.Background(), &GetPredictionsParams{
+		BroadcasterID: "12345",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreatePrediction_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.CreatePrediction(context.Background(), &CreatePredictionParams{
+		BroadcasterID:    "12345",
+		Title:            "Test Prediction",
+		Outcomes:         []CreatePredictionOutcome{{Title: "A"}, {Title: "B"}},
+		PredictionWindow: 60,
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_EndPrediction_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"prediction not found"}`))
+	})
+	defer server.Close()
+
+	_, err := client.EndPrediction(context.Background(), &EndPredictionParams{
+		BroadcasterID:    "12345",
+		ID:               "pred123",
+		Status:           "RESOLVED",
+		WinningOutcomeID: "outcome1",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreatePrediction_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[Prediction]{Data: []Prediction{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.CreatePrediction(context.Background(), &CreatePredictionParams{
+		BroadcasterID:    "12345",
+		Title:            "Test Prediction",
+		Outcomes:         []CreatePredictionOutcome{{Title: "A"}, {Title: "B"}},
+		PredictionWindow: 60,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result, got %+v", result)
+	}
+}
+
+func TestClient_EndPrediction_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[Prediction]{Data: []Prediction{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.EndPrediction(context.Background(), &EndPredictionParams{
+		BroadcasterID:    "12345",
+		ID:               "pred123",
+		Status:           "RESOLVED",
+		WinningOutcomeID: "outcome1",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result, got %+v", result)
+	}
+}

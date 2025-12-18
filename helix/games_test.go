@@ -163,4 +163,30 @@ func TestClient_GetTopGames_NilParams(t *testing.T) {
 	}
 }
 
+func TestClient_GetGames_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetGames(ctx, &GetGamesParams{IDs: []string{"123"}})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetTopGames_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetTopGames(ctx, nil)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
 var ctx = context.Background()

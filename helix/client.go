@@ -56,6 +56,9 @@ type Client struct {
 
 	// Base URL (can be overridden for testing)
 	baseURL string
+
+	// Ingest base URL (can be overridden for testing)
+	ingestBaseURL string
 }
 
 // Option is a function that configures the client.
@@ -72,6 +75,13 @@ func WithHTTPClient(client *http.Client) Option {
 func WithBaseURL(url string) Option {
 	return func(c *Client) {
 		c.baseURL = url
+	}
+}
+
+// WithIngestBaseURL sets a custom ingest base URL (useful for testing).
+func WithIngestBaseURL(url string) Option {
+	return func(c *Client) {
+		c.ingestBaseURL = url
 	}
 }
 
@@ -113,6 +123,7 @@ func NewClient(clientID string, authClient *AuthClient, opts ...Option) *Client 
 		authClient:         authClient,
 		httpClient:         &http.Client{Timeout: 30 * time.Second},
 		baseURL:            HelixBaseURL,
+		ingestBaseURL:      IngestBaseURL,
 		rateLimitLimit:     DefaultRateLimit,
 		rateLimitRemaining: DefaultRateLimit,
 		retryEnabled:       true,
