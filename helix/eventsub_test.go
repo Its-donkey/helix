@@ -600,7 +600,8 @@ func TestClient_GetAllSubscriptions_Error(t *testing.T) {
 func TestClient_DeleteAllSubscriptions(t *testing.T) {
 	callCount := 0
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
 			resp := EventSubResponse{
 				Data: []EventSubSubscription{
 					{ID: "sub1", Status: "enabled"},
@@ -608,7 +609,7 @@ func TestClient_DeleteAllSubscriptions(t *testing.T) {
 				},
 			}
 			_ = json.NewEncoder(w).Encode(resp)
-		} else if r.Method == http.MethodDelete {
+		case http.MethodDelete:
 			callCount++
 			w.WriteHeader(http.StatusNoContent)
 		}
@@ -642,7 +643,8 @@ func TestClient_DeleteAllSubscriptions_GetError(t *testing.T) {
 func TestClient_DeleteAllSubscriptions_DeleteError(t *testing.T) {
 	deleteCallCount := 0
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == http.MethodGet {
+		switch r.Method {
+		case http.MethodGet:
 			resp := EventSubResponse{
 				Data: []EventSubSubscription{
 					{ID: "sub1", Status: "enabled"},
@@ -650,7 +652,7 @@ func TestClient_DeleteAllSubscriptions_DeleteError(t *testing.T) {
 				},
 			}
 			_ = json.NewEncoder(w).Encode(resp)
-		} else if r.Method == http.MethodDelete {
+		case http.MethodDelete:
 			deleteCallCount++
 			if deleteCallCount == 1 {
 				w.WriteHeader(http.StatusNoContent)

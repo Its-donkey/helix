@@ -355,7 +355,7 @@ func TestClient_GetChannelICalendar(t *testing.T) {
 		}
 
 		w.Header().Set("Content-Type", "text/calendar")
-		w.Write([]byte("BEGIN:VCALENDAR\nVERSION:2.0\nEND:VCALENDAR"))
+		_, _ = w.Write([]byte("BEGIN:VCALENDAR\nVERSION:2.0\nEND:VCALENDAR"))
 	})
 	defer server.Close()
 
@@ -363,9 +363,8 @@ func TestClient_GetChannelICalendar(t *testing.T) {
 	// So it will always return an empty string, but let's test the code path
 	_, err := client.GetChannelICalendar(context.Background(), "12345")
 	// The read will return io.EOF because the body is empty after first read into zero-length slice
-	if err == nil {
-		// This is expected behavior with the current bug in the code
-	}
+	// We don't check err here because the behavior depends on the implementation bug
+	_ = err
 }
 
 func TestClient_GetChannelICalendar_Error(t *testing.T) {

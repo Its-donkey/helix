@@ -409,7 +409,7 @@ func TestClient_UpdateRedemptionStatus_Cancel(t *testing.T) {
 func TestClient_GetCustomRewards_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"internal error"}`))
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
 	})
 	defer server.Close()
 
@@ -422,7 +422,7 @@ func TestClient_GetCustomRewards_Error(t *testing.T) {
 func TestClient_CreateCustomReward_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 

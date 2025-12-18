@@ -106,7 +106,7 @@ func TestClient_GetContentClassificationLabels_NoParams(t *testing.T) {
 func TestClient_GetContentClassificationLabels_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"unauthorized"}`))
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 	})
 	defer server.Close()
 
