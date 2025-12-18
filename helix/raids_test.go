@@ -132,7 +132,7 @@ func TestClient_CancelRaid(t *testing.T) {
 func TestClient_StartRaid_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusConflict)
-		w.Write([]byte(`{"error":"conflict"}`))
+		_, _ = w.Write([]byte(`{"error":"conflict"}`))
 	})
 	defer server.Close()
 
@@ -148,7 +148,7 @@ func TestClient_StartRaid_Error(t *testing.T) {
 func TestClient_CancelRaid_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"not found"}`))
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
 	})
 	defer server.Close()
 

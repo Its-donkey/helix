@@ -297,7 +297,7 @@ func TestClient_EndPrediction_Lock(t *testing.T) {
 func TestClient_GetPredictions_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"internal error"}`))
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
 	})
 	defer server.Close()
 
@@ -312,7 +312,7 @@ func TestClient_GetPredictions_Error(t *testing.T) {
 func TestClient_CreatePrediction_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 
@@ -330,7 +330,7 @@ func TestClient_CreatePrediction_Error(t *testing.T) {
 func TestClient_EndPrediction_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"prediction not found"}`))
+		_, _ = w.Write([]byte(`{"error":"prediction not found"}`))
 	})
 	defer server.Close()
 

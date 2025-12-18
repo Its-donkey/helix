@@ -248,7 +248,7 @@ func TestClient_EndPoll_Archive(t *testing.T) {
 func TestClient_GetPolls_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"internal error"}`))
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
 	})
 	defer server.Close()
 
@@ -263,7 +263,7 @@ func TestClient_GetPolls_Error(t *testing.T) {
 func TestClient_CreatePoll_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 
@@ -281,7 +281,7 @@ func TestClient_CreatePoll_Error(t *testing.T) {
 func TestClient_EndPoll_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"poll not found"}`))
+		_, _ = w.Write([]byte(`{"error":"poll not found"}`))
 	})
 	defer server.Close()
 

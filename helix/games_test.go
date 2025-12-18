@@ -166,7 +166,7 @@ func TestClient_GetTopGames_NilParams(t *testing.T) {
 func TestClient_GetGames_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"unauthorized"}`))
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 	})
 	defer server.Close()
 
@@ -179,7 +179,7 @@ func TestClient_GetGames_Error(t *testing.T) {
 func TestClient_GetTopGames_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"internal error"}`))
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
 	})
 	defer server.Close()
 

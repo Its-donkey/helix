@@ -110,7 +110,7 @@ func TestClient_GetCharityDonations(t *testing.T) {
 func TestClient_GetCharityCampaign_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error":"forbidden"}`))
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 	})
 	defer server.Close()
 
@@ -141,7 +141,7 @@ func TestClient_GetCharityCampaign_EmptyResponse(t *testing.T) {
 func TestClient_GetCharityDonations_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"unauthorized"}`))
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 	})
 	defer server.Close()
 

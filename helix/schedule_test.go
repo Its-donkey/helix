@@ -476,7 +476,7 @@ func TestClient_UpdateChannelStreamSchedule_WithVacationTimes(t *testing.T) {
 func TestClient_GetChannelStreamSchedule_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"unauthorized"}`))
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 	})
 	defer server.Close()
 
@@ -491,7 +491,7 @@ func TestClient_GetChannelStreamSchedule_Error(t *testing.T) {
 func TestClient_UpdateChannelStreamSchedule_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error":"forbidden"}`))
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 	})
 	defer server.Close()
 
@@ -506,7 +506,7 @@ func TestClient_UpdateChannelStreamSchedule_Error(t *testing.T) {
 func TestClient_CreateChannelStreamScheduleSegment_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 
@@ -524,7 +524,7 @@ func TestClient_CreateChannelStreamScheduleSegment_Error(t *testing.T) {
 func TestClient_UpdateChannelStreamScheduleSegment_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"not found"}`))
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
 	})
 	defer server.Close()
 
@@ -542,7 +542,7 @@ func TestClient_UpdateChannelStreamScheduleSegment_Error(t *testing.T) {
 func TestClient_DeleteChannelStreamScheduleSegment_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error":"forbidden"}`))
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 	})
 	defer server.Close()
 

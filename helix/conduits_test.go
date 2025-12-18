@@ -234,7 +234,7 @@ func TestClient_UpdateConduitShards(t *testing.T) {
 func TestClient_GetConduits_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"internal error"}`))
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
 	})
 	defer server.Close()
 
@@ -247,7 +247,7 @@ func TestClient_GetConduits_Error(t *testing.T) {
 func TestClient_CreateConduit_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 
@@ -278,7 +278,7 @@ func TestClient_CreateConduit_EmptyResponse(t *testing.T) {
 func TestClient_UpdateConduit_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"not found"}`))
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
 	})
 	defer server.Close()
 
@@ -315,7 +315,7 @@ func TestClient_UpdateConduit_EmptyResponse(t *testing.T) {
 func TestClient_GetConduitShards_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"internal error"}`))
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
 	})
 	defer server.Close()
 
@@ -353,7 +353,7 @@ func TestClient_GetConduitShards_WithStatus(t *testing.T) {
 func TestClient_UpdateConduitShards_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 

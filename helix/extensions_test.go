@@ -440,7 +440,7 @@ func TestClient_GetExtensionTransactions(t *testing.T) {
 func TestClient_GetExtensions_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"unauthorized"}`))
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 	})
 	defer server.Close()
 
@@ -453,7 +453,7 @@ func TestClient_GetExtensions_Error(t *testing.T) {
 func TestClient_GetReleasedExtensions_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"not found"}`))
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
 	})
 	defer server.Close()
 
@@ -466,7 +466,7 @@ func TestClient_GetReleasedExtensions_Error(t *testing.T) {
 func TestClient_GetExtensionConfigurationSegment_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error":"forbidden"}`))
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 	})
 	defer server.Close()
 
@@ -482,7 +482,7 @@ func TestClient_GetExtensionConfigurationSegment_Error(t *testing.T) {
 func TestClient_SetExtensionConfigurationSegment_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 
@@ -498,7 +498,7 @@ func TestClient_SetExtensionConfigurationSegment_Error(t *testing.T) {
 func TestClient_SetExtensionRequiredConfiguration_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error":"forbidden"}`))
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 	})
 	defer server.Close()
 
@@ -514,7 +514,7 @@ func TestClient_SetExtensionRequiredConfiguration_Error(t *testing.T) {
 func TestClient_SendExtensionPubSubMessage_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"unauthorized"}`))
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 	})
 	defer server.Close()
 
@@ -530,7 +530,7 @@ func TestClient_SendExtensionPubSubMessage_Error(t *testing.T) {
 func TestClient_GetExtensionLiveChannels_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"not found"}`))
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
 	})
 	defer server.Close()
 
@@ -545,7 +545,7 @@ func TestClient_GetExtensionLiveChannels_Error(t *testing.T) {
 func TestClient_GetExtensionSecrets_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error":"forbidden"}`))
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 	})
 	defer server.Close()
 
@@ -558,7 +558,7 @@ func TestClient_GetExtensionSecrets_Error(t *testing.T) {
 func TestClient_CreateExtensionSecret_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error":"forbidden"}`))
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 	})
 	defer server.Close()
 
@@ -571,7 +571,7 @@ func TestClient_CreateExtensionSecret_Error(t *testing.T) {
 func TestClient_SendExtensionChatMessage_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 
@@ -589,7 +589,7 @@ func TestClient_SendExtensionChatMessage_Error(t *testing.T) {
 func TestClient_GetExtensionBitsProducts_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"unauthorized"}`))
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 	})
 	defer server.Close()
 
@@ -602,7 +602,7 @@ func TestClient_GetExtensionBitsProducts_Error(t *testing.T) {
 func TestClient_UpdateExtensionBitsProduct_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 
@@ -619,7 +619,7 @@ func TestClient_UpdateExtensionBitsProduct_Error(t *testing.T) {
 func TestClient_GetExtensionTransactions_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"unauthorized"}`))
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 	})
 	defer server.Close()
 

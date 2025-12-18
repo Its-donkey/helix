@@ -285,7 +285,7 @@ func TestClient_GetStreamMarkers(t *testing.T) {
 func TestClient_GetStreams_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte(`{"error":"internal error"}`))
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
 	})
 	defer server.Close()
 
@@ -298,7 +298,7 @@ func TestClient_GetStreams_Error(t *testing.T) {
 func TestClient_GetFollowedStreams_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"unauthorized"}`))
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 	})
 	defer server.Close()
 
@@ -311,7 +311,7 @@ func TestClient_GetFollowedStreams_Error(t *testing.T) {
 func TestClient_GetStreamKey_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error":"forbidden"}`))
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 	})
 	defer server.Close()
 
@@ -340,7 +340,7 @@ func TestClient_GetStreamKey_EmptyResponse(t *testing.T) {
 func TestClient_CreateStreamMarker_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"stream not live"}`))
+		_, _ = w.Write([]byte(`{"error":"stream not live"}`))
 	})
 	defer server.Close()
 
@@ -369,7 +369,7 @@ func TestClient_CreateStreamMarker_EmptyResponse(t *testing.T) {
 func TestClient_GetStreamMarkers_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"not found"}`))
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
 	})
 	defer server.Close()
 

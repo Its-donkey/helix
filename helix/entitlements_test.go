@@ -133,7 +133,7 @@ func TestClient_UpdateDropsEntitlements(t *testing.T) {
 func TestClient_GetDropsEntitlements_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"unauthorized"}`))
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 	})
 	defer server.Close()
 
@@ -148,7 +148,7 @@ func TestClient_GetDropsEntitlements_Error(t *testing.T) {
 func TestClient_UpdateDropsEntitlements_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 

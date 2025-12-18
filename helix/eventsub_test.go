@@ -675,7 +675,7 @@ func TestClient_DeleteAllSubscriptions_DeleteError(t *testing.T) {
 func TestClient_CreateEventSubSubscription_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request","message":"invalid condition"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request","message":"invalid condition"}`))
 	})
 	defer server.Close()
 
@@ -728,7 +728,7 @@ func TestClient_CreateEventSubSubscription_EmptyResponse(t *testing.T) {
 func TestClient_GetEventSubSubscriptions_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusUnauthorized)
-		w.Write([]byte(`{"error":"unauthorized"}`))
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
 	})
 	defer server.Close()
 
@@ -741,7 +741,7 @@ func TestClient_GetEventSubSubscriptions_Error(t *testing.T) {
 func TestClient_DeleteEventSubSubscription_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"not found"}`))
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
 	})
 	defer server.Close()
 

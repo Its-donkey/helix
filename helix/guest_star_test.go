@@ -343,7 +343,7 @@ func TestClient_UpdateGuestStarSlotSettings(t *testing.T) {
 func TestClient_GetChannelGuestStarSettings_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error":"forbidden"}`))
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 	})
 	defer server.Close()
 
@@ -374,7 +374,7 @@ func TestClient_GetChannelGuestStarSettings_EmptyResponse(t *testing.T) {
 func TestClient_UpdateChannelGuestStarSettings_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 
@@ -389,7 +389,7 @@ func TestClient_UpdateChannelGuestStarSettings_Error(t *testing.T) {
 func TestClient_GetGuestStarSession_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"not found"}`))
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
 	})
 	defer server.Close()
 
@@ -420,7 +420,7 @@ func TestClient_GetGuestStarSession_EmptyResponse(t *testing.T) {
 func TestClient_CreateGuestStarSession_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error":"forbidden"}`))
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 	})
 	defer server.Close()
 
@@ -451,7 +451,7 @@ func TestClient_CreateGuestStarSession_EmptyResponse(t *testing.T) {
 func TestClient_EndGuestStarSession_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"not found"}`))
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
 	})
 	defer server.Close()
 
@@ -482,7 +482,7 @@ func TestClient_EndGuestStarSession_EmptyResponse(t *testing.T) {
 func TestClient_GetGuestStarInvites_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error":"forbidden"}`))
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 	})
 	defer server.Close()
 
@@ -495,7 +495,7 @@ func TestClient_GetGuestStarInvites_Error(t *testing.T) {
 func TestClient_SendGuestStarInvite_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 
@@ -508,7 +508,7 @@ func TestClient_SendGuestStarInvite_Error(t *testing.T) {
 func TestClient_DeleteGuestStarInvite_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"not found"}`))
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
 	})
 	defer server.Close()
 
@@ -521,7 +521,7 @@ func TestClient_DeleteGuestStarInvite_Error(t *testing.T) {
 func TestClient_AssignGuestStarSlot_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusConflict)
-		w.Write([]byte(`{"error":"conflict"}`))
+		_, _ = w.Write([]byte(`{"error":"conflict"}`))
 	})
 	defer server.Close()
 
@@ -534,7 +534,7 @@ func TestClient_AssignGuestStarSlot_Error(t *testing.T) {
 func TestClient_UpdateGuestStarSlot_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(`{"error":"bad request"}`))
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
 	})
 	defer server.Close()
 
@@ -553,7 +553,7 @@ func TestClient_UpdateGuestStarSlot_Error(t *testing.T) {
 func TestClient_DeleteGuestStarSlot_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`{"error":"not found"}`))
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
 	})
 	defer server.Close()
 
@@ -566,7 +566,7 @@ func TestClient_DeleteGuestStarSlot_Error(t *testing.T) {
 func TestClient_UpdateGuestStarSlotSettings_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
-		w.Write([]byte(`{"error":"forbidden"}`))
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
 	})
 	defer server.Close()
 
