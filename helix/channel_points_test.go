@@ -405,3 +405,137 @@ func TestClient_UpdateRedemptionStatus_Cancel(t *testing.T) {
 		t.Errorf("expected status CANCELED, got %s", resp.Data[0].Status)
 	}
 }
+
+func TestClient_GetCustomRewards_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetCustomRewards(context.Background(), &GetCustomRewardsParams{BroadcasterID: "12345"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreateCustomReward_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.CreateCustomReward(context.Background(), &CreateCustomRewardParams{BroadcasterID: "12345", Title: "Test", Cost: 100})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreateCustomReward_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[CustomReward]{Data: []CustomReward{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.CreateCustomReward(context.Background(), &CreateCustomRewardParams{BroadcasterID: "12345", Title: "Test", Cost: 100})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil for empty response, got %v", result)
+	}
+}
+
+func TestClient_UpdateCustomReward_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
+	})
+	defer server.Close()
+
+	_, err := client.UpdateCustomReward(context.Background(), &UpdateCustomRewardParams{BroadcasterID: "12345", ID: "reward123"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_UpdateCustomReward_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[CustomReward]{Data: []CustomReward{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.UpdateCustomReward(context.Background(), &UpdateCustomRewardParams{BroadcasterID: "12345", ID: "reward123"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil for empty response, got %v", result)
+	}
+}
+
+func TestClient_GetCustomRewardRedemptions_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetCustomRewardRedemptions(context.Background(), &GetCustomRewardRedemptionsParams{BroadcasterID: "12345", RewardID: "reward123"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_UpdateRedemptionStatus_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.UpdateRedemptionStatus(context.Background(), &UpdateRedemptionStatusParams{BroadcasterID: "12345", RewardID: "reward123", IDs: []string{"red1"}, Status: "FULFILLED"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetCustomRewardRedemptions_WithIDsAndSort(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		ids := r.URL.Query()["id"]
+		if len(ids) != 2 {
+			t.Errorf("expected 2 ids, got %d", len(ids))
+		}
+
+		sort := r.URL.Query().Get("sort")
+		if sort != "OLDEST" {
+			t.Errorf("expected sort=OLDEST, got %s", sort)
+		}
+
+		resp := Response[CustomRewardRedemption]{
+			Data: []CustomRewardRedemption{
+				{ID: "redemption1", Status: "FULFILLED"},
+				{ID: "redemption2", Status: "FULFILLED"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.GetCustomRewardRedemptions(context.Background(), &GetCustomRewardRedemptionsParams{
+		BroadcasterID: "12345",
+		RewardID:      "reward123",
+		IDs:           []string{"redemption1", "redemption2"},
+		Sort:          "OLDEST",
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Data) != 2 {
+		t.Fatalf("expected 2 redemptions, got %d", len(resp.Data))
+	}
+}

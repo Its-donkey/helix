@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 )
@@ -313,8 +314,20 @@ func TestAuthClient_GetDeviceCode(t *testing.T) {
 	}))
 	defer server.Close()
 
-	client2 := NewAuthClient(AuthConfig{ClientID: "test-client"})
-	client2.httpClient = server.Client()
+	client2 := NewAuthClient(AuthConfig{ClientID: "test-client", Scopes: []string{"chat:read"}})
+	client2.SetHTTPClient(server.Client())
+	client2.SetEndpoints("", "", "", server.URL, "", "", "")
+
+	resp, err := client2.GetDeviceCode(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.DeviceCode != "device-code-123" {
+		t.Errorf("expected device-code-123, got %s", resp.DeviceCode)
+	}
+	if resp.UserCode != "USER-CODE" {
+		t.Errorf("expected USER-CODE, got %s", resp.UserCode)
+	}
 }
 
 func TestAuthClient_PollDeviceToken(t *testing.T) {
@@ -323,6 +336,84 @@ func TestAuthClient_PollDeviceToken(t *testing.T) {
 	_, err := client.PollDeviceToken(context.Background(), "device-code")
 	if err != ErrMissingClientID {
 		t.Errorf("expected ErrMissingClientID, got %v", err)
+	}
+
+	// Test successful token polling
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := Token{
+			AccessToken:  "access-token",
+			RefreshToken: "refresh-token",
+			TokenType:    "bearer",
+			ExpiresIn:    3600,
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client2 := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client2.SetHTTPClient(server.Client())
+	client2.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	token, err := client2.PollDeviceToken(context.Background(), "device-code")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token.AccessToken != "access-token" {
+		t.Errorf("expected access-token, got %s", token.AccessToken)
+	}
+
+	// Test authorization pending
+	serverPending := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		resp := AuthErrorResponse{Message: "authorization_pending"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer serverPending.Close()
+
+	client3 := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client3.SetHTTPClient(serverPending.Client())
+	client3.SetEndpoints(serverPending.URL, "", "", "", "", "", "")
+
+	_, err = client3.PollDeviceToken(context.Background(), "device-code")
+	if err != ErrAuthorizationPending {
+		t.Errorf("expected ErrAuthorizationPending, got %v", err)
+	}
+
+	// Test invalid device code
+	serverInvalid := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		resp := AuthErrorResponse{Message: "invalid device code"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer serverInvalid.Close()
+
+	client4 := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client4.SetHTTPClient(serverInvalid.Client())
+	client4.SetEndpoints(serverInvalid.URL, "", "", "", "", "", "")
+
+	_, err = client4.PollDeviceToken(context.Background(), "device-code")
+	if err != ErrInvalidDeviceCode {
+		t.Errorf("expected ErrInvalidDeviceCode, got %v", err)
+	}
+
+	// Test with client secret
+	serverWithSecret := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		if r.Form.Get("client_secret") != "secret" {
+			t.Error("expected client_secret to be set")
+		}
+		resp := Token{AccessToken: "token", TokenType: "bearer", ExpiresIn: 3600}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer serverWithSecret.Close()
+
+	client5 := NewAuthClient(AuthConfig{ClientID: "test-client", ClientSecret: "secret"})
+	client5.SetHTTPClient(serverWithSecret.Client())
+	client5.SetEndpoints(serverWithSecret.URL, "", "", "", "", "", "")
+
+	_, err = client5.PollDeviceToken(context.Background(), "device-code")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
@@ -383,7 +474,8 @@ func TestAuthClient_RefreshCurrentToken(t *testing.T) {
 func TestAuthClient_ValidateToken(t *testing.T) {
 	// Test successful validation
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.Header.Get("Authorization") != "OAuth test-token" {
+		auth := r.Header.Get("Authorization")
+		if auth != "OAuth valid-token" {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
@@ -400,6 +492,57 @@ func TestAuthClient_ValidateToken(t *testing.T) {
 
 	client := NewAuthClient(AuthConfig{})
 	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", server.URL, "", "", "", "", "")
+
+	valResp, err := client.ValidateToken(context.Background(), "valid-token")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if valResp.Login != "testuser" {
+		t.Errorf("expected testuser, got %s", valResp.Login)
+	}
+	if valResp.UserID != "12345" {
+		t.Errorf("expected 12345, got %s", valResp.UserID)
+	}
+
+	// Test unauthorized
+	_, err = client.ValidateToken(context.Background(), "invalid-token")
+	if err != ErrInvalidToken {
+		t.Errorf("expected ErrInvalidToken, got %v", err)
+	}
+
+	// Test error response with JSON
+	serverError := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		resp := AuthErrorResponse{Status: 400, Message: "Bad request"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer serverError.Close()
+
+	client2 := NewAuthClient(AuthConfig{})
+	client2.SetHTTPClient(serverError.Client())
+	client2.SetEndpoints("", serverError.URL, "", "", "", "", "")
+
+	_, err = client2.ValidateToken(context.Background(), "token")
+	if err == nil || !strings.Contains(err.Error(), "Bad request") {
+		t.Errorf("expected error with 'Bad request', got %v", err)
+	}
+
+	// Test error response without valid JSON
+	serverBadJSON := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("not json"))
+	}))
+	defer serverBadJSON.Close()
+
+	client3 := NewAuthClient(AuthConfig{})
+	client3.SetHTTPClient(serverBadJSON.Client())
+	client3.SetEndpoints("", serverBadJSON.URL, "", "", "", "", "")
+
+	_, err = client3.ValidateToken(context.Background(), "token")
+	if err == nil || !strings.Contains(err.Error(), "status 500") {
+		t.Errorf("expected error with status 500, got %v", err)
+	}
 }
 
 func TestAuthClient_ValidateCurrentToken(t *testing.T) {
@@ -427,6 +570,45 @@ func TestAuthClient_RevokeToken(t *testing.T) {
 
 	client2 := NewAuthClient(AuthConfig{ClientID: "test-client"})
 	client2.SetHTTPClient(server.Client())
+	client2.SetEndpoints("", "", server.URL, "", "", "", "")
+
+	err = client2.RevokeToken(context.Background(), "token")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Test error response with JSON
+	serverError := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		resp := AuthErrorResponse{Status: 400, Message: "Invalid token"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer serverError.Close()
+
+	client3 := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client3.SetHTTPClient(serverError.Client())
+	client3.SetEndpoints("", "", serverError.URL, "", "", "", "")
+
+	err = client3.RevokeToken(context.Background(), "token")
+	if err == nil || !strings.Contains(err.Error(), "Invalid token") {
+		t.Errorf("expected error with 'Invalid token', got %v", err)
+	}
+
+	// Test error response without valid JSON
+	serverBadJSON := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("not json"))
+	}))
+	defer serverBadJSON.Close()
+
+	client4 := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client4.SetHTTPClient(serverBadJSON.Client())
+	client4.SetEndpoints("", "", serverBadJSON.URL, "", "", "", "")
+
+	err = client4.RevokeToken(context.Background(), "token")
+	if err == nil || !strings.Contains(err.Error(), "status 500") {
+		t.Errorf("expected error with status 500, got %v", err)
+	}
 }
 
 func TestAuthClient_RevokeCurrentToken(t *testing.T) {
@@ -435,6 +617,43 @@ func TestAuthClient_RevokeCurrentToken(t *testing.T) {
 	err := client.RevokeCurrentToken(context.Background())
 	if err != ErrInvalidToken {
 		t.Errorf("expected ErrInvalidToken, got %v", err)
+	}
+
+	// Test successful revoke
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	client2 := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client2.SetHTTPClient(server.Client())
+	client2.SetEndpoints("", "", server.URL, "", "", "", "")
+	client2.SetToken(&Token{AccessToken: "test-token"})
+
+	err = client2.RevokeCurrentToken(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if client2.GetToken() != nil {
+		t.Error("token should be nil after revocation")
+	}
+
+	// Test revoke error
+	serverError := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		resp := AuthErrorResponse{Message: "error"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer serverError.Close()
+
+	client3 := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client3.SetHTTPClient(serverError.Client())
+	client3.SetEndpoints("", "", serverError.URL, "", "", "", "")
+	client3.SetToken(&Token{AccessToken: "test-token"})
+
+	err = client3.RevokeCurrentToken(context.Background())
+	if err == nil {
+		t.Error("expected error")
 	}
 }
 
@@ -638,18 +857,186 @@ func TestAuthClient_requestToken_Success(t *testing.T) {
 		RedirectURI:  "http://localhost/callback",
 	})
 	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
 
-	// We can test requestToken indirectly through ExchangeCode with a mock server
-	// But first we need to override TokenEndpoint - since we can't, we test via integration
+	// Test via ExchangeCode
+	token, err := client.ExchangeCode(context.Background(), "auth-code")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token.AccessToken != "test-access-token" {
+		t.Errorf("expected test-access-token, got %s", token.AccessToken)
+	}
+
+	// Verify token was set on client
+	storedToken := client.GetToken()
+	if storedToken == nil || storedToken.AccessToken != "test-access-token" {
+		t.Error("token should be stored on client")
+	}
 }
 
-func TestAuthClient_ValidateToken_Success(t *testing.T) {
+func TestAuthClient_requestToken_Error(t *testing.T) {
+	// Test error response with JSON
+	serverError := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		resp := AuthErrorResponse{Status: 400, Message: "Invalid grant"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer serverError.Close()
+
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client.SetHTTPClient(serverError.Client())
+	client.SetEndpoints(serverError.URL, "", "", "", "", "", "")
+
+	_, err := client.ExchangeCode(context.Background(), "bad-code")
+	if err == nil || !strings.Contains(err.Error(), "Invalid grant") {
+		t.Errorf("expected error with 'Invalid grant', got %v", err)
+	}
+
+	// Test error response without valid JSON
+	serverBadJSON := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("not json"))
+	}))
+	defer serverBadJSON.Close()
+
+	client2 := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client2.SetHTTPClient(serverBadJSON.Client())
+	client2.SetEndpoints(serverBadJSON.URL, "", "", "", "", "", "")
+
+	_, err = client2.ExchangeCode(context.Background(), "code")
+	if err == nil || !strings.Contains(err.Error(), "status 500") {
+		t.Errorf("expected error with status 500, got %v", err)
+	}
+}
+
+func TestAuthClient_GetAppAccessToken_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		auth := r.Header.Get("Authorization")
-		if auth != "OAuth valid-token" {
-			w.WriteHeader(http.StatusUnauthorized)
-			return
+		_ = r.ParseForm()
+		if r.Form.Get("grant_type") != "client_credentials" {
+			t.Errorf("expected grant_type client_credentials, got %s", r.Form.Get("grant_type"))
 		}
+		resp := Token{
+			AccessToken: "app-access-token",
+			TokenType:   "bearer",
+			ExpiresIn:   3600,
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	token, err := client.GetAppAccessToken(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token.AccessToken != "app-access-token" {
+		t.Errorf("expected app-access-token, got %s", token.AccessToken)
+	}
+}
+
+func TestAuthClient_RefreshToken_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		if r.Form.Get("grant_type") != "refresh_token" {
+			t.Errorf("expected grant_type refresh_token, got %s", r.Form.Get("grant_type"))
+		}
+		resp := Token{
+			AccessToken:  "new-access-token",
+			RefreshToken: "new-refresh-token",
+			TokenType:    "bearer",
+			ExpiresIn:    3600,
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	token, err := client.RefreshToken(context.Background(), "old-refresh-token")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token.AccessToken != "new-access-token" {
+		t.Errorf("expected new-access-token, got %s", token.AccessToken)
+	}
+}
+
+func TestAuthClient_RefreshToken_InvalidRefresh(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		resp := AuthErrorResponse{Message: "Invalid refresh token"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	_, err := client.RefreshToken(context.Background(), "bad-refresh-token")
+	if err != ErrInvalidRefreshToken {
+		t.Errorf("expected ErrInvalidRefreshToken, got %v", err)
+	}
+}
+
+func TestAuthClient_RefreshCurrentToken_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := Token{
+			AccessToken:  "new-access-token",
+			RefreshToken: "new-refresh-token",
+			TokenType:    "bearer",
+			ExpiresIn:    3600,
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+	client.SetToken(&Token{AccessToken: "old-token", RefreshToken: "old-refresh-token"})
+
+	token, err := client.RefreshCurrentToken(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token.AccessToken != "new-access-token" {
+		t.Errorf("expected new-access-token, got %s", token.AccessToken)
+	}
+
+	// Verify token was updated on client
+	storedToken := client.GetToken()
+	if storedToken.AccessToken != "new-access-token" {
+		t.Error("token should be updated on client")
+	}
+}
+
+func TestAuthClient_ValidateCurrentToken_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		resp := ValidationResponse{
 			ClientID:  "client-id",
 			Login:     "testuser",
@@ -663,6 +1050,16 @@ func TestAuthClient_ValidateToken_Success(t *testing.T) {
 
 	client := NewAuthClient(AuthConfig{})
 	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", server.URL, "", "", "", "", "")
+	client.SetToken(&Token{AccessToken: "test-token"})
+
+	valResp, err := client.ValidateCurrentToken(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if valResp.Login != "testuser" {
+		t.Errorf("expected testuser, got %s", valResp.Login)
+	}
 }
 
 func TestAuthClient_ValidateToken_Unauthorized(t *testing.T) {
@@ -673,6 +1070,12 @@ func TestAuthClient_ValidateToken_Unauthorized(t *testing.T) {
 
 	client := NewAuthClient(AuthConfig{})
 	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", server.URL, "", "", "", "", "")
+
+	_, err := client.ValidateToken(context.Background(), "bad-token")
+	if err != ErrInvalidToken {
+		t.Errorf("expected ErrInvalidToken, got %v", err)
+	}
 }
 
 func TestAuthClient_GetOpenIDConfiguration_Success(t *testing.T) {
@@ -690,6 +1093,32 @@ func TestAuthClient_GetOpenIDConfiguration_Success(t *testing.T) {
 
 	client := NewAuthClient(AuthConfig{})
 	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", "", "", "", server.URL, "", "")
+
+	config, err := client.GetOpenIDConfiguration(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if config.Issuer != "https://id.twitch.tv/oauth2" {
+		t.Errorf("expected issuer https://id.twitch.tv/oauth2, got %s", config.Issuer)
+	}
+}
+
+func TestAuthClient_GetOpenIDConfiguration_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("error"))
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", "", "", "", server.URL, "", "")
+
+	_, err := client.GetOpenIDConfiguration(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "status 500") {
+		t.Errorf("expected error with status 500, got %v", err)
+	}
 }
 
 func TestAuthClient_GetJWKS_Success(t *testing.T) {
@@ -710,6 +1139,35 @@ func TestAuthClient_GetJWKS_Success(t *testing.T) {
 
 	client := NewAuthClient(AuthConfig{})
 	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", "", "", "", "", "", server.URL)
+
+	jwks, err := client.GetJWKS(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(jwks.Keys) != 1 {
+		t.Errorf("expected 1 key, got %d", len(jwks.Keys))
+	}
+	if jwks.Keys[0].Kid != "key1" {
+		t.Errorf("expected kid key1, got %s", jwks.Keys[0].Kid)
+	}
+}
+
+func TestAuthClient_GetJWKS_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("error"))
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", "", "", "", "", "", server.URL)
+
+	_, err := client.GetJWKS(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "status 500") {
+		t.Errorf("expected error with status 500, got %v", err)
+	}
 }
 
 func TestAuthClient_GetOIDCUserInfo_Success(t *testing.T) {
@@ -730,6 +1188,18 @@ func TestAuthClient_GetOIDCUserInfo_Success(t *testing.T) {
 
 	client := NewAuthClient(AuthConfig{})
 	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", "", "", "", "", server.URL, "")
+
+	userInfo, err := client.GetOIDCUserInfo(context.Background(), "valid-token")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if userInfo.PreferredUsername != "testuser" {
+		t.Errorf("expected testuser, got %s", userInfo.PreferredUsername)
+	}
+	if userInfo.Email != "test@example.com" {
+		t.Errorf("expected test@example.com, got %s", userInfo.Email)
+	}
 }
 
 func TestAuthClient_GetOIDCUserInfo_Unauthorized(t *testing.T) {
@@ -740,67 +1210,214 @@ func TestAuthClient_GetOIDCUserInfo_Unauthorized(t *testing.T) {
 
 	client := NewAuthClient(AuthConfig{})
 	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", "", "", "", "", server.URL, "")
+
+	_, err := client.GetOIDCUserInfo(context.Background(), "bad-token")
+	if err != ErrInvalidToken {
+		t.Errorf("expected ErrInvalidToken, got %v", err)
+	}
 }
 
-func TestAuthClient_RevokeToken_Success(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	client := NewAuthClient(AuthConfig{ClientID: "test-client"})
-	client.SetHTTPClient(server.Client())
-}
-
-func TestAuthClient_RevokeToken_Error(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func TestAuthClient_GetOIDCUserInfo_Error(t *testing.T) {
+	// Test error response with JSON
+	serverError := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		resp := AuthErrorResponse{
-			Status:  400,
-			Message: "Invalid token",
+		resp := AuthErrorResponse{Status: 400, Message: "Bad request"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer serverError.Close()
+
+	client := NewAuthClient(AuthConfig{})
+	client.SetHTTPClient(serverError.Client())
+	client.SetEndpoints("", "", "", "", "", serverError.URL, "")
+
+	_, err := client.GetOIDCUserInfo(context.Background(), "token")
+	if err == nil || !strings.Contains(err.Error(), "Bad request") {
+		t.Errorf("expected error with 'Bad request', got %v", err)
+	}
+
+	// Test error response without valid JSON
+	serverBadJSON := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("not json"))
+	}))
+	defer serverBadJSON.Close()
+
+	client2 := NewAuthClient(AuthConfig{})
+	client2.SetHTTPClient(serverBadJSON.Client())
+	client2.SetEndpoints("", "", "", "", "", serverBadJSON.URL, "")
+
+	_, err = client2.GetOIDCUserInfo(context.Background(), "token")
+	if err == nil || !strings.Contains(err.Error(), "status 500") {
+		t.Errorf("expected error with status 500, got %v", err)
+	}
+}
+
+func TestAuthClient_GetCurrentOIDCUserInfo_Success(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := OIDCUserInfo{
+			Sub:               "12345",
+			PreferredUsername: "testuser",
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
-	client := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client := NewAuthClient(AuthConfig{})
 	client.SetHTTPClient(server.Client())
-}
-
-func TestAuthClient_RevokeCurrentToken_Success(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	}))
-	defer server.Close()
-
-	client := NewAuthClient(AuthConfig{ClientID: "test-client"})
-	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", "", "", "", "", server.URL, "")
 	client.SetToken(&Token{AccessToken: "test-token"})
+
+	userInfo, err := client.GetCurrentOIDCUserInfo(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if userInfo.PreferredUsername != "testuser" {
+		t.Errorf("expected testuser, got %s", userInfo.PreferredUsername)
+	}
 }
 
-func TestAuthClient_GetDeviceCode_Success(t *testing.T) {
+func TestAuthClient_ExchangeCodeForOIDCToken_Success(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		resp := DeviceCodeResponse{
-			DeviceCode:      "device-code",
-			UserCode:        "USER-CODE",
-			VerificationURI: "https://twitch.tv/activate",
-			ExpiresIn:       1800,
-			Interval:        5,
+		resp := OIDCToken{
+			Token: Token{
+				AccessToken:  "access-token",
+				RefreshToken: "refresh-token",
+				TokenType:    "bearer",
+				ExpiresIn:    3600,
+			},
+			IDToken: "eyJhbGciOiJSUzI1NiJ9.eyJpc3MiOiJ0ZXN0In0.sig",
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	}))
 	defer server.Close()
 
-	client := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+		RedirectURI:  "http://localhost/callback",
+	})
 	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	token, err := client.ExchangeCodeForOIDCToken(context.Background(), "auth-code")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token.AccessToken != "access-token" {
+		t.Errorf("expected access-token, got %s", token.AccessToken)
+	}
+	if token.IDToken == "" {
+		t.Error("expected ID token to be set")
+	}
 }
 
-func TestAuthClient_GetDeviceCode_Error(t *testing.T) {
+func TestAuthClient_ExchangeCodeForOIDCToken_Error(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusBadRequest)
-		resp := AuthErrorResponse{
-			Status:  400,
-			Message: "Invalid request",
+		resp := AuthErrorResponse{Status: 400, Message: "Invalid code"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	_, err := client.ExchangeCodeForOIDCToken(context.Background(), "bad-code")
+	if err == nil || !strings.Contains(err.Error(), "Invalid code") {
+		t.Errorf("expected error with 'Invalid code', got %v", err)
+	}
+
+	// Test error without valid JSON
+	serverBadJSON := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("not json"))
+	}))
+	defer serverBadJSON.Close()
+
+	client2 := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client2.SetHTTPClient(serverBadJSON.Client())
+	client2.SetEndpoints(serverBadJSON.URL, "", "", "", "", "", "")
+
+	_, err = client2.ExchangeCodeForOIDCToken(context.Background(), "code")
+	if err == nil || !strings.Contains(err.Error(), "status 500") {
+		t.Errorf("expected error with status 500, got %v", err)
+	}
+}
+
+func TestAuthClient_GetDeviceCode_ErrorBranches(t *testing.T) {
+	// Test error response with JSON
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		resp := AuthErrorResponse{Status: 400, Message: "Invalid request"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", "", "", server.URL, "", "", "")
+
+	_, err := client.GetDeviceCode(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "Invalid request") {
+		t.Errorf("expected error with 'Invalid request', got %v", err)
+	}
+
+	// Test error response without valid JSON
+	serverBadJSON := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("not json"))
+	}))
+	defer serverBadJSON.Close()
+
+	client2 := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client2.SetHTTPClient(serverBadJSON.Client())
+	client2.SetEndpoints("", "", "", serverBadJSON.URL, "", "", "")
+
+	_, err = client2.GetDeviceCode(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "status 500") {
+		t.Errorf("expected error with status 500, got %v", err)
+	}
+}
+
+func TestAuthClient_WaitForDeviceToken_ContextCancelled(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	client := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	deviceCode := &DeviceCodeResponse{
+		DeviceCode: "device-code",
+		Interval:   1,
+		ExpiresIn:  300,
+	}
+
+	_, err := client.WaitForDeviceToken(ctx, deviceCode)
+	if err != context.Canceled {
+		t.Errorf("expected context.Canceled, got %v", err)
+	}
+}
+
+func TestAuthClient_WaitForDeviceToken_Success(t *testing.T) {
+	callCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount < 2 {
+			w.WriteHeader(http.StatusBadRequest)
+			resp := AuthErrorResponse{Message: "authorization_pending"}
+			_ = json.NewEncoder(w).Encode(resp)
+			return
+		}
+		resp := Token{
+			AccessToken: "access-token",
+			TokenType:   "bearer",
+			ExpiresIn:   3600,
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	}))
@@ -808,6 +1425,194 @@ func TestAuthClient_GetDeviceCode_Error(t *testing.T) {
 
 	client := NewAuthClient(AuthConfig{ClientID: "test-client"})
 	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	deviceCode := &DeviceCodeResponse{
+		DeviceCode: "device-code",
+		Interval:   1, // 1 second interval
+		ExpiresIn:  300,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	token, err := client.WaitForDeviceToken(ctx, deviceCode)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token.AccessToken != "access-token" {
+		t.Errorf("expected access-token, got %s", token.AccessToken)
+	}
+}
+
+func TestAuthClient_WaitForDeviceToken_Expired(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		resp := AuthErrorResponse{Message: "authorization_pending"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	deviceCode := &DeviceCodeResponse{
+		DeviceCode: "device-code",
+		Interval:   1,
+		ExpiresIn:  1, // Expires in 1 second
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := client.WaitForDeviceToken(ctx, deviceCode)
+	if err == nil || !strings.Contains(err.Error(), "expired") {
+		t.Errorf("expected error with 'expired', got %v", err)
+	}
+}
+
+func TestAuthClient_WaitForDeviceToken_OtherError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		resp := AuthErrorResponse{Message: "some other error"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	deviceCode := &DeviceCodeResponse{
+		DeviceCode: "device-code",
+		Interval:   1,
+		ExpiresIn:  300,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := client.WaitForDeviceToken(ctx, deviceCode)
+	if err == nil || strings.Contains(err.Error(), "expired") {
+		t.Errorf("expected non-expired error, got %v", err)
+	}
+}
+
+func TestAuthClient_AutoRefresh(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := Token{
+			AccessToken:  "new-access-token",
+			RefreshToken: "new-refresh-token",
+			TokenType:    "bearer",
+			ExpiresIn:    3600,
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	// Test with no token - should just wait
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	cancelFunc := client.AutoRefresh(ctx)
+	defer cancelFunc()
+
+	time.Sleep(50 * time.Millisecond)
+
+	// Test with token that needs refresh
+	client.SetToken(&Token{
+		AccessToken:  "old-token",
+		RefreshToken: "old-refresh",
+		ExpiresAt:    time.Now().Add(1 * time.Second), // Expires soon
+	})
+
+	time.Sleep(100 * time.Millisecond)
+}
+
+func TestAuthClient_AutoRefresh_Cancel(t *testing.T) {
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+
+	ctx := context.Background()
+	cancel := client.AutoRefresh(ctx)
+
+	// Cancel immediately
+	cancel()
+}
+
+func TestJWK_RSAPublicKey_InvalidN(t *testing.T) {
+	jwk := &JWK{
+		Kty: "RSA",
+		N:   "!!invalid!!",
+		E:   "AQAB",
+	}
+	_, err := jwk.RSAPublicKey()
+	if err == nil || !strings.Contains(err.Error(), "decoding modulus") {
+		t.Errorf("expected decoding modulus error, got %v", err)
+	}
+}
+
+func TestJWK_RSAPublicKey_InvalidE(t *testing.T) {
+	jwk := &JWK{
+		Kty: "RSA",
+		N:   "AQAB",
+		E:   "!!invalid!!",
+	}
+	_, err := jwk.RSAPublicKey()
+	if err == nil || !strings.Contains(err.Error(), "decoding exponent") {
+		t.Errorf("expected decoding exponent error, got %v", err)
+	}
+}
+
+func TestParseIDToken_InvalidBase64(t *testing.T) {
+	// Invalid base64 in payload
+	_, err := ParseIDToken("header.!!invalid!!.signature")
+	if err == nil || !strings.Contains(err.Error(), "decoding") {
+		t.Errorf("expected decoding error, got %v", err)
+	}
+}
+
+func TestParseIDToken_InvalidJSON(t *testing.T) {
+	// Valid base64 but invalid JSON (base64 of "not json")
+	_, err := ParseIDToken("header.bm90IGpzb24.signature")
+	if err == nil || !strings.Contains(err.Error(), "parsing") {
+		t.Errorf("expected parsing error, got %v", err)
+	}
+}
+
+func TestAuthClient_SetEndpoints_Partial(t *testing.T) {
+	client := NewAuthClient(AuthConfig{})
+
+	// Original values
+	originalToken := client.tokenEndpoint
+	originalValidate := client.validateEndpoint
+
+	// Set only token endpoint
+	client.SetEndpoints("http://new-token", "", "", "", "", "", "")
+
+	if client.tokenEndpoint != "http://new-token" {
+		t.Errorf("expected http://new-token, got %s", client.tokenEndpoint)
+	}
+	if client.validateEndpoint != originalValidate {
+		t.Errorf("validate endpoint should not change, got %s", client.validateEndpoint)
+	}
+
+	// Set empty string should not change
+	client.tokenEndpoint = originalToken
+	client.SetEndpoints("", "", "", "", "", "", "")
+	if client.tokenEndpoint != originalToken {
+		t.Errorf("empty string should not change endpoint")
+	}
 }
 
 func TestAuthClient_ValidateIDTokenClaims(t *testing.T) {
@@ -864,4 +1669,240 @@ func TestAuthClient_ValidateIDTokenClaims(t *testing.T) {
 	if err != nil {
 		t.Errorf("unexpected error: %v", err)
 	}
+}
+
+// Tests for JSON parsing errors in success responses
+func TestAuthClient_GetDeviceCode_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("invalid json"))
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{ClientID: "test-client"})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", "", "", server.URL, "", "", "")
+
+	_, err := client.GetDeviceCode(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "parsing device code response") {
+		t.Errorf("expected parsing error, got %v", err)
+	}
+}
+
+func TestAuthClient_ValidateToken_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("invalid json"))
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", server.URL, "", "", "", "", "")
+
+	_, err := client.ValidateToken(context.Background(), "token")
+	if err == nil || !strings.Contains(err.Error(), "parsing validate response") {
+		t.Errorf("expected parsing error, got %v", err)
+	}
+}
+
+func TestAuthClient_requestToken_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("invalid json"))
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	_, err := client.ExchangeCode(context.Background(), "code")
+	if err == nil || !strings.Contains(err.Error(), "parsing token response") {
+		t.Errorf("expected parsing error, got %v", err)
+	}
+}
+
+func TestAuthClient_GetOpenIDConfiguration_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("invalid json"))
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", "", "", "", server.URL, "", "")
+
+	_, err := client.GetOpenIDConfiguration(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "parsing OIDC config response") {
+		t.Errorf("expected parsing error, got %v", err)
+	}
+}
+
+func TestAuthClient_ExchangeCodeForOIDCToken_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("invalid json"))
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	_, err := client.ExchangeCodeForOIDCToken(context.Background(), "code")
+	if err == nil || !strings.Contains(err.Error(), "parsing token response") {
+		t.Errorf("expected parsing error, got %v", err)
+	}
+}
+
+func TestAuthClient_GetOIDCUserInfo_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("invalid json"))
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", "", "", "", "", server.URL, "")
+
+	_, err := client.GetOIDCUserInfo(context.Background(), "token")
+	if err == nil || !strings.Contains(err.Error(), "parsing userinfo response") {
+		t.Errorf("expected parsing error, got %v", err)
+	}
+}
+
+func TestAuthClient_GetJWKS_InvalidJSON(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("invalid json"))
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints("", "", "", "", "", "", server.URL)
+
+	_, err := client.GetJWKS(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "parsing JWKS response") {
+		t.Errorf("expected parsing error, got %v", err)
+	}
+}
+
+func TestAuthClient_AutoRefresh_ImmediateRefresh(t *testing.T) {
+	var refreshCount int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		atomic.AddInt64(&refreshCount, 1)
+		resp := Token{
+			AccessToken:  "new-access-token",
+			RefreshToken: "new-refresh-token",
+			TokenType:    "bearer",
+			ExpiresIn:    3600,
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	// Set token that already needs refresh (expired)
+	client.SetToken(&Token{
+		AccessToken:  "old-token",
+		RefreshToken: "old-refresh",
+		ExpiresAt:    time.Now().Add(-1 * time.Hour), // Already expired
+	})
+
+	ctx, ctxCancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer ctxCancel()
+
+	cancel := client.AutoRefresh(ctx)
+	defer cancel()
+
+	// Wait for refresh to happen
+	time.Sleep(500 * time.Millisecond)
+
+	if atomic.LoadInt64(&refreshCount) == 0 {
+		t.Error("expected at least one refresh call")
+	}
+}
+
+func TestAuthClient_AutoRefresh_RefreshError(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		resp := AuthErrorResponse{Message: "error"}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	// Set token that already needs refresh (expired)
+	client.SetToken(&Token{
+		AccessToken:  "old-token",
+		RefreshToken: "old-refresh",
+		ExpiresAt:    time.Now().Add(-1 * time.Hour),
+	})
+
+	ctx, ctxCancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer ctxCancel()
+
+	cancel := client.AutoRefresh(ctx)
+	defer cancel()
+
+	time.Sleep(500 * time.Millisecond)
+}
+
+func TestAuthClient_AutoRefresh_WaitForRefresh(t *testing.T) {
+	refreshCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		refreshCount++
+		resp := Token{
+			AccessToken:  "new-access-token",
+			RefreshToken: "new-refresh-token",
+			TokenType:    "bearer",
+			ExpiresIn:    1, // Expires in 1 second
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	client := NewAuthClient(AuthConfig{
+		ClientID:     "test-client",
+		ClientSecret: "test-secret",
+	})
+	client.SetHTTPClient(server.Client())
+	client.SetEndpoints(server.URL, "", "", "", "", "", "")
+
+	// Set token that expires soon
+	client.SetToken(&Token{
+		AccessToken:  "old-token",
+		RefreshToken: "old-refresh",
+		ExpiresAt:    time.Now().Add(3 * time.Second), // 5 min threshold means refresh now
+	})
+
+	ctx, ctxCancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer ctxCancel()
+
+	cancel := client.AutoRefresh(ctx)
+	defer cancel()
+
+	time.Sleep(300 * time.Millisecond)
 }

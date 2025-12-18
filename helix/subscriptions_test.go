@@ -228,3 +228,31 @@ func TestClient_CheckUserSubscription_GiftedSub(t *testing.T) {
 		t.Errorf("expected gifter ID gifter123, got %s", sub.GifterID)
 	}
 }
+
+func TestClient_GetBroadcasterSubscriptions_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetBroadcasterSubscriptions(context.Background(), &GetBroadcasterSubscriptionsParams{
+		BroadcasterID: "12345",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CheckUserSubscription_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.CheckUserSubscription(context.Background(), "12345", "67890")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}

@@ -286,3 +286,128 @@ func TestClient_GetClipsDownload(t *testing.T) {
 		t.Error("expected URL to be set")
 	}
 }
+
+func TestClient_CreateClip_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.CreateClip(context.Background(), &CreateClipParams{
+		BroadcasterID: "12345",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreateClip_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[CreateClipResponse]{
+			Data: []CreateClipResponse{},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.CreateClip(context.Background(), &CreateClipParams{
+		BroadcasterID: "12345",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Error("expected nil, got result")
+	}
+}
+
+func TestClient_GetClips_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetClips(context.Background(), &GetClipsParams{
+		BroadcasterID: "12345",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetClipsDownload_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetClipsDownload(context.Background(), []string{"clip1"})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetClips_WithDateRange(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		startedAt := r.URL.Query().Get("started_at")
+		endedAt := r.URL.Query().Get("ended_at")
+		if startedAt == "" {
+			t.Error("expected started_at to be set")
+		}
+		if endedAt == "" {
+			t.Error("expected ended_at to be set")
+		}
+
+		resp := Response[Clip]{
+			Data: []Clip{{ID: "clip1"}},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	startTime := time.Now().Add(-24 * time.Hour)
+	endTime := time.Now()
+	resp, err := client.GetClips(context.Background(), &GetClipsParams{
+		BroadcasterID: "12345",
+		StartedAt:     startTime,
+		EndedAt:       endTime,
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Data) != 1 {
+		t.Fatalf("expected 1 clip, got %d", len(resp.Data))
+	}
+}
+
+func TestClient_GetClips_NotFeatured(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		isFeatured := r.URL.Query().Get("is_featured")
+		if isFeatured != "false" {
+			t.Errorf("expected is_featured=false, got %s", isFeatured)
+		}
+
+		resp := Response[Clip]{
+			Data: []Clip{{ID: "clip1", IsFeatured: false}},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	notFeatured := false
+	resp, err := client.GetClips(context.Background(), &GetClipsParams{
+		BroadcasterID: "12345",
+		IsFeatured:    &notFeatured,
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Data) != 1 {
+		t.Fatalf("expected 1 clip, got %d", len(resp.Data))
+	}
+}

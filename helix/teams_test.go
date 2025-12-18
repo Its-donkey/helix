@@ -189,3 +189,31 @@ func TestClient_GetTeams_WithUsers(t *testing.T) {
 		t.Errorf("expected 5 users, got %d", len(resp.Data[0].Users))
 	}
 }
+
+func TestClient_GetChannelTeams_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetChannelTeams(context.Background(), "12345")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetTeams_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetTeams(context.Background(), &GetTeamsParams{
+		Name: "nonexistent",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}

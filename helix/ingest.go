@@ -32,7 +32,11 @@ type IngestServersResponse struct {
 // This endpoint does not require authentication.
 // Note: This endpoint uses a different base URL (ingest.twitch.tv) than the Helix API.
 func (c *Client) GetIngestServers(ctx context.Context) (*IngestServersResponse, error) {
-	url := IngestBaseURL + "/ingests"
+	baseURL := c.ingestBaseURL
+	if baseURL == "" {
+		baseURL = IngestBaseURL
+	}
+	url := baseURL + "/ingests"
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {

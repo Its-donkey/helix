@@ -230,3 +230,138 @@ func TestClient_UpdateConduitShards(t *testing.T) {
 		t.Fatalf("expected 1 shard, got %d", len(resp.Data))
 	}
 }
+
+func TestClient_GetConduits_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetConduits(context.Background())
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreateConduit_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.CreateConduit(context.Background(), 10)
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreateConduit_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[Conduit]{
+			Data: []Conduit{}, // Empty response
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.CreateConduit(context.Background(), 10)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result for empty response, got %v", result)
+	}
+}
+
+func TestClient_UpdateConduit_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
+	})
+	defer server.Close()
+
+	_, err := client.UpdateConduit(context.Background(), &UpdateConduitParams{
+		ID:         "conduit123",
+		ShardCount: 15,
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_UpdateConduit_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[Conduit]{
+			Data: []Conduit{}, // Empty response
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.UpdateConduit(context.Background(), &UpdateConduitParams{
+		ID:         "conduit123",
+		ShardCount: 15,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result for empty response, got %v", result)
+	}
+}
+
+func TestClient_GetConduitShards_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetConduitShards(context.Background(), &GetConduitShardsParams{
+		ConduitID: "conduit123",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetConduitShards_WithStatus(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		status := r.URL.Query().Get("status")
+		if status != "enabled" {
+			t.Errorf("expected status 'enabled', got %s", status)
+		}
+
+		resp := GetConduitShardsResponse{
+			Data: []ConduitShard{},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	_, err := client.GetConduitShards(context.Background(), &GetConduitShardsParams{
+		ConduitID: "conduit123",
+		Status:    "enabled",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_UpdateConduitShards_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.UpdateConduitShards(context.Background(), &UpdateConduitShardsParams{
+		ConduitID: "conduit123",
+		Shards:    []UpdateConduitShardParams{},
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}

@@ -244,3 +244,94 @@ func TestClient_EndPoll_Archive(t *testing.T) {
 		t.Errorf("expected status ARCHIVED, got %s", result.Status)
 	}
 }
+
+func TestClient_GetPolls_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error":"internal error"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetPolls(context.Background(), &GetPollsParams{
+		BroadcasterID: "12345",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreatePoll_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.CreatePoll(context.Background(), &CreatePollParams{
+		BroadcasterID: "12345",
+		Title:         "Test Poll",
+		Choices:       []CreatePollChoice{{Title: "A"}, {Title: "B"}},
+		Duration:      60,
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_EndPoll_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"poll not found"}`))
+	})
+	defer server.Close()
+
+	_, err := client.EndPoll(context.Background(), &EndPollParams{
+		BroadcasterID: "12345",
+		ID:            "poll123",
+		Status:        "TERMINATED",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreatePoll_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[Poll]{Data: []Poll{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.CreatePoll(context.Background(), &CreatePollParams{
+		BroadcasterID: "12345",
+		Title:         "Test Poll",
+		Choices:       []CreatePollChoice{{Title: "A"}, {Title: "B"}},
+		Duration:      60,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result, got %+v", result)
+	}
+}
+
+func TestClient_EndPoll_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[Poll]{Data: []Poll{}}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.EndPoll(context.Background(), &EndPollParams{
+		BroadcasterID: "12345",
+		ID:            "poll123",
+		Status:        "TERMINATED",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Errorf("expected nil result, got %+v", result)
+	}
+}

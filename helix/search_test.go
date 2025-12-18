@@ -173,3 +173,33 @@ func TestClient_SearchChannels_WithPagination(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 }
+
+func TestClient_SearchCategories_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.SearchCategories(context.Background(), &SearchCategoriesParams{
+		Query: "test",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_SearchChannels_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.SearchChannels(context.Background(), &SearchChannelsParams{
+		Query: "test",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}

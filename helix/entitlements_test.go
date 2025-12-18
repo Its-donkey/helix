@@ -129,3 +129,67 @@ func TestClient_UpdateDropsEntitlements(t *testing.T) {
 		t.Errorf("expected status 'SUCCESS', got %s", resp[0].Status)
 	}
 }
+
+func TestClient_GetDropsEntitlements_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte(`{"error":"unauthorized"}`))
+	})
+	defer server.Close()
+
+	_, err := client.GetDropsEntitlements(context.Background(), &GetDropsEntitlementsParams{
+		UserID: "12345",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_UpdateDropsEntitlements_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte(`{"error":"bad request"}`))
+	})
+	defer server.Close()
+
+	_, err := client.UpdateDropsEntitlements(context.Background(), &UpdateDropsEntitlementsParams{
+		EntitlementIDs:    []string{"entitlement1"},
+		FulfillmentStatus: "FULFILLED",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_GetDropsEntitlements_ByGameAndStatus(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		gameID := r.URL.Query().Get("game_id")
+		if gameID != "game123" {
+			t.Errorf("expected game_id=game123, got %s", gameID)
+		}
+		fulfillmentStatus := r.URL.Query().Get("fulfillment_status")
+		if fulfillmentStatus != "CLAIMED" {
+			t.Errorf("expected fulfillment_status=CLAIMED, got %s", fulfillmentStatus)
+		}
+
+		resp := Response[DropsEntitlement]{
+			Data: []DropsEntitlement{
+				{ID: "entitlement1", GameID: "game123", FulfillmentStatus: "CLAIMED"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	resp, err := client.GetDropsEntitlements(context.Background(), &GetDropsEntitlementsParams{
+		GameID:            "game123",
+		FulfillmentStatus: "CLAIMED",
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Data) != 1 {
+		t.Fatalf("expected 1 entitlement, got %d", len(resp.Data))
+	}
+}
