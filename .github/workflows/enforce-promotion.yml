@@ -1,0 +1,26 @@
+name: Enforce Promotion Path
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  check-source-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify PR is from test branch
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+        run: |
+          if [ "$HEAD_REF" != "test" ]; then
+            echo "❌ PRs to main must come from the 'test' branch"
+            echo ""
+            echo "Current source branch: $HEAD_REF"
+            echo ""
+            echo "Workflow:"
+            echo "  1. Push changes to 'test' branch"
+            echo "  2. Use 'Promote Release' workflow to create PR from test → main"
+            echo "  3. Or manually create PR from 'test' to 'main'"
+            exit 1
+          fi
+          echo "✅ PR is from 'test' branch - promotion allowed"
