@@ -16,3 +16,13 @@ coverage.out
 # Environment
 .env
 .env.local
+
+# GQL (not published yet)
+gql/
+cmd/gqldiscover/
+cmd/gqlproxy/
+gqldiscover
+gqlproxy
+gql_captures/
+twitch-gql-*.json
+twitch-gql-*.md
