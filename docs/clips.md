@@ -1,6 +1,6 @@
 # Clips API
 
-Create and retrieve Twitch clips from broadcasts.
+Create and retrieve Twitch clips from broadcasts and VODs.
 
 ## CreateClip
 
@@ -39,6 +39,75 @@ fmt.Printf("Clip created! ID: %s, Edit URL: %s\n",
   ]
 }
 ```
+
+## CreateClipFromVOD
+
+Create a clip from an existing VOD (Video on Demand).
+
+**Requires:** `editor:manage:clips` or `channel:manage:clips` scope
+
+```go
+// Basic usage - create a 30-second clip (default duration)
+resp, err := client.CreateClipFromVOD(ctx, &helix.CreateClipFromVODParams{
+    EditorID:      "11111",      // User creating the clip
+    BroadcasterID: "22222",      // Channel owner
+    VODID:         "1234567890", // VOD to clip from
+    VODOffset:     3600,         // 1 hour into the VOD (where clip ends)
+    Title:         "Epic Play!",
+})
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("Clip created! ID: %s\n", resp.ID)
+fmt.Printf("Edit URL: %s\n", resp.EditURL)
+
+// With custom duration (5-60 seconds)
+duration := 45.0
+resp, err = client.CreateClipFromVOD(ctx, &helix.CreateClipFromVODParams{
+    EditorID:      "11111",
+    BroadcasterID: "22222",
+    VODID:         "1234567890",
+    VODOffset:     7200,         // 2 hours into the VOD
+    Title:         "Amazing Moment",
+    Duration:      &duration,    // 45 second clip
+})
+```
+
+**Parameters:**
+- `EditorID` (string, required): User ID of the editor creating the clip
+- `BroadcasterID` (string, required): User ID of the channel receiving the clip
+- `VODID` (string, required): ID of the VOD to create clip from
+- `VODOffset` (int, required): Offset in seconds where the clip ends in the VOD
+- `Title` (string, required): Title for the clip
+- `Duration` (*float64, optional): Clip length in seconds (5-60, default 30, precision 0.1)
+
+**Returns:**
+- `ID` (string): The newly created clip ID
+- `EditURL` (string): URL where the clip can be edited
+
+**Sample Response:**
+```json
+{
+  "data": [
+    {
+      "id": "VODClipAwesome123",
+      "edit_url": "https://clips.twitch.tv/VODClipAwesome123/edit"
+    }
+  ]
+}
+```
+
+**Example Output:**
+```
+Clip created! ID: VODClipAwesome123
+Edit URL: https://clips.twitch.tv/VODClipAwesome123/edit
+```
+
+**Notes:**
+- The `VODOffset` specifies where the clip **ends**, not where it starts
+- The clip will include content from `(VODOffset - Duration)` to `VODOffset`
+- Duration defaults to 30 seconds if not specified
+- Duration must be between 5 and 60 seconds
 
 ## GetClips
 
