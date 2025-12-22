@@ -124,3 +124,26 @@ func (c *Client) GetClipsDownload(ctx context.Context, clipIDs []string) (*Respo
 	}
 	return &resp, nil
 }
+
+// CreateClipFromVODParams contains parameters for CreateClipFromVOD.
+type CreateClipFromVODParams struct {
+	EditorID      string   `json:"editor_id"`      // Required: User ID of the editor
+	BroadcasterID string   `json:"broadcaster_id"` // Required: User ID of the channel
+	VODID         string   `json:"vod_id"`         // Required: ID of the VOD to clip
+	VODOffset     int      `json:"vod_offset"`     // Required: Offset in seconds where clip ends
+	Title         string   `json:"title"`          // Required: Clip title
+	Duration      *float64 `json:"duration,omitempty"` // Optional: Clip length (5-60 seconds, default 30)
+}
+
+// CreateClipFromVOD creates a clip from a VOD.
+// Requires: editor:manage:clips or channel:manage:clips scope.
+func (c *Client) CreateClipFromVOD(ctx context.Context, params *CreateClipFromVODParams) (*CreateClipResponse, error) {
+	var resp Response[CreateClipResponse]
+	if err := c.post(ctx, "/videos/clips", nil, params, &resp); err != nil {
+		return nil, err
+	}
+	if len(resp.Data) == 0 {
+		return nil, nil
+	}
+	return &resp.Data[0], nil
+}
