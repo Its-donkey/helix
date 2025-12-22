@@ -411,3 +411,147 @@ func TestClient_GetClips_NotFeatured(t *testing.T) {
 		t.Fatalf("expected 1 clip, got %d", len(resp.Data))
 	}
 }
+
+func TestClient_CreateClipFromVOD(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/videos/clips" {
+			t.Errorf("expected /videos/clips, got %s", r.URL.Path)
+		}
+
+		var body CreateClipFromVODParams
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("failed to decode request body: %v", err)
+		}
+
+		if body.EditorID != "11111" {
+			t.Errorf("expected editor_id=11111, got %s", body.EditorID)
+		}
+		if body.BroadcasterID != "22222" {
+			t.Errorf("expected broadcaster_id=22222, got %s", body.BroadcasterID)
+		}
+		if body.VODID != "33333" {
+			t.Errorf("expected vod_id=33333, got %s", body.VODID)
+		}
+		if body.VODOffset != 3600 {
+			t.Errorf("expected vod_offset=3600, got %d", body.VODOffset)
+		}
+		if body.Title != "Epic Moment" {
+			t.Errorf("expected title=Epic Moment, got %s", body.Title)
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		resp := Response[CreateClipResponse]{
+			Data: []CreateClipResponse{
+				{
+					ID:      "VODClipAwesome123",
+					EditURL: "https://clips.twitch.tv/VODClipAwesome123/edit",
+				},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.CreateClipFromVOD(context.Background(), &CreateClipFromVODParams{
+		EditorID:      "11111",
+		BroadcasterID: "22222",
+		VODID:         "33333",
+		VODOffset:     3600,
+		Title:         "Epic Moment",
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result.ID != "VODClipAwesome123" {
+		t.Errorf("expected clip ID VODClipAwesome123, got %s", result.ID)
+	}
+	if result.EditURL != "https://clips.twitch.tv/VODClipAwesome123/edit" {
+		t.Errorf("expected edit URL, got %s", result.EditURL)
+	}
+}
+
+func TestClient_CreateClipFromVOD_WithDuration(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		var body CreateClipFromVODParams
+		if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+			t.Fatalf("failed to decode request body: %v", err)
+		}
+
+		if body.Duration == nil {
+			t.Error("expected duration to be set")
+		} else if *body.Duration != 45.5 {
+			t.Errorf("expected duration=45.5, got %f", *body.Duration)
+		}
+
+		w.WriteHeader(http.StatusAccepted)
+		resp := Response[CreateClipResponse]{
+			Data: []CreateClipResponse{
+				{ID: "clip123", EditURL: "https://clips.twitch.tv/clip123/edit"},
+			},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	duration := 45.5
+	_, err := client.CreateClipFromVOD(context.Background(), &CreateClipFromVODParams{
+		EditorID:      "11111",
+		BroadcasterID: "22222",
+		VODID:         "33333",
+		VODOffset:     3600,
+		Title:         "Custom Duration Clip",
+		Duration:      &duration,
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_CreateClipFromVOD_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"Not Found","message":"VOD not found"}`))
+	})
+	defer server.Close()
+
+	_, err := client.CreateClipFromVOD(context.Background(), &CreateClipFromVODParams{
+		EditorID:      "11111",
+		BroadcasterID: "22222",
+		VODID:         "invalid",
+		VODOffset:     3600,
+		Title:         "Test",
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_CreateClipFromVOD_EmptyResponse(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusAccepted)
+		resp := Response[CreateClipResponse]{
+			Data: []CreateClipResponse{},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	})
+	defer server.Close()
+
+	result, err := client.CreateClipFromVOD(context.Background(), &CreateClipFromVODParams{
+		EditorID:      "11111",
+		BroadcasterID: "22222",
+		VODID:         "33333",
+		VODOffset:     3600,
+		Title:         "Test",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if result != nil {
+		t.Error("expected nil, got result")
+	}
+}
