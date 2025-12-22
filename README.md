@@ -1,6 +1,6 @@
 # Kappopher
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/Its-donkey/helix)](https://goreportcard.com/report/github.com/Its-donkey/helix)
+[![Go Report Card](https://goreportcard.com/badge/github.com/Its-donkey/kappopher)](https://goreportcard.com/report/github.com/Its-donkey/kappopher)
 [![codecov](https://codecov.io/github/Its-donkey/helix/graph/badge.svg?token=UB85N281NS)](https://codecov.io/github/Its-donkey/helix)
 
 A comprehensive Twitch API toolkit for Go.
@@ -22,7 +22,7 @@ A comprehensive Twitch API toolkit for Go.
 ## Installation
 
 ```bash
-go get github.com/Its-donkey/helix
+go get github.com/Its-donkey/kappopher
 ```
 
 ## Quick Start
@@ -33,7 +33,7 @@ package main
 import (
     "context"
     "fmt"
-    "github.com/Its-donkey/helix/helix"
+    "github.com/Its-donkey/kappopher/helix"
 )
 
 func main() {

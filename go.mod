@@ -1,4 +1,4 @@
-module github.com/Its-donkey/helix
+module github.com/Its-donkey/kappopher
 
 go 1.21
 
