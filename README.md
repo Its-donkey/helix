@@ -1,8 +1,9 @@
-# Twitch Helix API Client for Go
+# Kappopher
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/Its-donkey/helix)](https://goreportcard.com/report/github.com/Its-donkey/helix)
 [![codecov](https://codecov.io/github/Its-donkey/helix/graph/badge.svg?token=UB85N281NS)](https://codecov.io/github/Its-donkey/helix)
 
-A comprehensive Go client library for the Twitch Helix API with full OAuth authentication support.
+A comprehensive Twitch API toolkit for Go.
 
 ## Features
 
@@ -12,10 +13,11 @@ A comprehensive Go client library for the Twitch Helix API with full OAuth authe
 - **EventSub Webhooks**: Built-in webhook handler with signature verification and event parsing
 - **EventSub WebSocket**: Real-time event streaming with automatic keepalive and reconnection
 - **Extension JWT**: Full support for Twitch Extension authentication
-- **Type-Safe**: Fully typed request/response structures with Go generics
-- **Pagination Support**: Built-in pagination helpers
+- **Caching Layer**: Built-in response caching with TTL support
+- **Middleware System**: Chainable request/response middleware
+- **Batch Operations**: Concurrent batch request processing
 - **Rate Limiting**: Automatic rate limit tracking with retry support
-- **Testable**: Mock-friendly design with customizable HTTP client
+- **Type-Safe**: Fully typed request/response structures with Go generics
 
 ## Installation
 
@@ -23,11 +25,55 @@ A comprehensive Go client library for the Twitch Helix API with full OAuth authe
 go get github.com/Its-donkey/helix
 ```
 
+## Quick Start
+
+```go
+package main
+
+import (
+    "context"
+    "fmt"
+    "github.com/Its-donkey/helix/helix"
+)
+
+func main() {
+    // Create auth client
+    authClient := helix.NewAuthClient(helix.AuthConfig{
+        ClientID:     "your-client-id",
+        ClientSecret: "your-client-secret",
+    })
+
+    // Get app access token
+    token, _ := authClient.GetAppAccessToken(context.Background())
+    authClient.SetToken(token)
+
+    // Create API client
+    client := helix.NewClient("your-client-id", authClient)
+
+    // Get user info
+    resp, _ := client.GetUsers(context.Background(), &helix.GetUsersParams{
+        Logins: []string{"shroud"},
+    })
+
+    fmt.Printf("User: %s (ID: %s)\n", resp.Data[0].DisplayName, resp.Data[0].ID)
+}
+```
+
 ## Documentation
 
 - [Quick Start Guide](./docs/quickstart.md) - Installation, authentication, and basic usage
 - [API Reference](./docs/README.md) - Full endpoint documentation
-- [Examples](./docs/examples/) - Working code samples
+
+## Comparison
+
+| Feature | Kappopher | Other Helix wrappers |
+|---------|-----------|----------------|
+| EventSub WebSocket | Yes | No |
+| Middleware System | Yes | No |
+| Caching Layer | Yes | No |
+| Batch Operations | Yes | No |
+| All OAuth Flows | Yes | Partial |
+| Extension JWT | Full | Basic |
 
 ## License
 
