@@ -100,43 +100,81 @@ jobs:
           echo "Next tag: $NEXT_TAG"
           echo "tag=$NEXT_TAG" >> $GITHUB_OUTPUT
 
-      - name: Check CHANGELOG updated
+      - name: Update CHANGELOG version
+        id: changelog
         env:
           TAG_NAME: ${{ steps.version.outputs.tag }}
         run: |
           set -euo pipefail
 
           VERSION="${TAG_NAME#v}"
+          TODAY=$(date +%Y-%m-%d)
 
-          # Check if version exists in CHANGELOG
+          # Check if version already exists in CHANGELOG
           if grep -qE "^## \[${VERSION}\]" CHANGELOG.md; then
-            echo "✅ CHANGELOG.md contains entry for version ${VERSION}"
+            echo "✅ CHANGELOG.md already contains entry for version ${VERSION}"
+            echo "updated=false" >> $GITHUB_OUTPUT
             exit 0
           fi
 
           # Check if [Unreleased] section has content
           UNRELEASED_CONTENT=$(sed -n '/^## \[Unreleased\]/,/^## \[/p' CHANGELOG.md | grep -E '^- ' || true)
 
-          if [ -n "$UNRELEASED_CONTENT" ]; then
-            echo "⚠️  CHANGELOG.md has unreleased changes but no entry for ${VERSION}"
+          if [ -z "$UNRELEASED_CONTENT" ]; then
+            echo "❌ CHANGELOG.md has no unreleased changes to release"
             echo ""
-            echo "Please update CHANGELOG.md before releasing:"
-            echo "  1. Rename [Unreleased] section to [${VERSION}] - $(date +%Y-%m-%d)"
-            echo "  2. Add a new empty [Unreleased] section at the top"
-            echo ""
-            echo "Unreleased changes found:"
-            echo "$UNRELEASED_CONTENT"
+            echo "Please add changelog entries under [Unreleased] before releasing:"
+            echo "  ### Added/Changed/Fixed"
+            echo "  - Your changes here"
             exit 1
           fi
 
-          echo "❌ CHANGELOG.md has no entry for version ${VERSION} and no unreleased changes"
+          echo "📝 Updating CHANGELOG.md: [Unreleased] -> [${VERSION}] - ${TODAY}"
+
+          # Create new unreleased section template
+          cat > /tmp/unreleased.txt << 'UNRELEASED_EOF'
+          ## [Unreleased]
+
+          ### Added
+
+          ### Changed
+
+          ### Fixed
+
+          UNRELEASED_EOF
+
+          # Remove leading spaces from template
+          sed -i 's/^          //' /tmp/unreleased.txt
+
+          # Replace [Unreleased] with version and date
+          sed -i "s/^## \[Unreleased\]$/## [${VERSION}] - ${TODAY}/" CHANGELOG.md
+
+          # Insert new [Unreleased] section before the version we just created
+          sed -i "/^## \[${VERSION}\]/e cat /tmp/unreleased.txt" CHANGELOG.md
+
+          # Clean up
+          rm -f /tmp/unreleased.txt
+
+          echo "✅ CHANGELOG.md updated with version ${VERSION}"
           echo ""
-          echo "Please add a changelog entry before releasing:"
-          echo "  ## [${VERSION}] - $(date +%Y-%m-%d)"
-          echo ""
-          echo "  ### Added/Changed/Fixed"
-          echo "  - Your changes here"
-          exit 1
+          echo "Changes being released:"
+          echo "$UNRELEASED_CONTENT"
+          echo "updated=true" >> $GITHUB_OUTPUT
+
+      - name: Commit CHANGELOG update
+        if: steps.changelog.outputs.updated == 'true'
+        env:
+          TAG_NAME: ${{ steps.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "Release ${TAG_NAME}: Update CHANGELOG version"
+          git push origin test
+
+          echo "✅ CHANGELOG update committed to test branch"
 
       - name: Create promotion PR
         id: pr
