@@ -254,9 +254,9 @@ func TestBotConnectWithMockServer(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testbot :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testbot :Welcome\r\n"))
 				return
 			}
 		}
@@ -292,7 +292,7 @@ func TestBotConnectWithMockServer(t *testing.T) {
 		t.Error("Client should not be nil after connect")
 	}
 
-	bot.Close()
+	_ = bot.Close()
 }
 
 func TestBotMethodsWhenConnected(t *testing.T) {
@@ -305,9 +305,9 @@ func TestBotMethodsWhenConnected(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testbot :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testbot :Welcome\r\n"))
 			}
 		}
 	})
@@ -327,7 +327,7 @@ func TestBotMethodsWhenConnected(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Bot.Connect failed: %v", err)
 	}
-	defer bot.Close()
+	defer func() { _ = bot.Close() }()
 
 	// Test Join
 	err = bot.Join("testchannel")
@@ -381,9 +381,9 @@ func TestBotIsConnectedWithClient(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testbot :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testbot :Welcome\r\n"))
 			}
 		}
 	})
@@ -402,7 +402,7 @@ func TestBotIsConnectedWithClient(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Bot.Connect failed: %v", err)
 	}
-	defer bot.Close()
+	defer func() { _ = bot.Close() }()
 
 	// Test IsConnected returns true
 	if !bot.IsConnected() {

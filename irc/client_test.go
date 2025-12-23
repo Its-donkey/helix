@@ -25,7 +25,7 @@ func createMockIRCServer(t *testing.T, handler func(*websocket.Conn)) *httptest.
 			t.Fatalf("Failed to upgrade: %v", err)
 			return
 		}
-		defer conn.Close()
+		defer func() { _ = conn.Close() }()
 		handler(conn)
 	}))
 }
@@ -295,12 +295,12 @@ func TestClientConnect(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags twitch.tv/commands twitch.tv/membership\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags twitch.tv/commands twitch.tv/membership\r\n"))
 			} else if strings.HasPrefix(msg, "PASS") {
 				// Continue
 			} else if strings.HasPrefix(msg, "NICK") {
 				// Send welcome
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome, GLHF!\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome, GLHF!\r\n"))
 				return
 			}
 		}
@@ -328,7 +328,7 @@ func TestClientConnect(t *testing.T) {
 		t.Errorf("Second Connect should return ErrAlreadyConnected, got: %v", err)
 	}
 
-	client.Close()
+	_ = client.Close()
 }
 
 func TestClientAuthFailed(t *testing.T) {
@@ -341,9 +341,9 @@ func TestClientAuthFailed(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv NOTICE * :Login authentication failed\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv NOTICE * :Login authentication failed\r\n"))
 				return
 			}
 		}
@@ -483,11 +483,11 @@ func TestClientPing(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 			} else if strings.HasPrefix(msg, "PING") {
-				conn.WriteMessage(websocket.TextMessage, []byte("PONG :tmi.twitch.tv\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte("PONG :tmi.twitch.tv\r\n"))
 			}
 		}
 	})
@@ -515,7 +515,7 @@ func TestClientPing(t *testing.T) {
 		t.Errorf("Ping failed: %v", err)
 	}
 
-	client.Close()
+	_ = client.Close()
 }
 
 func TestClientHandleMessageWithNilHandlers(t *testing.T) {
@@ -554,9 +554,9 @@ func TestClientReconnect(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 				// On first connect, close immediately to trigger reconnect
 				if connectCount == 1 {
 					return
@@ -599,7 +599,7 @@ func TestClientReconnect(t *testing.T) {
 		t.Errorf("Should have connected at least twice, got %d", connectCount)
 	}
 
-	client.Close()
+	_ = client.Close()
 }
 
 func TestClientReconnectStopped(t *testing.T) {
@@ -612,9 +612,9 @@ func TestClientReconnectStopped(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 				return // Close connection
 			}
 		}
@@ -641,7 +641,7 @@ func TestClientReconnectStopped(t *testing.T) {
 	time.Sleep(100 * time.Millisecond)
 
 	// Close should stop reconnect loop
-	client.Close()
+	_ = client.Close()
 
 	// Verify reconnect loop stops
 	time.Sleep(200 * time.Millisecond)
@@ -657,9 +657,9 @@ func TestClientJoinPartWhenConnected(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 			}
 		}
 	})
@@ -675,7 +675,7 @@ func TestClientJoinPartWhenConnected(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Connect failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test Join when connected
 	err = client.Join("channel1", "channel2")
@@ -710,9 +710,9 @@ func TestClientSendMethodsWhenConnected(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 			}
 		}
 	})
@@ -728,7 +728,7 @@ func TestClientSendMethodsWhenConnected(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Connect failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test Say
 	err = client.Say("channel", "Hello!")
@@ -759,9 +759,9 @@ func TestClientCloseWhenConnected(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 			}
 		}
 	})
@@ -802,11 +802,11 @@ func TestWaitForAuthWithGlobalUserState(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
 				// Send GLOBALUSERSTATE before welcome
-				conn.WriteMessage(websocket.TextMessage, []byte("@user-id=12345;display-name=TestUser :tmi.twitch.tv GLOBALUSERSTATE\r\n"))
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte("@user-id=12345;display-name=TestUser :tmi.twitch.tv GLOBALUSERSTATE\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 				return
 			}
 		}
@@ -829,7 +829,7 @@ func TestWaitForAuthWithGlobalUserState(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Connect failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	if !globalStateCalled {
 		t.Error("GlobalUserState handler should be called during auth")
@@ -851,9 +851,9 @@ func TestWaitForAuthImproperFormat(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv NOTICE * :Improperly formatted auth\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv NOTICE * :Improperly formatted auth\r\n"))
 				return
 			}
 		}
@@ -886,14 +886,14 @@ func TestReconnectWithError(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
 				if connectCount == 1 {
-					conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+					_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 					return // Close to trigger reconnect
 				} else {
 					// On reconnect attempt, fail auth
-					conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv NOTICE * :Login authentication failed\r\n"))
+					_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv NOTICE * :Login authentication failed\r\n"))
 					return
 				}
 			}
@@ -921,7 +921,7 @@ func TestReconnectWithError(t *testing.T) {
 	// Wait for reconnect attempt
 	time.Sleep(300 * time.Millisecond)
 
-	client.Close()
+	_ = client.Close()
 
 	if !errorReceived {
 		t.Error("Error handler should be called on reconnect failure")
@@ -938,9 +938,9 @@ func TestPingTimeout(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 			}
 			// Don't respond to PING - let it timeout
 		}
@@ -957,7 +957,7 @@ func TestPingTimeout(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Connect failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Ping with very short timeout
 	pingCtx, pingCancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
@@ -997,9 +997,9 @@ func TestJoinPartMultipleChannelsConnected(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 			}
 		}
 	})
@@ -1015,7 +1015,7 @@ func TestJoinPartMultipleChannelsConnected(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Connect failed: %v", err)
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	// Test joining multiple channels at once
 	err = client.Join("channel1", "#channel2", "CHANNEL3")
@@ -1052,11 +1052,11 @@ func TestReadLoopRawMessageHandler(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 				// Send a test message
-				conn.WriteMessage(websocket.TextMessage, []byte("@id=test :user!user@user.tmi.twitch.tv PRIVMSG #channel :test\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte("@id=test :user!user@user.tmi.twitch.tv PRIVMSG #channel :test\r\n"))
 			}
 		}
 	})
@@ -1082,7 +1082,7 @@ func TestReadLoopRawMessageHandler(t *testing.T) {
 	// Wait for messages to be received
 	time.Sleep(100 * time.Millisecond)
 
-	client.Close()
+	_ = client.Close()
 
 	if len(rawMessages) == 0 {
 		t.Error("Should have received raw messages")
@@ -1120,12 +1120,12 @@ func TestHandleMessageReconnect(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 				// Send RECONNECT command
 				time.Sleep(50 * time.Millisecond)
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv RECONNECT\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv RECONNECT\r\n"))
 			}
 		}
 	})
@@ -1153,7 +1153,7 @@ func TestHandleMessageReconnect(t *testing.T) {
 		t.Error("Client should be disconnected after RECONNECT command")
 	}
 
-	client.Close()
+	_ = client.Close()
 }
 
 func TestPingNotConnected(t *testing.T) {
@@ -1181,9 +1181,9 @@ func TestChannelsRejoinedOnReconnect(t *testing.T) {
 			msg := string(data)
 
 			if strings.HasPrefix(msg, "CAP REQ") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv CAP * ACK :twitch.tv/tags\r\n"))
 			} else if strings.HasPrefix(msg, "NICK") {
-				conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+				_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
 			} else if strings.HasPrefix(msg, "JOIN") {
 				joinCount++
 				if currentConnect == 1 {
@@ -1205,7 +1205,7 @@ func TestChannelsRejoinedOnReconnect(t *testing.T) {
 	)
 
 	// Pre-join a channel (will be queued)
-	client.Join("testchannel")
+	_ = client.Join("testchannel")
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -1218,7 +1218,7 @@ func TestChannelsRejoinedOnReconnect(t *testing.T) {
 	// Wait for initial join and reconnect
 	time.Sleep(300 * time.Millisecond)
 
-	client.Close()
+	_ = client.Close()
 
 	if connectCount < 2 {
 		t.Errorf("Should have connected at least twice, got %d", connectCount)
