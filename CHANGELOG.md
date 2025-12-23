@@ -8,9 +8,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+## [0.4.0] - 2025-12-23
+
+### Added
 - `CreateClipFromVOD` - Create clips from existing VODs (POST /videos/clips)
   - Requires `editor:manage:clips` or `channel:manage:clips` scope
   - Supports custom duration (5-60 seconds)
+- IRC/TMI chat client for building chat bots
+  - WebSocket-based connection to Twitch IRC
+  - Message parsing for PRIVMSG, USERNOTICE, ROOMSTATE, etc.
+  - Event handlers for messages, subscriptions, raids, and moderation
+  - Support for sending messages, whispers, and chat commands
 
 ### Changed
 
