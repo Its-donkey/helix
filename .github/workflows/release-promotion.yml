@@ -208,8 +208,8 @@ jobs:
             exit 0
           fi
 
-          # Add PR link to the version line
-          sed -i "s/^## \[${VERSION}\] - \([0-9-]*\)$/## [${VERSION}] - \1 ${PR_LINK}/" CHANGELOG.md
+          # Add PR link to the version line (use | delimiter to avoid conflicts with URLs)
+          sed -i "s|^## \[${VERSION}\] - \([0-9-]*\)$|## [${VERSION}] - \1 ${PR_LINK}|" CHANGELOG.md
 
           # Commit and push the change
           git config user.name "github-actions[bot]"
