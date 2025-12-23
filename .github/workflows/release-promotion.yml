@@ -3,8 +3,16 @@ name: Promote Release
 on:
   workflow_dispatch:
     inputs:
+      branch_pair:
+        description: "Branch pair to use for promotion"
+        required: true
+        default: "test->main"
+        type: choice
+        options:
+          - "test->main"
+          - "v2/dev->v2/proto"
       action:
-        description: "promote (test -> main) or archive (tag current main)"
+        description: "promote (dev -> prod) or archive (tag current prod)"
         required: true
         default: promote
         type: choice
@@ -42,9 +50,20 @@ jobs:
     if: ${{ github.event.inputs.action == 'promote' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Parse branch pair
+        id: branches
+        env:
+          BRANCH_PAIR: ${{ github.event.inputs.branch_pair }}
+        run: |
+          SOURCE_BRANCH="${BRANCH_PAIR%->*}"
+          TARGET_BRANCH="${BRANCH_PAIR#*->}"
+          echo "source=$SOURCE_BRANCH" >> $GITHUB_OUTPUT
+          echo "target=$TARGET_BRANCH" >> $GITHUB_OUTPUT
+          echo "📌 Source: $SOURCE_BRANCH -> Target: $TARGET_BRANCH"
+
       - uses: actions/checkout@v6
         with:
-          ref: test
+          ref: ${{ steps.branches.outputs.source }}
           fetch-depth: 0
 
       - name: Setup Go
@@ -134,50 +153,53 @@ jobs:
         if: steps.changelog.outputs.updated == 'true'
         env:
           TAG_NAME: ${{ steps.version.outputs.tag }}
+          SOURCE_BRANCH: ${{ steps.branches.outputs.source }}
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md
           git commit -m "Release ${TAG_NAME}: Update CHANGELOG version"
-          git push origin test
-          echo "✅ CHANGELOG update committed to test branch"
+          git push origin "$SOURCE_BRANCH"
+          echo "✅ CHANGELOG update committed to $SOURCE_BRANCH branch"
 
       - name: Create promotion PR
         id: pr
         env:
           TAG_NAME: ${{ steps.version.outputs.tag }}
           RELEASE_TYPE: ${{ github.event.inputs.release_type }}
+          SOURCE_BRANCH: ${{ steps.branches.outputs.source }}
+          TARGET_BRANCH: ${{ steps.branches.outputs.target }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
 
           # Check if PR already exists
-          EXISTING_PR=$(gh pr list --base main --head test --json number --jq '.[0].number' || echo "")
+          EXISTING_PR=$(gh pr list --base "$TARGET_BRANCH" --head "$SOURCE_BRANCH" --json number --jq '.[0].number' || echo "")
 
           if [ -n "$EXISTING_PR" ]; then
-            echo "PR #$EXISTING_PR already exists for test -> main"
+            echo "PR #$EXISTING_PR already exists for $SOURCE_BRANCH -> $TARGET_BRANCH"
             echo "URL: https://github.com/${{ github.repository }}/pull/$EXISTING_PR"
             echo "number=$EXISTING_PR" >> $GITHUB_OUTPUT
             echo "created=false" >> $GITHUB_OUTPUT
           else
-            # Create PR to merge test into main
-            PR_TITLE="Release ${TAG_NAME}: Promote test to main"
+            # Create PR to merge source into target
+            PR_TITLE="Release ${TAG_NAME}: Promote $SOURCE_BRANCH to $TARGET_BRANCH"
 
             PR_URL=$(gh pr create \
-              --base main \
-              --head test \
+              --base "$TARGET_BRANCH" \
+              --head "$SOURCE_BRANCH" \
               --title "$PR_TITLE" \
               --body "## Summary
 
-          Automated promotion of test branch to main.
+          Automated promotion of $SOURCE_BRANCH branch to $TARGET_BRANCH.
 
           **Version:** ${TAG_NAME}
           **Release type:** ${RELEASE_TYPE}
 
           ## Test plan
 
-          - [x] All tests pass on test branch
+          - [x] All tests pass on $SOURCE_BRANCH branch
           - [ ] Review changes before merging
 
           🤖 Generated with GitHub Actions")
@@ -194,6 +216,7 @@ jobs:
         env:
           TAG_NAME: ${{ steps.version.outputs.tag }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
+          SOURCE_BRANCH: ${{ steps.branches.outputs.source }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
@@ -216,7 +239,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add CHANGELOG.md
           git commit -m "Add PR #${PR_NUMBER} link to CHANGELOG for ${TAG_NAME}"
-          git push origin test
+          git push origin "$SOURCE_BRANCH"
 
           echo "✅ Added PR #${PR_NUMBER} link to CHANGELOG.md"
 
@@ -225,6 +248,7 @@ jobs:
         env:
           TAG_NAME: ${{ steps.version.outputs.tag }}
           PR_NUMBER: ${{ steps.pr.outputs.number }}
+          TARGET_BRANCH: ${{ steps.branches.outputs.target }}
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
@@ -237,14 +261,14 @@ jobs:
           # Merge the PR
           gh pr merge "$PR_NUMBER" --merge --delete-branch=false
 
-          echo "✅ PR #${PR_NUMBER} merged to main"
+          echo "✅ PR #${PR_NUMBER} merged to $TARGET_BRANCH"
 
-          # Fetch latest main
-          git fetch origin main
+          # Fetch latest target branch
+          git fetch origin "$TARGET_BRANCH"
 
-          # Create and push tag on main
-          echo "🏷️  Creating tag ${TAG_NAME} on main..."
-          git tag "$TAG_NAME" origin/main
+          # Create and push tag on target branch
+          echo "🏷️  Creating tag ${TAG_NAME} on $TARGET_BRANCH..."
+          git tag "$TAG_NAME" "origin/$TARGET_BRANCH"
           git push origin "$TAG_NAME"
 
           echo "✅ Tag ${TAG_NAME} created and pushed"
@@ -254,22 +278,33 @@ jobs:
     if: ${{ github.event.inputs.action == 'archive' }}
     runs-on: ubuntu-latest
     steps:
+      - name: Parse branch pair
+        id: branches
+        env:
+          BRANCH_PAIR: ${{ github.event.inputs.branch_pair }}
+        run: |
+          TARGET_BRANCH="${BRANCH_PAIR#*->}"
+          echo "target=$TARGET_BRANCH" >> $GITHUB_OUTPUT
+          echo "📌 Archiving target branch: $TARGET_BRANCH"
+
       - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Archive current main
+      - name: Archive current target branch
         env:
           ARCHIVE_TAG: ${{ github.event.inputs.archive_tag }}
+          TARGET_BRANCH: ${{ steps.branches.outputs.target }}
         run: |
           set -euo pipefail
           git fetch origin
 
-          # Tag the current main for archive
+          # Tag the current target branch for archive
           if [ -z "${ARCHIVE_TAG:-}" ]; then
             echo "Error: archive_tag is required"
             exit 1
           fi
 
-          git tag -f "$ARCHIVE_TAG" origin/main
+          git tag -f "$ARCHIVE_TAG" "origin/$TARGET_BRANCH"
           git push origin "$ARCHIVE_TAG" --force
+          echo "✅ Archived $TARGET_BRANCH as $ARCHIVE_TAG"
