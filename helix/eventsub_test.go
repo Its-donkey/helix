@@ -997,3 +997,50 @@ func TestHypeTrainProgressEvent_Conversion(t *testing.T) {
 		t.Errorf("expected Type=golden_kappa, got %s", event.Type)
 	}
 }
+
+func TestHypeTrainBeginEvent_InvalidJSON(t *testing.T) {
+	var event ChannelHypeTrainBeginEvent
+	// Use JSON with wrong type for a field to trigger error inside UnmarshalJSON
+	err := json.Unmarshal([]byte(`{"level": "not a number"}`), &event)
+	if err == nil {
+		t.Error("expected error for invalid JSON")
+	}
+}
+
+func TestHypeTrainEndEvent_InvalidJSON(t *testing.T) {
+	var event ChannelHypeTrainEndEvent
+	// Use JSON with wrong type for a field to trigger error inside UnmarshalJSON
+	err := json.Unmarshal([]byte(`{"level": "not a number"}`), &event)
+	if err == nil {
+		t.Error("expected error for invalid JSON")
+	}
+}
+
+func TestHypeTrainEndEvent_V1RegularTrain(t *testing.T) {
+	// Test v1 payload with is_golden_kappa_train=false converts to Type=regular
+	v1Regular := `{
+		"id": "train1",
+		"broadcaster_user_id": "12345",
+		"broadcaster_user_login": "test",
+		"broadcaster_user_name": "Test",
+		"level": 3,
+		"total": 500,
+		"started_at": "2025-01-01T00:00:00Z",
+		"ended_at": "2025-01-01T00:05:00Z",
+		"cooldown_ends_at": "2025-01-01T01:05:00Z",
+		"is_golden_kappa_train": false,
+		"top_contributions": []
+	}`
+
+	var event ChannelHypeTrainEndEvent
+	if err := json.Unmarshal([]byte(v1Regular), &event); err != nil {
+		t.Fatalf("failed to unmarshal: %v", err)
+	}
+
+	if event.Type != HypeTrainTypeRegular {
+		t.Errorf("expected Type=regular, got %s", event.Type)
+	}
+	if event.IsGoldenKappaTrain {
+		t.Error("expected IsGoldenKappaTrain=false")
+	}
+}
