@@ -350,7 +350,7 @@ type HypeTrainParticipant struct {
 }
 
 // ChannelHypeTrainBeginEvent is sent when a Hype Train begins.
-// This struct supports both v1 and v2 payloads.
+// Note: Hype Train v1 is deprecated by Twitch. Use v2 fields (Type, IsSharedTrain, etc.).
 type ChannelHypeTrainBeginEvent struct {
 	ID string `json:"id"`
 	EventSubBroadcaster
@@ -362,9 +362,10 @@ type ChannelHypeTrainBeginEvent struct {
 	Level            int                    `json:"level"`
 	StartedAt        time.Time              `json:"started_at"`
 	ExpiresAt        time.Time              `json:"expires_at"`
-	// V1 only field (deprecated in v2)
+	// Deprecated: IsGoldenKappaTrain is from v1 which is deprecated. Use Type == HypeTrainTypeGoldenKappa instead.
+	// This field is auto-populated from Type during unmarshaling for migration convenience.
 	IsGoldenKappaTrain bool `json:"is_golden_kappa_train,omitempty"`
-	// V2 only fields
+	// V2 fields
 	Type                    HypeTrainType          `json:"type,omitempty"`
 	IsSharedTrain           bool                   `json:"is_shared_train,omitempty"`
 	SharedTrainParticipants []HypeTrainParticipant `json:"shared_train_participants,omitempty"`
@@ -383,7 +384,7 @@ type EventSubContribution struct {
 type ChannelHypeTrainProgressEvent = ChannelHypeTrainBeginEvent
 
 // ChannelHypeTrainEndEvent is sent when a Hype Train ends.
-// This struct supports both v1 and v2 payloads.
+// Note: Hype Train v1 is deprecated by Twitch. Use v2 fields (Type, IsSharedTrain, etc.).
 type ChannelHypeTrainEndEvent struct {
 	ID string `json:"id"`
 	EventSubBroadcaster
@@ -393,9 +394,10 @@ type ChannelHypeTrainEndEvent struct {
 	StartedAt        time.Time              `json:"started_at"`
 	EndedAt          time.Time              `json:"ended_at"`
 	CooldownEndsAt   time.Time              `json:"cooldown_ends_at"`
-	// V1 only field (deprecated in v2)
+	// Deprecated: IsGoldenKappaTrain is from v1 which is deprecated. Use Type == HypeTrainTypeGoldenKappa instead.
+	// This field is auto-populated from Type during unmarshaling for migration convenience.
 	IsGoldenKappaTrain bool `json:"is_golden_kappa_train,omitempty"`
-	// V2 only fields
+	// V2 fields
 	Type                    HypeTrainType          `json:"type,omitempty"`
 	IsSharedTrain           bool                   `json:"is_shared_train,omitempty"`
 	SharedTrainParticipants []HypeTrainParticipant `json:"shared_train_participants,omitempty"`
