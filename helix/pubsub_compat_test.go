@@ -3,6 +3,7 @@ package helix
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -826,5 +827,533 @@ func TestPubSubClient_NotificationRouting(t *testing.T) {
 
 	if envelope.Type != EventSubTypeChannelPointsRedemptionAdd {
 		t.Errorf("expected type %q, got %q", EventSubTypeChannelPointsRedemptionAdd, envelope.Type)
+	}
+}
+
+func TestPubSubClient_Revocation(t *testing.T) {
+	sessionID := "pubsub-session-revoke"
+	errorReceived := make(chan error, 1)
+
+	wsMock := newMockPubSubWSServer(func(conn *websocket.Conn) {
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "welcome-1",
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      sessionID,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 10,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+
+		// Wait for subscription to be created
+		time.Sleep(150 * time.Millisecond)
+
+		// Send revocation message
+		revocation := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "revoke-1",
+				MessageType:      WSMessageTypeRevocation,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketNotificationPayload{
+				Subscription: EventSubSubscription{
+					ID:     "sub-1",
+					Type:   EventSubTypeChannelPointsRedemptionAdd,
+					Status: "authorization_revoked",
+				},
+			}),
+		}
+		_ = conn.WriteJSON(revocation)
+
+		time.Sleep(200 * time.Millisecond)
+	})
+	defer wsMock.Close()
+
+	helixMock := newMockHelixServer()
+	defer helixMock.Close()
+
+	helixClient := NewClient("test-client-id", nil)
+	helixClient.baseURL = helixMock.server.URL
+
+	pubsub := NewPubSubClient(helixClient,
+		WithPubSubWSURL(wsMock.URL()),
+		WithPubSubErrorHandler(func(err error) {
+			select {
+			case errorReceived <- err:
+			default:
+			}
+		}),
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := pubsub.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	defer func() { _ = pubsub.Close(ctx) }()
+
+	// Listen to a topic
+	topic := "channel-points-channel-v1.12345"
+	err = pubsub.Listen(ctx, topic)
+	if err != nil {
+		t.Fatalf("Listen failed: %v", err)
+	}
+
+	// Wait for revocation error
+	select {
+	case err := <-errorReceived:
+		if err == nil {
+			t.Error("expected error from revocation")
+		}
+		// Verify error contains expected text
+		if !strings.Contains(err.Error(), "subscription revoked") {
+			t.Errorf("expected revocation error, got: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for revocation error")
+	}
+
+	// Verify topic was removed
+	time.Sleep(100 * time.Millisecond)
+	topics := pubsub.Topics()
+	if len(topics) != 0 {
+		t.Errorf("expected 0 topics after revocation, got %d", len(topics))
+	}
+}
+
+func TestPubSubClient_Reconnect(t *testing.T) {
+	sessionID := "pubsub-session-reconnect"
+	newSessionID := "pubsub-session-new"
+	reconnectCalled := make(chan struct{})
+
+	// First server for initial connection
+	firstServer := newMockPubSubWSServer(func(conn *websocket.Conn) {
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "welcome-1",
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      sessionID,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 10,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+		time.Sleep(500 * time.Millisecond)
+	})
+	defer firstServer.Close()
+
+	// Second server for reconnection
+	secondServer := newMockPubSubWSServer(func(conn *websocket.Conn) {
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "welcome-2",
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      newSessionID,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 10,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+		time.Sleep(500 * time.Millisecond)
+	})
+	defer secondServer.Close()
+
+	helixClient := NewClient("test-client-id", nil)
+
+	pubsub := NewPubSubClient(helixClient,
+		WithPubSubWSURL(firstServer.URL()),
+		WithPubSubReconnectHandler(func() {
+			close(reconnectCalled)
+		}),
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := pubsub.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	defer func() { _ = pubsub.Close(ctx) }()
+
+	// Manually trigger reconnect handler (simulating server request)
+	pubsub.handleReconnect(secondServer.URL())
+
+	// Wait for reconnect handler to be called
+	select {
+	case <-reconnectCalled:
+		// Success
+	case <-time.After(3 * time.Second):
+		t.Fatal("timeout waiting for reconnect handler")
+	}
+
+	// Give time for session ID to be updated
+	time.Sleep(100 * time.Millisecond)
+
+	if pubsub.SessionID() != newSessionID {
+		t.Errorf("expected new session ID %q, got %q", newSessionID, pubsub.SessionID())
+	}
+}
+
+func TestPubSubClient_ReconnectError(t *testing.T) {
+	sessionID := "pubsub-session-reconnect-err"
+	errorReceived := make(chan error, 1)
+
+	wsMock := newMockPubSubWSServer(func(conn *websocket.Conn) {
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "welcome-1",
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      sessionID,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 10,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+		time.Sleep(500 * time.Millisecond)
+	})
+	defer wsMock.Close()
+
+	helixClient := NewClient("test-client-id", nil)
+
+	pubsub := NewPubSubClient(helixClient,
+		WithPubSubWSURL(wsMock.URL()),
+		WithPubSubErrorHandler(func(err error) {
+			select {
+			case errorReceived <- err:
+			default:
+			}
+		}),
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := pubsub.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	defer func() { _ = pubsub.Close(ctx) }()
+
+	// Trigger reconnect to invalid URL
+	pubsub.handleReconnect("ws://invalid-url-that-does-not-exist:12345")
+
+	// Wait for error
+	select {
+	case err := <-errorReceived:
+		if err == nil {
+			t.Error("expected error from failed reconnect")
+		}
+		if !strings.Contains(err.Error(), "reconnecting") {
+			t.Errorf("expected reconnecting error, got: %v", err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("timeout waiting for reconnect error")
+	}
+}
+
+func TestPubSubClient_HandleErrorNoHandler(t *testing.T) {
+	// Test that handleError doesn't panic when no error handler is set
+	client := &Client{}
+	pubsub := NewPubSubClient(client)
+
+	// This should not panic
+	pubsub.handleError(errors.New("test error"))
+}
+
+func TestPubSubClient_NotificationUnknownSubscription(t *testing.T) {
+	sessionID := "pubsub-session-unknown"
+
+	wsMock := newMockPubSubWSServer(func(conn *websocket.Conn) {
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "welcome-1",
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      sessionID,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 10,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+
+		// Send notification for unknown subscription
+		time.Sleep(100 * time.Millisecond)
+		notification := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "notif-unknown",
+				MessageType:      WSMessageTypeNotification,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketNotificationPayload{
+				Subscription: EventSubSubscription{
+					ID:   "unknown-sub-id",
+					Type: EventSubTypeChannelCheer,
+				},
+				Event: mustMarshal(map[string]string{"test": "data"}),
+			}),
+		}
+		_ = conn.WriteJSON(notification)
+
+		time.Sleep(200 * time.Millisecond)
+	})
+	defer wsMock.Close()
+
+	messageCalled := false
+	helixClient := NewClient("test-client-id", nil)
+	pubsub := NewPubSubClient(helixClient,
+		WithPubSubWSURL(wsMock.URL()),
+		WithPubSubMessageHandler(func(topic string, msg json.RawMessage) {
+			messageCalled = true
+		}),
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := pubsub.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	defer func() { _ = pubsub.Close(ctx) }()
+
+	// Wait for notification to be processed
+	time.Sleep(500 * time.Millisecond)
+
+	// Message handler should NOT have been called for unknown subscription
+	if messageCalled {
+		t.Error("message handler should not be called for unknown subscription")
+	}
+}
+
+func TestPubSubClient_NotificationNoHandler(t *testing.T) {
+	sessionID := "pubsub-session-no-handler"
+
+	wsMock := newMockPubSubWSServer(func(conn *websocket.Conn) {
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "welcome-1",
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      sessionID,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 10,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+
+		time.Sleep(100 * time.Millisecond)
+
+		// Send notification
+		notification := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "notif-1",
+				MessageType:      WSMessageTypeNotification,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketNotificationPayload{
+				Subscription: EventSubSubscription{
+					ID:   "sub-1",
+					Type: EventSubTypeChannelPointsRedemptionAdd,
+				},
+				Event: mustMarshal(map[string]string{"test": "data"}),
+			}),
+		}
+		_ = conn.WriteJSON(notification)
+
+		time.Sleep(200 * time.Millisecond)
+	})
+	defer wsMock.Close()
+
+	helixMock := newMockHelixServer()
+	defer helixMock.Close()
+
+	helixClient := NewClient("test-client-id", nil)
+	helixClient.baseURL = helixMock.server.URL
+
+	// No message handler set
+	pubsub := NewPubSubClient(helixClient, WithPubSubWSURL(wsMock.URL()))
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := pubsub.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	defer func() { _ = pubsub.Close(ctx) }()
+
+	topic := "channel-points-channel-v1.12345"
+	err = pubsub.Listen(ctx, topic)
+	if err != nil {
+		t.Fatalf("Listen failed: %v", err)
+	}
+
+	// Wait for notification to be processed - should not panic
+	time.Sleep(500 * time.Millisecond)
+}
+
+func TestPubSubClient_RevocationCleanupMultipleSubscriptions(t *testing.T) {
+	sessionID := "pubsub-session-revoke-multi"
+	errorCount := 0
+	var errorMu sync.Mutex
+
+	wsMock := newMockPubSubWSServer(func(conn *websocket.Conn) {
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "welcome-1",
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      sessionID,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 10,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+
+		// Wait for subscriptions to be created (3 for subscribe events)
+		time.Sleep(200 * time.Millisecond)
+
+		// Revoke only one of the three subscriptions
+		revocation := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "revoke-1",
+				MessageType:      WSMessageTypeRevocation,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketNotificationPayload{
+				Subscription: EventSubSubscription{
+					ID:     "sub-1",
+					Type:   EventSubTypeChannelSubscribe,
+					Status: "authorization_revoked",
+				},
+			}),
+		}
+		_ = conn.WriteJSON(revocation)
+
+		time.Sleep(300 * time.Millisecond)
+	})
+	defer wsMock.Close()
+
+	helixMock := newMockHelixServer()
+	defer helixMock.Close()
+
+	helixClient := NewClient("test-client-id", nil)
+	helixClient.baseURL = helixMock.server.URL
+
+	pubsub := NewPubSubClient(helixClient,
+		WithPubSubWSURL(wsMock.URL()),
+		WithPubSubErrorHandler(func(err error) {
+			errorMu.Lock()
+			errorCount++
+			errorMu.Unlock()
+		}),
+	)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := pubsub.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	defer func() { _ = pubsub.Close(ctx) }()
+
+	// Listen to subscribe events (maps to 3 EventSub types)
+	topic := "channel-subscribe-events-v1.12345"
+	err = pubsub.Listen(ctx, topic)
+	if err != nil {
+		t.Fatalf("Listen failed: %v", err)
+	}
+
+	// Verify 3 subscriptions were created
+	helixMock.mu.Lock()
+	initialSubCount := len(helixMock.subscriptions)
+	helixMock.mu.Unlock()
+
+	if initialSubCount != 3 {
+		t.Errorf("expected 3 subscriptions, got %d", initialSubCount)
+	}
+
+	// Wait for revocation to be processed
+	time.Sleep(600 * time.Millisecond)
+
+	// Topic should still exist (2 subs remaining)
+	topics := pubsub.Topics()
+	if len(topics) != 1 {
+		t.Errorf("expected 1 topic (with 2 remaining subs), got %d", len(topics))
+	}
+
+	// Should have received exactly one error
+	errorMu.Lock()
+	finalErrorCount := errorCount
+	errorMu.Unlock()
+
+	if finalErrorCount != 1 {
+		t.Errorf("expected 1 error from revocation, got %d", finalErrorCount)
+	}
+}
+
+func TestPubSubClient_UnlistenNotConnected(t *testing.T) {
+	client := &Client{}
+	pubsub := NewPubSubClient(client)
+
+	// Unlisten when not connected should be safe (no-op)
+	err := pubsub.Unlisten(context.Background(), "channel-bits-events-v1.12345")
+	if err != nil {
+		t.Errorf("expected no error for unlisten when not listening, got %v", err)
+	}
+}
+
+func TestPubSubClient_CloseNotConnected(t *testing.T) {
+	client := &Client{}
+	pubsub := NewPubSubClient(client)
+
+	// Close when not connected should be safe
+	err := pubsub.Close(context.Background())
+	if err != nil {
+		t.Errorf("expected no error for close when not connected, got %v", err)
 	}
 }
