@@ -1,6 +1,9 @@
 package helix
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // EventSub Event Types - Common structures that appear in event payloads
 
@@ -396,6 +399,68 @@ type ChannelHypeTrainEndEvent struct {
 	Type                    HypeTrainType          `json:"type,omitempty"`
 	IsSharedTrain           bool                   `json:"is_shared_train,omitempty"`
 	SharedTrainParticipants []HypeTrainParticipant `json:"shared_train_participants,omitempty"`
+}
+
+// UnmarshalJSON implements automatic v1/v2 field conversion for ChannelHypeTrainBeginEvent.
+// When receiving v1 events, it populates Type from IsGoldenKappaTrain.
+// When receiving v2 events, it populates IsGoldenKappaTrain from Type.
+func (e *ChannelHypeTrainBeginEvent) UnmarshalJSON(data []byte) error {
+	type Alias ChannelHypeTrainBeginEvent
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	// Convert v1 -> v2: if Type is empty but IsGoldenKappaTrain is set
+	if e.Type == "" {
+		if e.IsGoldenKappaTrain {
+			e.Type = HypeTrainTypeGoldenKappa
+		} else {
+			e.Type = HypeTrainTypeRegular
+		}
+	}
+
+	// Convert v2 -> v1: if Type is set, populate IsGoldenKappaTrain
+	if e.Type == HypeTrainTypeGoldenKappa {
+		e.IsGoldenKappaTrain = true
+	}
+
+	return nil
+}
+
+// UnmarshalJSON implements automatic v1/v2 field conversion for ChannelHypeTrainEndEvent.
+// When receiving v1 events, it populates Type from IsGoldenKappaTrain.
+// When receiving v2 events, it populates IsGoldenKappaTrain from Type.
+func (e *ChannelHypeTrainEndEvent) UnmarshalJSON(data []byte) error {
+	type Alias ChannelHypeTrainEndEvent
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	// Convert v1 -> v2: if Type is empty but IsGoldenKappaTrain is set
+	if e.Type == "" {
+		if e.IsGoldenKappaTrain {
+			e.Type = HypeTrainTypeGoldenKappa
+		} else {
+			e.Type = HypeTrainTypeRegular
+		}
+	}
+
+	// Convert v2 -> v1: if Type is set, populate IsGoldenKappaTrain
+	if e.Type == HypeTrainTypeGoldenKappa {
+		e.IsGoldenKappaTrain = true
+	}
+
+	return nil
 }
 
 // V1 compatibility type aliases.

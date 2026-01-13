@@ -263,7 +263,12 @@ resp, err := client.CreateEventSubSubscription(ctx, &helix.CreateEventSubSubscri
 **V1 Compatibility:**
 - `IsGoldenKappaTrain` - Only present in v1 events (deprecated in v2, use `Type == "golden_kappa"` instead)
 
-**Migration Note:** Existing v1 subscriptions registered with Twitch will continue working. The event structs support both v1 and v2 payloads - v1 events populate `IsGoldenKappaTrain` while v2 fields remain zero values, and vice versa. Only the default version for *new* subscriptions has changed to v2.
+**Automatic Conversion:** The library automatically converts between v1 and v2 fields during JSON unmarshaling:
+- V1 events: `IsGoldenKappaTrain=true` → `Type` is set to `golden_kappa`
+- V1 events: `IsGoldenKappaTrain=false` → `Type` is set to `regular`
+- V2 events: `Type=golden_kappa` → `IsGoldenKappaTrain` is set to `true`
+
+This means you can use either field regardless of which version you subscribed to. Existing v1 subscriptions will continue working, and your code can use the v2 `Type` field even when receiving v1 events.
 
 ### Stream Events
 

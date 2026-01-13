@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `AllTimeHighLevel` and `AllTimeHighTotal` for channel records
 - Version constants `EventSubVersionHypeTrainV1` and `EventSubVersionHypeTrainV2` for explicit version selection
 - Full backwards compatibility with v1 (`IsGoldenKappaTrain` field preserved)
+- Automatic v1/v2 field conversion during JSON unmarshaling (use either field regardless of subscription version)
 
 ### Changed
 - Default Hype Train EventSub version changed from v1 to v2
