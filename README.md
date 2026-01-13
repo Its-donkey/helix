@@ -1,7 +1,7 @@
 # Kappopher
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/Its-donkey/kappopher)](https://goreportcard.com/report/github.com/Its-donkey/kappopher)
-[![codecov](https://codecov.io/github/Its-donkey/kappopher/graph/badge.svg?token=UB85N281NS)](https://codecov.io/github/Its-donkey/kappopher)
+[![Tests](https://github.com/Its-donkey/kappopher/actions/workflows/test.yml/badge.svg)](https://github.com/Its-donkey/kappopher/actions/workflows/test.yml)
 
 A comprehensive Twitch API toolkit for Go.
 
