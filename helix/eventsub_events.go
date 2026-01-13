@@ -330,7 +330,24 @@ type ChannelPredictionEndEvent struct {
 
 // Hype Train Events
 
+// HypeTrainType represents the type of hype train (v2 only).
+type HypeTrainType string
+
+const (
+	HypeTrainTypeRegular    HypeTrainType = "regular"
+	HypeTrainTypeGoldenKappa HypeTrainType = "golden_kappa"
+	HypeTrainTypeShared     HypeTrainType = "shared"
+)
+
+// HypeTrainParticipant represents a participant in a shared hype train (v2 only).
+type HypeTrainParticipant struct {
+	BroadcasterID    string `json:"broadcaster_id"`
+	BroadcasterLogin string `json:"broadcaster_login"`
+	BroadcasterName  string `json:"broadcaster_name"`
+}
+
 // ChannelHypeTrainBeginEvent is sent when a Hype Train begins.
+// This struct supports both v1 and v2 payloads.
 type ChannelHypeTrainBeginEvent struct {
 	ID string `json:"id"`
 	EventSubBroadcaster
@@ -342,6 +359,14 @@ type ChannelHypeTrainBeginEvent struct {
 	Level            int                    `json:"level"`
 	StartedAt        time.Time              `json:"started_at"`
 	ExpiresAt        time.Time              `json:"expires_at"`
+	// V1 only field (deprecated in v2)
+	IsGoldenKappaTrain bool `json:"is_golden_kappa_train,omitempty"`
+	// V2 only fields
+	Type                    HypeTrainType          `json:"type,omitempty"`
+	IsSharedTrain           bool                   `json:"is_shared_train,omitempty"`
+	SharedTrainParticipants []HypeTrainParticipant `json:"shared_train_participants,omitempty"`
+	AllTimeHighLevel        int                    `json:"all_time_high_level,omitempty"`
+	AllTimeHighTotal        int                    `json:"all_time_high_total,omitempty"`
 }
 
 // EventSubContribution represents a Hype Train contribution.
@@ -355,6 +380,7 @@ type EventSubContribution struct {
 type ChannelHypeTrainProgressEvent = ChannelHypeTrainBeginEvent
 
 // ChannelHypeTrainEndEvent is sent when a Hype Train ends.
+// This struct supports both v1 and v2 payloads.
 type ChannelHypeTrainEndEvent struct {
 	ID string `json:"id"`
 	EventSubBroadcaster
@@ -364,7 +390,28 @@ type ChannelHypeTrainEndEvent struct {
 	StartedAt        time.Time              `json:"started_at"`
 	EndedAt          time.Time              `json:"ended_at"`
 	CooldownEndsAt   time.Time              `json:"cooldown_ends_at"`
+	// V1 only field (deprecated in v2)
+	IsGoldenKappaTrain bool `json:"is_golden_kappa_train,omitempty"`
+	// V2 only fields
+	Type                    HypeTrainType          `json:"type,omitempty"`
+	IsSharedTrain           bool                   `json:"is_shared_train,omitempty"`
+	SharedTrainParticipants []HypeTrainParticipant `json:"shared_train_participants,omitempty"`
 }
+
+// V1 compatibility type aliases.
+// These are provided for users who need to work with v1 payloads explicitly.
+
+// ChannelHypeTrainBeginEventV1 is the v1 version of the hype train begin event.
+// Deprecated: Use ChannelHypeTrainBeginEvent with v2 subscription instead.
+type ChannelHypeTrainBeginEventV1 = ChannelHypeTrainBeginEvent
+
+// ChannelHypeTrainProgressEventV1 is the v1 version of the hype train progress event.
+// Deprecated: Use ChannelHypeTrainProgressEvent with v2 subscription instead.
+type ChannelHypeTrainProgressEventV1 = ChannelHypeTrainProgressEvent
+
+// ChannelHypeTrainEndEventV1 is the v1 version of the hype train end event.
+// Deprecated: Use ChannelHypeTrainEndEvent with v2 subscription instead.
+type ChannelHypeTrainEndEventV1 = ChannelHypeTrainEndEvent
 
 // Stream Events
 
