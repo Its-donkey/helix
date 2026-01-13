@@ -189,8 +189,9 @@ const (
 	EventSubTypeChannelHypeTrainEnd      = "channel.hype_train.end"
 )
 
-// EventSub Hype Train version constants for explicit version selection.
+// EventSub Hype Train version constants.
 const (
+	// Deprecated: EventSubVersionHypeTrainV1 is deprecated by Twitch. Use EventSubVersionHypeTrainV2.
 	EventSubVersionHypeTrainV1 = "1"
 	EventSubVersionHypeTrainV2 = "2"
 )
@@ -350,7 +351,7 @@ var EventSubTypeVersion = map[string]string{
 	EventSubTypeChannelPredictionProgress: "1",
 	EventSubTypeChannelPredictionLock:     "1",
 	EventSubTypeChannelPredictionEnd:      "1",
-	// Hype Train (v2 is default, use EventSubVersionHypeTrainV1 for v1)
+	// Hype Train (v1 is deprecated by Twitch)
 	EventSubTypeChannelHypeTrainBegin:    "2",
 	EventSubTypeChannelHypeTrainProgress: "2",
 	EventSubTypeChannelHypeTrainEnd:      "2",

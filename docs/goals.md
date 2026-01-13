@@ -178,17 +178,17 @@ for _, hypeTrain := range resp.Data {
 
 ## EventSub Hype Train Events
 
-For real-time hype train notifications, use EventSub subscriptions. Hype Train events support both v1 and v2 versions.
+For real-time hype train notifications, use EventSub subscriptions.
 
-**V2 (Default):** Includes enhanced fields for shared hype trains and channel records:
+**Note:** Hype Train v1 is deprecated by Twitch. This library defaults to v2.
+
+**V2 Fields:**
 - `Type` - `regular`, `golden_kappa`, or `shared`
 - `IsSharedTrain` - Whether this is a shared hype train
 - `SharedTrainParticipants` - Participating broadcasters for shared trains
 - `AllTimeHighLevel` / `AllTimeHighTotal` - Channel's all-time records
 
-**V1 Compatibility:** Use `EventSubVersionHypeTrainV1` for backwards compatibility with the `IsGoldenKappaTrain` field.
-
-See [EventSub documentation](eventsub.md#hype-train-events) for subscription details and code examples.
+See [EventSub documentation](eventsub.md#hype-train-events) for subscription details, code examples, and migration guidance.
 
 **Sample Response:**
 ```json

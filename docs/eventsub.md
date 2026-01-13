@@ -235,20 +235,12 @@ The following constants are available for EventSub subscription types:
 - `EventSubTypeChannelHypeTrainProgress` - Hype Train progress update
 - `EventSubTypeChannelHypeTrainEnd` - Hype Train ended
 
-**Version Support:** Hype Train events default to v2. Use version constants for explicit selection:
+**Note:** Hype Train v1 is deprecated by Twitch. This library defaults to v2.
 
 ```go
-// Use v2 (default) - includes Type, IsSharedTrain, SharedTrainParticipants
 resp, err := client.CreateEventSubSubscription(ctx, &helix.CreateEventSubSubscriptionParams{
     Type:    helix.EventSubTypeChannelHypeTrainBegin,
     Version: helix.EventSubVersionHypeTrainV2, // or omit for default v2
-    // ...
-})
-
-// Use v1 for backwards compatibility - includes IsGoldenKappaTrain
-resp, err := client.CreateEventSubSubscription(ctx, &helix.CreateEventSubSubscriptionParams{
-    Type:    helix.EventSubTypeChannelHypeTrainBegin,
-    Version: helix.EventSubVersionHypeTrainV1,
     // ...
 })
 ```
@@ -260,15 +252,11 @@ resp, err := client.CreateEventSubSubscription(ctx, &helix.CreateEventSubSubscri
 - `AllTimeHighLevel` - Channel's all-time highest hype train level
 - `AllTimeHighTotal` - Channel's all-time highest hype train total
 
-**V1 Compatibility:**
-- `IsGoldenKappaTrain` - Only present in v1 events (deprecated in v2, use `Type == "golden_kappa"` instead)
+**Migration from V1:** The library automatically converts v1 fields to v2 during JSON unmarshaling to ease migration:
+- `IsGoldenKappaTrain=true` → `Type` is set to `golden_kappa`
+- `IsGoldenKappaTrain=false` → `Type` is set to `regular`
 
-**Automatic Conversion:** The library automatically converts between v1 and v2 fields during JSON unmarshaling:
-- V1 events: `IsGoldenKappaTrain=true` → `Type` is set to `golden_kappa`
-- V1 events: `IsGoldenKappaTrain=false` → `Type` is set to `regular`
-- V2 events: `Type=golden_kappa` → `IsGoldenKappaTrain` is set to `true`
-
-This means you can use either field regardless of which version you subscribed to. Existing v1 subscriptions will continue working, and your code can use the v2 `Type` field even when receiving v1 events.
+This allows existing code using `IsGoldenKappaTrain` to continue working while you migrate to the `Type` field.
 
 ### Stream Events
 
