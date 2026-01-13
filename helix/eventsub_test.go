@@ -752,21 +752,25 @@ func TestClient_DeleteEventSubSubscription_Error(t *testing.T) {
 }
 
 func TestHypeTrainBeginEvent_V1ToV2Conversion(t *testing.T) {
-	// Test v1 payload with is_golden_kappa_train=true converts to Type=golden_kappa
+	// Official Twitch v1 example from https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelhype_trainbegin
+	// Modified is_golden_kappa_train to true for golden kappa test
 	v1GoldenKappa := `{
-		"id": "train1",
-		"broadcaster_user_id": "12345",
-		"broadcaster_user_login": "test",
-		"broadcaster_user_name": "Test",
-		"total": 100,
-		"progress": 50,
-		"goal": 200,
-		"level": 1,
-		"started_at": "2025-01-01T00:00:00Z",
-		"expires_at": "2025-01-01T00:05:00Z",
-		"is_golden_kappa_train": true,
-		"top_contributions": [],
-		"last_contribution": {"user_id": "1", "user_login": "u", "user_name": "U", "type": "bits", "total": 50}
+		"id": "1b0AsbInCHZW2SQFQkCzqN07Ib2",
+		"broadcaster_user_id": "1337",
+		"broadcaster_user_login": "cool_user",
+		"broadcaster_user_name": "Cool_User",
+		"total": 137,
+		"progress": 137,
+		"goal": 500,
+		"top_contributions": [
+			{ "user_id": "123", "user_login": "pogchamp", "user_name": "PogChamp", "type": "bits", "total": 50 },
+			{ "user_id": "456", "user_login": "kappa", "user_name": "Kappa", "type": "subscription", "total": 45 }
+		],
+		"last_contribution": { "user_id": "123", "user_login": "pogchamp", "user_name": "PogChamp", "type": "bits", "total": 50 },
+		"level": 2,
+		"started_at": "2020-07-15T17:16:03.17106713Z",
+		"expires_at": "2020-07-15T17:16:11.17106713Z",
+		"is_golden_kappa_train": true
 	}`
 
 	var event ChannelHypeTrainBeginEvent
@@ -780,22 +784,34 @@ func TestHypeTrainBeginEvent_V1ToV2Conversion(t *testing.T) {
 	if !event.IsGoldenKappaTrain {
 		t.Error("expected IsGoldenKappaTrain=true")
 	}
+	if event.ID != "1b0AsbInCHZW2SQFQkCzqN07Ib2" {
+		t.Errorf("expected ID=1b0AsbInCHZW2SQFQkCzqN07Ib2, got %s", event.ID)
+	}
+	if event.Total != 137 {
+		t.Errorf("expected Total=137, got %d", event.Total)
+	}
+	if len(event.TopContributions) != 2 {
+		t.Errorf("expected 2 top contributions, got %d", len(event.TopContributions))
+	}
 
-	// Test v1 payload with is_golden_kappa_train=false converts to Type=regular
+	// Official Twitch v1 example (unmodified - is_golden_kappa_train: false)
 	v1Regular := `{
-		"id": "train2",
-		"broadcaster_user_id": "12345",
-		"broadcaster_user_login": "test",
-		"broadcaster_user_name": "Test",
-		"total": 100,
-		"progress": 50,
-		"goal": 200,
-		"level": 1,
-		"started_at": "2025-01-01T00:00:00Z",
-		"expires_at": "2025-01-01T00:05:00Z",
-		"is_golden_kappa_train": false,
-		"top_contributions": [],
-		"last_contribution": {"user_id": "1", "user_login": "u", "user_name": "U", "type": "bits", "total": 50}
+		"id": "1b0AsbInCHZW2SQFQkCzqN07Ib2",
+		"broadcaster_user_id": "1337",
+		"broadcaster_user_login": "cool_user",
+		"broadcaster_user_name": "Cool_User",
+		"total": 137,
+		"progress": 137,
+		"goal": 500,
+		"top_contributions": [
+			{ "user_id": "123", "user_login": "pogchamp", "user_name": "PogChamp", "type": "bits", "total": 50 },
+			{ "user_id": "456", "user_login": "kappa", "user_name": "Kappa", "type": "subscription", "total": 45 }
+		],
+		"last_contribution": { "user_id": "123", "user_login": "pogchamp", "user_name": "PogChamp", "type": "bits", "total": 50 },
+		"level": 2,
+		"started_at": "2020-07-15T17:16:03.17106713Z",
+		"expires_at": "2020-07-15T17:16:11.17106713Z",
+		"is_golden_kappa_train": false
 	}`
 
 	var event2 ChannelHypeTrainBeginEvent
@@ -812,22 +828,33 @@ func TestHypeTrainBeginEvent_V1ToV2Conversion(t *testing.T) {
 }
 
 func TestHypeTrainBeginEvent_V2ToV1Conversion(t *testing.T) {
-	// Test v2 payload with type=golden_kappa converts to IsGoldenKappaTrain=true
+	// Official Twitch v2 example from https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelhype_trainbegin
+	// Modified type to golden_kappa for conversion test
 	v2GoldenKappa := `{
-		"id": "train1",
-		"broadcaster_user_id": "12345",
-		"broadcaster_user_login": "test",
-		"broadcaster_user_name": "Test",
-		"total": 100,
-		"progress": 50,
-		"goal": 200,
+		"id": "1b0AsbInCHZW2SQFQkCzqN07Ib2",
+		"broadcaster_user_id": "1337",
+		"broadcaster_user_login": "cool_user",
+		"broadcaster_user_name": "Cool_User",
+		"total": 137,
+		"progress": 137,
+		"goal": 500,
+		"top_contributions": [
+			{
+				"user_id": "123",
+				"user_login": "pogchamp",
+				"user_name": "PogChamp",
+				"type": "bits",
+				"total": 50
+			}
+		],
+		"shared_train_participants": null,
 		"level": 1,
-		"started_at": "2025-01-01T00:00:00Z",
-		"expires_at": "2025-01-01T00:05:00Z",
-		"type": "golden_kappa",
+		"started_at": "2020-07-15T17:16:03.17106713Z",
+		"expires_at": "2020-07-15T17:16:11.17106713Z",
 		"is_shared_train": false,
-		"top_contributions": [],
-		"last_contribution": {"user_id": "1", "user_login": "u", "user_name": "U", "type": "bits", "total": 50}
+		"type": "golden_kappa",
+		"all_time_high_level": 4,
+		"all_time_high_total": 2845
 	}`
 
 	var event ChannelHypeTrainBeginEvent
@@ -842,22 +869,32 @@ func TestHypeTrainBeginEvent_V2ToV1Conversion(t *testing.T) {
 		t.Error("expected IsGoldenKappaTrain=true (converted from v2)")
 	}
 
-	// Test v2 payload with type=regular keeps IsGoldenKappaTrain=false
+	// Official Twitch v2 example (unmodified - type: regular)
 	v2Regular := `{
-		"id": "train2",
-		"broadcaster_user_id": "12345",
-		"broadcaster_user_login": "test",
-		"broadcaster_user_name": "Test",
-		"total": 100,
-		"progress": 50,
-		"goal": 200,
+		"id": "1b0AsbInCHZW2SQFQkCzqN07Ib2",
+		"broadcaster_user_id": "1337",
+		"broadcaster_user_login": "cool_user",
+		"broadcaster_user_name": "Cool_User",
+		"total": 137,
+		"progress": 137,
+		"goal": 500,
+		"top_contributions": [
+			{
+				"user_id": "123",
+				"user_login": "pogchamp",
+				"user_name": "PogChamp",
+				"type": "bits",
+				"total": 50
+			}
+		],
+		"shared_train_participants": null,
 		"level": 1,
-		"started_at": "2025-01-01T00:00:00Z",
-		"expires_at": "2025-01-01T00:05:00Z",
-		"type": "regular",
+		"started_at": "2020-07-15T17:16:03.17106713Z",
+		"expires_at": "2020-07-15T17:16:11.17106713Z",
 		"is_shared_train": false,
-		"top_contributions": [],
-		"last_contribution": {"user_id": "1", "user_login": "u", "user_name": "U", "type": "bits", "total": 50}
+		"type": "regular",
+		"all_time_high_level": 4,
+		"all_time_high_total": 2845
 	}`
 
 	var event2 ChannelHypeTrainBeginEvent
@@ -871,27 +908,42 @@ func TestHypeTrainBeginEvent_V2ToV1Conversion(t *testing.T) {
 	if event2.IsGoldenKappaTrain {
 		t.Error("expected IsGoldenKappaTrain=false")
 	}
+	if event2.AllTimeHighLevel != 4 {
+		t.Errorf("expected AllTimeHighLevel=4, got %d", event2.AllTimeHighLevel)
+	}
+	if event2.AllTimeHighTotal != 2845 {
+		t.Errorf("expected AllTimeHighTotal=2845, got %d", event2.AllTimeHighTotal)
+	}
 
 	// Test v2 payload with type=shared
 	v2Shared := `{
-		"id": "train3",
-		"broadcaster_user_id": "12345",
-		"broadcaster_user_login": "test",
-		"broadcaster_user_name": "Test",
-		"total": 100,
-		"progress": 50,
-		"goal": 200,
-		"level": 1,
-		"started_at": "2025-01-01T00:00:00Z",
-		"expires_at": "2025-01-01T00:05:00Z",
-		"type": "shared",
-		"is_shared_train": true,
+		"id": "1b0AsbInCHZW2SQFQkCzqN07Ib2",
+		"broadcaster_user_id": "1337",
+		"broadcaster_user_login": "cool_user",
+		"broadcaster_user_name": "Cool_User",
+		"total": 137,
+		"progress": 137,
+		"goal": 500,
+		"top_contributions": [
+			{
+				"user_id": "123",
+				"user_login": "pogchamp",
+				"user_name": "PogChamp",
+				"type": "bits",
+				"total": 50
+			}
+		],
 		"shared_train_participants": [
 			{"broadcaster_id": "111", "broadcaster_login": "user1", "broadcaster_name": "User1"},
 			{"broadcaster_id": "222", "broadcaster_login": "user2", "broadcaster_name": "User2"}
 		],
-		"top_contributions": [],
-		"last_contribution": {"user_id": "1", "user_login": "u", "user_name": "U", "type": "bits", "total": 50}
+		"level": 1,
+		"started_at": "2020-07-15T17:16:03.17106713Z",
+		"expires_at": "2020-07-15T17:16:11.17106713Z",
+		"is_shared_train": true,
+		"type": "shared",
+		"all_time_high_level": 4,
+		"all_time_high_total": 2845
 	}`
 
 	var event3 ChannelHypeTrainBeginEvent
@@ -914,18 +966,23 @@ func TestHypeTrainBeginEvent_V2ToV1Conversion(t *testing.T) {
 }
 
 func TestHypeTrainEndEvent_V1ToV2Conversion(t *testing.T) {
+	// Official Twitch v1 example from https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelhype_trainend
+	// Modified is_golden_kappa_train to true for golden kappa test
 	v1GoldenKappa := `{
-		"id": "train1",
-		"broadcaster_user_id": "12345",
-		"broadcaster_user_login": "test",
-		"broadcaster_user_name": "Test",
-		"level": 3,
-		"total": 500,
-		"started_at": "2025-01-01T00:00:00Z",
-		"ended_at": "2025-01-01T00:05:00Z",
-		"cooldown_ends_at": "2025-01-01T01:05:00Z",
-		"is_golden_kappa_train": true,
-		"top_contributions": []
+		"id": "1b0AsbInCHZW2SQFQkCzqN07Ib2",
+		"broadcaster_user_id": "1337",
+		"broadcaster_user_login": "cool_user",
+		"broadcaster_user_name": "Cool_User",
+		"level": 2,
+		"total": 137,
+		"top_contributions": [
+			{ "user_id": "123", "user_login": "pogchamp", "user_name": "PogChamp", "type": "bits", "total": 50 },
+			{ "user_id": "456", "user_login": "kappa", "user_name": "Kappa", "type": "subscription", "total": 45 }
+		],
+		"started_at": "2020-07-15T17:16:03.17106713Z",
+		"ended_at": "2020-07-15T17:16:11.17106713Z",
+		"cooldown_ends_at": "2020-07-15T18:16:11.17106713Z",
+		"is_golden_kappa_train": true
 	}`
 
 	var event ChannelHypeTrainEndEvent
@@ -939,22 +996,42 @@ func TestHypeTrainEndEvent_V1ToV2Conversion(t *testing.T) {
 	if !event.IsGoldenKappaTrain {
 		t.Error("expected IsGoldenKappaTrain=true")
 	}
+	if event.ID != "1b0AsbInCHZW2SQFQkCzqN07Ib2" {
+		t.Errorf("expected ID=1b0AsbInCHZW2SQFQkCzqN07Ib2, got %s", event.ID)
+	}
+	if event.Total != 137 {
+		t.Errorf("expected Total=137, got %d", event.Total)
+	}
+	if len(event.TopContributions) != 2 {
+		t.Errorf("expected 2 top contributions, got %d", len(event.TopContributions))
+	}
 }
 
 func TestHypeTrainEndEvent_V2ToV1Conversion(t *testing.T) {
+	// Official Twitch v2 example from https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelhype_trainend
+	// Modified type to golden_kappa for conversion test
 	v2GoldenKappa := `{
-		"id": "train1",
-		"broadcaster_user_id": "12345",
-		"broadcaster_user_login": "test",
-		"broadcaster_user_name": "Test",
-		"level": 3,
-		"total": 500,
-		"started_at": "2025-01-01T00:00:00Z",
-		"ended_at": "2025-01-01T00:05:00Z",
-		"cooldown_ends_at": "2025-01-01T01:05:00Z",
-		"type": "golden_kappa",
+		"id": "1b0AsbInCHZW2SQFQkCzqN07Ib2",
+		"broadcaster_user_id": "1337",
+		"broadcaster_user_login": "cool_user",
+		"broadcaster_user_name": "Cool_User",
+		"total": 137,
+		"top_contributions": [
+			{
+				"user_id": "123",
+				"user_login": "pogchamp",
+				"user_name": "PogChamp",
+				"type": "bits",
+				"total": 50
+			}
+		],
+		"shared_train_participants": null,
+		"level": 1,
+		"started_at": "2020-07-15T17:16:03.17106713Z",
+		"ended_at": "2020-07-15T17:16:11.17106713Z",
+		"cooldown_ends_at": "2020-07-16T17:16:11.17106713Z",
 		"is_shared_train": false,
-		"top_contributions": []
+		"type": "golden_kappa"
 	}`
 
 	var event ChannelHypeTrainEndEvent
@@ -968,24 +1045,65 @@ func TestHypeTrainEndEvent_V2ToV1Conversion(t *testing.T) {
 	if !event.IsGoldenKappaTrain {
 		t.Error("expected IsGoldenKappaTrain=true (converted from v2)")
 	}
+
+	// Official Twitch v2 example (unmodified - type: regular)
+	v2Regular := `{
+		"id": "1b0AsbInCHZW2SQFQkCzqN07Ib2",
+		"broadcaster_user_id": "1337",
+		"broadcaster_user_login": "cool_user",
+		"broadcaster_user_name": "Cool_User",
+		"total": 137,
+		"top_contributions": [
+			{
+				"user_id": "123",
+				"user_login": "pogchamp",
+				"user_name": "PogChamp",
+				"type": "bits",
+				"total": 50
+			}
+		],
+		"shared_train_participants": null,
+		"level": 1,
+		"started_at": "2020-07-15T17:16:03.17106713Z",
+		"ended_at": "2020-07-15T17:16:11.17106713Z",
+		"cooldown_ends_at": "2020-07-16T17:16:11.17106713Z",
+		"is_shared_train": false,
+		"type": "regular"
+	}`
+
+	var event2 ChannelHypeTrainEndEvent
+	if err := json.Unmarshal([]byte(v2Regular), &event2); err != nil {
+		t.Fatalf("failed to unmarshal: %v", err)
+	}
+
+	if event2.Type != HypeTrainTypeRegular {
+		t.Errorf("expected Type=regular, got %s", event2.Type)
+	}
+	if event2.IsGoldenKappaTrain {
+		t.Error("expected IsGoldenKappaTrain=false")
+	}
 }
 
 func TestHypeTrainProgressEvent_Conversion(t *testing.T) {
-	// Progress event uses same struct as Begin, so it should have the same conversion
+	// Official Twitch v1 example from https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelhype_trainprogress
+	// Modified is_golden_kappa_train to true for conversion test
 	v1Payload := `{
-		"id": "train1",
-		"broadcaster_user_id": "12345",
-		"broadcaster_user_login": "test",
-		"broadcaster_user_name": "Test",
-		"total": 200,
-		"progress": 150,
-		"goal": 300,
+		"id": "1b0AsbInCHZW2SQFQkCzqN07Ib2",
+		"broadcaster_user_id": "1337",
+		"broadcaster_user_login": "cool_user",
+		"broadcaster_user_name": "Cool_User",
+		"total": 137,
+		"progress": 137,
+		"goal": 500,
+		"top_contributions": [
+			{ "user_id": "123", "user_login": "pogchamp", "user_name": "PogChamp", "type": "bits", "total": 50 },
+			{ "user_id": "456", "user_login": "kappa", "user_name": "Kappa", "type": "subscription", "total": 45 }
+		],
+		"last_contribution": { "user_id": "123", "user_login": "pogchamp", "user_name": "PogChamp", "type": "bits", "total": 50 },
 		"level": 2,
-		"started_at": "2025-01-01T00:00:00Z",
-		"expires_at": "2025-01-01T00:05:00Z",
-		"is_golden_kappa_train": true,
-		"top_contributions": [],
-		"last_contribution": {"user_id": "1", "user_login": "u", "user_name": "U", "type": "bits", "total": 50}
+		"started_at": "2020-07-15T17:16:03.17106713Z",
+		"expires_at": "2020-07-15T17:16:11.17106713Z",
+		"is_golden_kappa_train": true
 	}`
 
 	var event ChannelHypeTrainProgressEvent
@@ -995,6 +1113,56 @@ func TestHypeTrainProgressEvent_Conversion(t *testing.T) {
 
 	if event.Type != HypeTrainTypeGoldenKappa {
 		t.Errorf("expected Type=golden_kappa, got %s", event.Type)
+	}
+	if event.ID != "1b0AsbInCHZW2SQFQkCzqN07Ib2" {
+		t.Errorf("expected ID=1b0AsbInCHZW2SQFQkCzqN07Ib2, got %s", event.ID)
+	}
+	if event.Total != 137 {
+		t.Errorf("expected Total=137, got %d", event.Total)
+	}
+	if event.Progress != 137 {
+		t.Errorf("expected Progress=137, got %d", event.Progress)
+	}
+	if event.Goal != 500 {
+		t.Errorf("expected Goal=500, got %d", event.Goal)
+	}
+
+	// Official Twitch v2 example (unmodified - type: regular)
+	v2Payload := `{
+		"id": "1b0AsbInCHZW2SQFQkCzqN07Ib2",
+		"broadcaster_user_id": "1337",
+		"broadcaster_user_login": "cool_user",
+		"broadcaster_user_name": "Cool_User",
+		"total": 137,
+		"progress": 137,
+		"goal": 500,
+		"top_contributions": [
+			{
+				"user_id": "123",
+				"user_login": "pogchamp",
+				"user_name": "PogChamp",
+				"type": "bits",
+				"total": 50
+			}
+		],
+		"shared_train_participants": null,
+		"level": 1,
+		"started_at": "2020-07-15T17:16:03.17106713Z",
+		"expires_at": "2020-07-15T17:16:11.17106713Z",
+		"is_shared_train": false,
+		"type": "regular"
+	}`
+
+	var event2 ChannelHypeTrainProgressEvent
+	if err := json.Unmarshal([]byte(v2Payload), &event2); err != nil {
+		t.Fatalf("failed to unmarshal: %v", err)
+	}
+
+	if event2.Type != HypeTrainTypeRegular {
+		t.Errorf("expected Type=regular, got %s", event2.Type)
+	}
+	if event2.IsGoldenKappaTrain {
+		t.Error("expected IsGoldenKappaTrain=false")
 	}
 }
 
@@ -1017,19 +1185,23 @@ func TestHypeTrainEndEvent_InvalidJSON(t *testing.T) {
 }
 
 func TestHypeTrainEndEvent_V1RegularTrain(t *testing.T) {
-	// Test v1 payload with is_golden_kappa_train=false converts to Type=regular
+	// Official Twitch v1 example from https://dev.twitch.tv/docs/eventsub/eventsub-subscription-types/#channelhype_trainend
+	// (unmodified - is_golden_kappa_train: false)
 	v1Regular := `{
-		"id": "train1",
-		"broadcaster_user_id": "12345",
-		"broadcaster_user_login": "test",
-		"broadcaster_user_name": "Test",
-		"level": 3,
-		"total": 500,
-		"started_at": "2025-01-01T00:00:00Z",
-		"ended_at": "2025-01-01T00:05:00Z",
-		"cooldown_ends_at": "2025-01-01T01:05:00Z",
-		"is_golden_kappa_train": false,
-		"top_contributions": []
+		"id": "1b0AsbInCHZW2SQFQkCzqN07Ib2",
+		"broadcaster_user_id": "1337",
+		"broadcaster_user_login": "cool_user",
+		"broadcaster_user_name": "Cool_User",
+		"level": 2,
+		"total": 137,
+		"top_contributions": [
+			{ "user_id": "123", "user_login": "pogchamp", "user_name": "PogChamp", "type": "bits", "total": 50 },
+			{ "user_id": "456", "user_login": "kappa", "user_name": "Kappa", "type": "subscription", "total": 45 }
+		],
+		"started_at": "2020-07-15T17:16:03.17106713Z",
+		"ended_at": "2020-07-15T17:16:11.17106713Z",
+		"cooldown_ends_at": "2020-07-15T18:16:11.17106713Z",
+		"is_golden_kappa_train": false
 	}`
 
 	var event ChannelHypeTrainEndEvent
@@ -1042,5 +1214,11 @@ func TestHypeTrainEndEvent_V1RegularTrain(t *testing.T) {
 	}
 	if event.IsGoldenKappaTrain {
 		t.Error("expected IsGoldenKappaTrain=false")
+	}
+	if event.ID != "1b0AsbInCHZW2SQFQkCzqN07Ib2" {
+		t.Errorf("expected ID=1b0AsbInCHZW2SQFQkCzqN07Ib2, got %s", event.ID)
+	}
+	if event.Level != 2 {
+		t.Errorf("expected Level=2, got %d", event.Level)
 	}
 }
