@@ -263,6 +263,8 @@ resp, err := client.CreateEventSubSubscription(ctx, &helix.CreateEventSubSubscri
 **V1 Compatibility:**
 - `IsGoldenKappaTrain` - Only present in v1 events (deprecated in v2, use `Type == "golden_kappa"` instead)
 
+**Migration Note:** Existing v1 subscriptions registered with Twitch will continue working. The event structs support both v1 and v2 payloads - v1 events populate `IsGoldenKappaTrain` while v2 fields remain zero values, and vice versa. Only the default version for *new* subscriptions has changed to v2.
+
 ### Stream Events
 
 - `EventSubTypeStreamOnline` - Stream went online
