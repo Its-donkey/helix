@@ -25,6 +25,7 @@ This documentation provides detailed guides and examples for using the Twitch He
 | [Conduits](conduits.md) | EventSub conduit management |
 | [Entitlements](entitlements.md) | Drops entitlements |
 | [EventSub](eventsub.md) | Event subscriptions |
+| [PubSub Compatibility](pubsub-compat.md) | PubSub-style API backed by EventSub |
 | [Extensions](extensions.md) | Extension management |
 | [Games](games.md) | Game information |
 | [Goals](goals.md) | Creator goals, hype train |
@@ -52,4 +53,5 @@ See the [examples](./examples/) directory for code samples:
 - [API Usage](./examples/api-usage.md) - Common API patterns
 - [EventSub Webhooks](./examples/eventsub-webhooks.md) - Webhook notifications
 - [EventSub WebSocket](./examples/eventsub-websocket.md) - Real-time events
+- [PubSub Migration](./examples/pubsub-migration.md) - Migrating from PubSub to EventSub
 - [Extension JWT](./examples/extension-jwt.md) - Extension authentication

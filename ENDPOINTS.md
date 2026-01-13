@@ -375,3 +375,15 @@ This document lists all Twitch API endpoints and indicates whether they are supp
 - **Authentication/OIDC endpoints** use a different base URL (`https://id.twitch.tv/oauth2`) and support OpenID Connect flows
 - **EventSub** includes webhook handler with signature verification, challenge response, and event type definitions
 - **Extension JWT** authentication is supported for extension backend services
+
+### Real-Time Features (Non-REST)
+
+In addition to REST API endpoints, this library supports:
+
+| Feature | Protocol | Description |
+|---------|----------|-------------|
+| IRC/TMI Chat | WebSocket | Full chat client with message parsing, subs, raids, moderation |
+| EventSub WebSocket | WebSocket | Real-time event streaming with auto-reconnect |
+| PubSub Compatibility | WebSocket | PubSub-style API backed by EventSub (migration layer) |
+
+The **PubSub Compatibility** layer provides familiar `Listen(topic)`/`Unlisten(topic)` semantics for developers migrating from the deprecated Twitch PubSub system (decommissioned April 2025). It internally uses EventSub WebSocket.

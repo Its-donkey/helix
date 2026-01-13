@@ -1,7 +1,10 @@
 # Kappopher
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/Its-donkey/kappopher.svg)](https://pkg.go.dev/github.com/Its-donkey/kappopher)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Its-donkey/kappopher)](https://goreportcard.com/report/github.com/Its-donkey/kappopher)
-[![codecov](https://codecov.io/github/Its-donkey/kappopher/graph/badge.svg?token=UB85N281NS)](https://codecov.io/github/Its-donkey/kappopher)
+[![Tests](https://github.com/Its-donkey/kappopher/actions/workflows/test.yml/badge.svg)](https://github.com/Its-donkey/kappopher/actions/workflows/test.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/Its-donkey/kappopher)](https://github.com/Its-donkey/kappopher)
 
 A comprehensive Twitch API toolkit for Go.
 
@@ -13,6 +16,7 @@ A comprehensive Twitch API toolkit for Go.
 - **IRC/TMI Chat**: Full IRC chat client for building chat bots with message parsing, subs, raids, and moderation events
 - **EventSub Webhooks**: Built-in webhook handler with signature verification and event parsing
 - **EventSub WebSocket**: Real-time event streaming with automatic keepalive and reconnection
+- **PubSub Compatibility**: Migration layer providing familiar PubSub-style API backed by EventSub
 - **Extension JWT**: Full support for Twitch Extension authentication
 - **Caching Layer**: Built-in response caching with TTL support
 - **Middleware System**: Chainable request/response middleware
@@ -72,6 +76,7 @@ func main() {
 | IRC/TMI Chat | Yes | Varies |
 | EventSub WebSocket | Yes | No |
 | EventSub Conduits | Yes | Varies |
+| PubSub Compatibility Layer | Yes | No |
 | Middleware System | Yes | No |
 | Caching Layer | Yes | No |
 | Batch Operations | Yes | No |
