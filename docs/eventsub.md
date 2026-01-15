@@ -235,6 +235,29 @@ The following constants are available for EventSub subscription types:
 - `EventSubTypeChannelHypeTrainProgress` - Hype Train progress update
 - `EventSubTypeChannelHypeTrainEnd` - Hype Train ended
 
+**Note:** Hype Train v1 is deprecated by Twitch. This library defaults to v2.
+
+```go
+resp, err := client.CreateEventSubSubscription(ctx, &helix.CreateEventSubSubscriptionParams{
+    Type:    helix.EventSubTypeChannelHypeTrainBegin,
+    Version: helix.EventSubVersionHypeTrainV2, // or omit for default v2
+    // ...
+})
+```
+
+**V2 Fields:**
+- `Type` - Hype train type: `regular`, `golden_kappa`, or `shared`
+- `IsSharedTrain` - Whether this is a shared hype train across multiple channels
+- `SharedTrainParticipants` - List of participating broadcasters (for shared trains)
+- `AllTimeHighLevel` - Channel's all-time highest hype train level
+- `AllTimeHighTotal` - Channel's all-time highest hype train total
+
+**Migration from V1:** The library automatically converts v1 fields to v2 during JSON unmarshaling to ease migration:
+- `IsGoldenKappaTrain=true` → `Type` is set to `golden_kappa`
+- `IsGoldenKappaTrain=false` → `Type` is set to `regular`
+
+This allows existing code using `IsGoldenKappaTrain` to continue working while you migrate to the `Type` field.
+
 ### Stream Events
 
 - `EventSubTypeStreamOnline` - Stream went online
