@@ -1,6 +1,9 @@
 package helix
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 // EventSub Event Types - Common structures that appear in event payloads
 
@@ -330,7 +333,24 @@ type ChannelPredictionEndEvent struct {
 
 // Hype Train Events
 
+// HypeTrainType represents the type of hype train (v2 only).
+type HypeTrainType string
+
+const (
+	HypeTrainTypeRegular    HypeTrainType = "regular"
+	HypeTrainTypeGoldenKappa HypeTrainType = "golden_kappa"
+	HypeTrainTypeShared     HypeTrainType = "shared"
+)
+
+// HypeTrainParticipant represents a participant in a shared hype train (v2 only).
+type HypeTrainParticipant struct {
+	BroadcasterID    string `json:"broadcaster_id"`
+	BroadcasterLogin string `json:"broadcaster_login"`
+	BroadcasterName  string `json:"broadcaster_name"`
+}
+
 // ChannelHypeTrainBeginEvent is sent when a Hype Train begins.
+// Note: Hype Train v1 is deprecated by Twitch. Use v2 fields (Type, IsSharedTrain, etc.).
 type ChannelHypeTrainBeginEvent struct {
 	ID string `json:"id"`
 	EventSubBroadcaster
@@ -342,6 +362,15 @@ type ChannelHypeTrainBeginEvent struct {
 	Level            int                    `json:"level"`
 	StartedAt        time.Time              `json:"started_at"`
 	ExpiresAt        time.Time              `json:"expires_at"`
+	// Deprecated: IsGoldenKappaTrain is from v1 which is deprecated. Use Type == HypeTrainTypeGoldenKappa instead.
+	// This field is auto-populated from Type during unmarshaling for migration convenience.
+	IsGoldenKappaTrain bool `json:"is_golden_kappa_train,omitempty"`
+	// V2 fields
+	Type                    HypeTrainType          `json:"type,omitempty"`
+	IsSharedTrain           bool                   `json:"is_shared_train,omitempty"`
+	SharedTrainParticipants []HypeTrainParticipant `json:"shared_train_participants,omitempty"`
+	AllTimeHighLevel        int                    `json:"all_time_high_level,omitempty"`
+	AllTimeHighTotal        int                    `json:"all_time_high_total,omitempty"`
 }
 
 // EventSubContribution represents a Hype Train contribution.
@@ -355,6 +384,7 @@ type EventSubContribution struct {
 type ChannelHypeTrainProgressEvent = ChannelHypeTrainBeginEvent
 
 // ChannelHypeTrainEndEvent is sent when a Hype Train ends.
+// Note: Hype Train v1 is deprecated by Twitch. Use v2 fields (Type, IsSharedTrain, etc.).
 type ChannelHypeTrainEndEvent struct {
 	ID string `json:"id"`
 	EventSubBroadcaster
@@ -364,7 +394,91 @@ type ChannelHypeTrainEndEvent struct {
 	StartedAt        time.Time              `json:"started_at"`
 	EndedAt          time.Time              `json:"ended_at"`
 	CooldownEndsAt   time.Time              `json:"cooldown_ends_at"`
+	// Deprecated: IsGoldenKappaTrain is from v1 which is deprecated. Use Type == HypeTrainTypeGoldenKappa instead.
+	// This field is auto-populated from Type during unmarshaling for migration convenience.
+	IsGoldenKappaTrain bool `json:"is_golden_kappa_train,omitempty"`
+	// V2 fields
+	Type                    HypeTrainType          `json:"type,omitempty"`
+	IsSharedTrain           bool                   `json:"is_shared_train,omitempty"`
+	SharedTrainParticipants []HypeTrainParticipant `json:"shared_train_participants,omitempty"`
 }
+
+// UnmarshalJSON implements automatic v1/v2 field conversion for ChannelHypeTrainBeginEvent.
+// When receiving v1 events, it populates Type from IsGoldenKappaTrain.
+// When receiving v2 events, it populates IsGoldenKappaTrain from Type.
+func (e *ChannelHypeTrainBeginEvent) UnmarshalJSON(data []byte) error {
+	type Alias ChannelHypeTrainBeginEvent
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	// Convert v1 -> v2: if Type is empty but IsGoldenKappaTrain is set
+	if e.Type == "" {
+		if e.IsGoldenKappaTrain {
+			e.Type = HypeTrainTypeGoldenKappa
+		} else {
+			e.Type = HypeTrainTypeRegular
+		}
+	}
+
+	// Convert v2 -> v1: if Type is set, populate IsGoldenKappaTrain
+	if e.Type == HypeTrainTypeGoldenKappa {
+		e.IsGoldenKappaTrain = true
+	}
+
+	return nil
+}
+
+// UnmarshalJSON implements automatic v1/v2 field conversion for ChannelHypeTrainEndEvent.
+// When receiving v1 events, it populates Type from IsGoldenKappaTrain.
+// When receiving v2 events, it populates IsGoldenKappaTrain from Type.
+func (e *ChannelHypeTrainEndEvent) UnmarshalJSON(data []byte) error {
+	type Alias ChannelHypeTrainEndEvent
+	aux := &struct {
+		*Alias
+	}{
+		Alias: (*Alias)(e),
+	}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+
+	// Convert v1 -> v2: if Type is empty but IsGoldenKappaTrain is set
+	if e.Type == "" {
+		if e.IsGoldenKappaTrain {
+			e.Type = HypeTrainTypeGoldenKappa
+		} else {
+			e.Type = HypeTrainTypeRegular
+		}
+	}
+
+	// Convert v2 -> v1: if Type is set, populate IsGoldenKappaTrain
+	if e.Type == HypeTrainTypeGoldenKappa {
+		e.IsGoldenKappaTrain = true
+	}
+
+	return nil
+}
+
+// V1 compatibility type aliases.
+// These are provided for users who need to work with v1 payloads explicitly.
+
+// ChannelHypeTrainBeginEventV1 is the v1 version of the hype train begin event.
+// Deprecated: Use ChannelHypeTrainBeginEvent with v2 subscription instead.
+type ChannelHypeTrainBeginEventV1 = ChannelHypeTrainBeginEvent
+
+// ChannelHypeTrainProgressEventV1 is the v1 version of the hype train progress event.
+// Deprecated: Use ChannelHypeTrainProgressEvent with v2 subscription instead.
+type ChannelHypeTrainProgressEventV1 = ChannelHypeTrainProgressEvent
+
+// ChannelHypeTrainEndEventV1 is the v1 version of the hype train end event.
+// Deprecated: Use ChannelHypeTrainEndEvent with v2 subscription instead.
+type ChannelHypeTrainEndEventV1 = ChannelHypeTrainEndEvent
 
 // Stream Events
 

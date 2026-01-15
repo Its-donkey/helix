@@ -182,11 +182,18 @@ const (
 	EventSubTypeChannelPredictionEnd      = "channel.prediction.end"
 )
 
-// EventSub subscription types - Hype Train
+// EventSub subscription types - Hype Train (default v2)
 const (
 	EventSubTypeChannelHypeTrainBegin    = "channel.hype_train.begin"
 	EventSubTypeChannelHypeTrainProgress = "channel.hype_train.progress"
 	EventSubTypeChannelHypeTrainEnd      = "channel.hype_train.end"
+)
+
+// EventSub Hype Train version constants.
+const (
+	// Deprecated: EventSubVersionHypeTrainV1 is deprecated by Twitch. Use EventSubVersionHypeTrainV2.
+	EventSubVersionHypeTrainV1 = "1"
+	EventSubVersionHypeTrainV2 = "2"
 )
 
 // EventSub subscription types - Charity
@@ -344,10 +351,10 @@ var EventSubTypeVersion = map[string]string{
 	EventSubTypeChannelPredictionProgress: "1",
 	EventSubTypeChannelPredictionLock:     "1",
 	EventSubTypeChannelPredictionEnd:      "1",
-	// Hype Train
-	EventSubTypeChannelHypeTrainBegin:    "1",
-	EventSubTypeChannelHypeTrainProgress: "1",
-	EventSubTypeChannelHypeTrainEnd:      "1",
+	// Hype Train (v1 is deprecated by Twitch)
+	EventSubTypeChannelHypeTrainBegin:    "2",
+	EventSubTypeChannelHypeTrainProgress: "2",
+	EventSubTypeChannelHypeTrainEnd:      "2",
 	// Charity
 	EventSubTypeChannelCharityCampaignDonate:   "1",
 	EventSubTypeChannelCharityCampaignStart:    "1",

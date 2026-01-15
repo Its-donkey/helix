@@ -98,6 +98,7 @@ This document lists all Twitch API endpoints and indicates whether they are supp
 | Supported | Category | Endpoint Name | Method | Path | Last Updated | Twitch Note |
 |:---------:|----------|---------------|--------|------|--------------|-------------|
 | Yes | Clips | Create Clip | POST | `/helix/clips` | 2025-12-10 | |
+| Yes | Clips | Create Clip From VOD | POST | `/helix/videos/clips` | 2026-01-13 | |
 | Yes | Clips | Get Clips | GET | `/helix/clips` | 2025-12-10 | |
 | Yes | Clips | Get Clips Download | GET | `/helix/clips/download` | 2025-12-10 | NEW |
 
@@ -326,9 +327,9 @@ This document lists all Twitch API endpoints and indicates whether they are supp
 
 | Status | Count |
 |--------|-------|
-| Supported | 147 |
+| Supported | 148 |
 | Not Yet Supported | 2 |
-| **Total Endpoints** | **149** |
+| **Total Endpoints** | **150** |
 
 ### Support by Category
 
@@ -342,7 +343,7 @@ This document lists all Twitch API endpoints and indicates whether they are supp
 | Channels | 5 | 5 |
 | Charity | 2 | 2 |
 | Chat | 15 | 15 |
-| Clips | 3 | 3 |
+| Clips | 4 | 4 |
 | Conduits | 6 | 6 |
 | Content Classification | 1 | 1 |
 | Entitlements | 2 | 2 |

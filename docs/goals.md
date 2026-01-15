@@ -176,6 +176,20 @@ for _, hypeTrain := range resp.Data {
 - `StartedAt` (string): Timestamp when the hype train started
 - `ExpiresAt` (string): Timestamp when the hype train expires
 
+## EventSub Hype Train Events
+
+For real-time hype train notifications, use EventSub subscriptions.
+
+**Note:** Hype Train v1 is deprecated by Twitch. This library defaults to v2.
+
+**V2 Fields:**
+- `Type` - `regular`, `golden_kappa`, or `shared`
+- `IsSharedTrain` - Whether this is a shared hype train
+- `SharedTrainParticipants` - Participating broadcasters for shared trains
+- `AllTimeHighLevel` / `AllTimeHighTotal` - Channel's all-time records
+
+See [EventSub documentation](eventsub.md#hype-train-events) for subscription details, code examples, and migration guidance.
+
 **Sample Response:**
 ```json
 {
