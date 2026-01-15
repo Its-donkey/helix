@@ -211,6 +211,18 @@ jobs:
             echo "created=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Trigger CI on new PR
+        if: steps.pr.outputs.created == 'true'
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.number }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # GITHUB_TOKEN actions don't trigger workflows, so close/reopen to fire pull_request event
+          echo "🔄 Triggering CI by reopening PR #${PR_NUMBER}..."
+          gh pr close "$PR_NUMBER"
+          gh pr reopen "$PR_NUMBER"
+          echo "✅ CI workflows should now be running"
+
       - name: Add PR link to CHANGELOG
         if: steps.pr.outputs.created == 'true'
         env:
