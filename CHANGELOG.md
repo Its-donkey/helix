@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-## [1.0.0] - 2026-01-15
+## [1.0.0] - 2026-01-15 ([#34](https://github.com/Its-donkey/kappopher/pull/34))
 
 ### Added
 - Hype Train EventSub v2 support (v1 is deprecated by Twitch):
