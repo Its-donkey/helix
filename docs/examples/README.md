@@ -19,6 +19,7 @@ Code examples for common use cases.
 
 - [EventSub Webhooks](eventsub-webhooks.md) - Handle webhook notifications with signature verification
 - [EventSub WebSocket](eventsub-websocket.md) - Real-time event streaming without a public endpoint
+- [PubSub Migration](pubsub-migration.md) - PubSub-style API using EventSub (for migration from deprecated PubSub)
 
 ## Extensions
 

@@ -259,12 +259,18 @@ func (c *EventSubWebSocketClient) readLoop() {
 		// Set read deadline based on keepalive timeout (with buffer)
 		c.mu.RLock()
 		timeout := c.keepaliveTimeout
+		conn := c.conn
 		c.mu.RUnlock()
-		if timeout > 0 {
-			_ = c.conn.SetReadDeadline(time.Now().Add(timeout + 10*time.Second))
+
+		if conn == nil {
+			return
 		}
 
-		_, data, err := c.conn.ReadMessage()
+		if timeout > 0 {
+			_ = conn.SetReadDeadline(time.Now().Add(timeout + 10*time.Second))
+		}
+
+		_, data, err := conn.ReadMessage()
 		if err != nil {
 			if c.onError != nil && !errors.Is(err, websocket.ErrCloseSent) {
 				c.onError(fmt.Errorf("reading message: %w", err))
@@ -390,7 +396,9 @@ func (c *EventSubWebSocketClient) IsConnected() bool {
 
 // Reconnect connects to a new URL (typically from a reconnect message).
 func (c *EventSubWebSocketClient) Reconnect(ctx context.Context, url string) (string, error) {
+	c.mu.RLock()
 	oldConn := c.conn
+	c.mu.RUnlock()
 
 	// Connect to new URL
 	newConn, _, err := websocket.DefaultDialer.DialContext(ctx, url, nil)

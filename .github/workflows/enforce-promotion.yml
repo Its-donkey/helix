@@ -2,25 +2,40 @@ name: Enforce Promotion Path
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, v2/proto]
 
 jobs:
   check-source-branch:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify PR is from test branch
+      - name: Verify PR is from correct source branch
         env:
           HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
         run: |
-          if [ "$HEAD_REF" != "test" ]; then
-            echo "❌ PRs to main must come from the 'test' branch"
+          # Determine required source branch based on target
+          case "$BASE_REF" in
+            main)
+              REQUIRED_SOURCE="test"
+              ;;
+            v2/proto)
+              REQUIRED_SOURCE="v2/dev"
+              ;;
+            *)
+              echo "❌ Unknown target branch: $BASE_REF"
+              exit 1
+              ;;
+          esac
+
+          if [ "$HEAD_REF" != "$REQUIRED_SOURCE" ]; then
+            echo "❌ PRs to '$BASE_REF' must come from the '$REQUIRED_SOURCE' branch"
             echo ""
             echo "Current source branch: $HEAD_REF"
             echo ""
             echo "Workflow:"
-            echo "  1. Push changes to 'test' branch"
-            echo "  2. Use 'Promote Release' workflow to create PR from test → main"
-            echo "  3. Or manually create PR from 'test' to 'main'"
+            echo "  1. Push changes to '$REQUIRED_SOURCE' branch"
+            echo "  2. Use 'Promote Release' workflow to create PR from $REQUIRED_SOURCE → $BASE_REF"
+            echo "  3. Or manually create PR from '$REQUIRED_SOURCE' to '$BASE_REF'"
             exit 1
           fi
-          echo "✅ PR is from 'test' branch - promotion allowed"
+          echo "✅ PR is from '$REQUIRED_SOURCE' branch - promotion allowed"
