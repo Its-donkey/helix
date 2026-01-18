@@ -2086,18 +2086,26 @@ func TestIRCClient_Part_SendError(t *testing.T) {
 		t.Fatalf("Connect failed: %v", err)
 	}
 
-	// Close the connection to cause send error
+	// Nil out the connection to cause send error
+	// Note: we don't actually close it here since closing a websocket
+	// doesn't guarantee WriteMessage will fail immediately
 	client.mu.Lock()
-	_ = client.conn.Close()
+	savedConn := client.conn
+	client.conn = nil
 	client.mu.Unlock()
 
 	close(closeSignal)
 
-	// Part should fail due to closed connection
+	// Part should fail due to nil connection
 	err = client.Part("testchannel")
 	if err == nil {
-		t.Error("expected error for Part with closed connection")
+		t.Error("expected error for Part with nil connection")
 	}
+
+	// Restore and close properly
+	client.mu.Lock()
+	client.conn = savedConn
+	client.mu.Unlock()
 
 	_ = client.Close()
 }
