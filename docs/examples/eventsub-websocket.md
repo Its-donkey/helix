@@ -182,11 +182,10 @@ wsClient := helix.NewEventSubWebSocketClient(
             }
         }()
     }),
-    helix.WithWSCloseHandler(func(code int, reason string) {
-        log.Printf("WebSocket closed: %d - %s", code, reason)
-    }),
 )
 ```
+
+Note: Expected close errors (like "use of closed network connection" during shutdown) are automatically filtered and won't trigger the error handler.
 
 ## Supported Event Types
 
