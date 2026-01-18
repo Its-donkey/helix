@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,6 +37,21 @@ const (
 	WSCloseNetworkError          = 4006 // Network error
 	WSCloseInvalidReconnect      = 4007 // Invalid reconnect
 )
+
+// isExpectedCloseError returns true for errors that are expected when
+// a connection is deliberately closed (e.g., during reconnect or shutdown).
+func isExpectedCloseError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, websocket.ErrCloseSent) {
+		return true
+	}
+	// Check for common close-related error messages
+	errStr := err.Error()
+	return strings.Contains(errStr, "use of closed network connection") ||
+		strings.Contains(errStr, "i/o timeout")
+}
 
 // WebSocketMessage represents a message received from EventSub WebSocket.
 type WebSocketMessage struct {
@@ -299,7 +315,8 @@ func (c *EventSubWebSocketClient) readLoop() {
 
 		_, data, err := conn.ReadMessage()
 		if err != nil {
-			if c.onError != nil && !errors.Is(err, websocket.ErrCloseSent) {
+			// Don't report errors for expected connection close scenarios
+			if c.onError != nil && !isExpectedCloseError(err) {
 				c.onError(fmt.Errorf("reading message: %w", err))
 			}
 			return
@@ -411,9 +428,17 @@ func (c *EventSubWebSocketClient) Close() error {
 		close(c.stopChan)
 	})
 	c.connected = false
+	conn := c.conn
 	c.mu.Unlock()
 
-	// Wait for readLoop to finish (it will close the connection)
+	// Close connection to unblock ReadMessage in readLoop
+	if conn != nil {
+		// Set immediate deadline to ensure ReadMessage unblocks quickly
+		_ = conn.SetReadDeadline(time.Now())
+		_ = conn.Close()
+	}
+
+	// Wait for readLoop to finish
 	c.wg.Wait()
 
 	return nil
@@ -447,6 +472,8 @@ func (c *EventSubWebSocketClient) Reconnect(ctx context.Context, url string) (st
 
 	// Close old connection to unblock ReadMessage in readLoop
 	if oldConn != nil {
+		// Set immediate deadline to ensure ReadMessage unblocks quickly
+		_ = oldConn.SetReadDeadline(time.Now())
 		_ = oldConn.Close()
 	}
 
