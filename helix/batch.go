@@ -56,6 +56,7 @@ func (c *Client) Batch(ctx context.Context, requests []BatchRequest, opts *Batch
 
 	var wg sync.WaitGroup
 	var stopMu sync.Mutex
+	var resultsMu sync.Mutex
 	stopped := false
 
 	for i, req := range requests {
@@ -64,7 +65,9 @@ func (c *Client) Batch(ctx context.Context, requests []BatchRequest, opts *Batch
 			stopMu.Lock()
 			if stopped {
 				stopMu.Unlock()
+				resultsMu.Lock()
 				results[i] = BatchResult{Index: i, Error: context.Canceled}
+				resultsMu.Unlock()
 				continue
 			}
 			stopMu.Unlock()
@@ -72,7 +75,9 @@ func (c *Client) Batch(ctx context.Context, requests []BatchRequest, opts *Batch
 
 		// Check context
 		if ctx.Err() != nil {
+			resultsMu.Lock()
 			results[i] = BatchResult{Index: i, Error: ctx.Err()}
+			resultsMu.Unlock()
 			continue
 		}
 
@@ -81,7 +86,9 @@ func (c *Client) Batch(ctx context.Context, requests []BatchRequest, opts *Batch
 			select {
 			case sem <- struct{}{}:
 			case <-ctx.Done():
+				resultsMu.Lock()
 				results[i] = BatchResult{Index: i, Error: ctx.Err()}
+				resultsMu.Unlock()
 				continue
 			}
 		}
@@ -94,7 +101,10 @@ func (c *Client) Batch(ctx context.Context, requests []BatchRequest, opts *Batch
 			}
 
 			err := c.Do(ctx, batchReq.Request, batchReq.Result)
+
+			resultsMu.Lock()
 			results[idx] = BatchResult{Index: idx, Error: err}
+			resultsMu.Unlock()
 
 			if err != nil && opts.StopOnError {
 				stopMu.Lock()
@@ -151,6 +161,8 @@ func (c *Client) BatchSequential(ctx context.Context, requests []BatchRequest) [
 
 // BatchWithCallback executes requests and calls the callback for each result.
 // This is useful for processing results as they complete.
+// Note: The callback is serialized with a mutex to prevent concurrent calls.
+// If the callback panics, the panic is recovered and the goroutine continues.
 func (c *Client) BatchWithCallback(ctx context.Context, requests []BatchRequest, opts *BatchOptions, callback func(BatchResult)) {
 	if opts == nil {
 		defaultOpts := DefaultBatchOptions()
@@ -171,23 +183,27 @@ func (c *Client) BatchWithCallback(ctx context.Context, requests []BatchRequest,
 	stopped := false
 	var callbackMu sync.Mutex
 
+	// safeCallback calls the callback with panic recovery to prevent deadlock
+	safeCallback := func(result BatchResult) {
+		callbackMu.Lock()
+		defer callbackMu.Unlock()
+		defer func() { _ = recover() }()
+		callback(result)
+	}
+
 	for i, req := range requests {
 		if opts.StopOnError {
 			stopMu.Lock()
-			if stopped {
-				stopMu.Unlock()
-				callbackMu.Lock()
-				callback(BatchResult{Index: i, Error: context.Canceled})
-				callbackMu.Unlock()
+			shouldStop := stopped
+			stopMu.Unlock()
+			if shouldStop {
+				safeCallback(BatchResult{Index: i, Error: context.Canceled})
 				continue
 			}
-			stopMu.Unlock()
 		}
 
 		if ctx.Err() != nil {
-			callbackMu.Lock()
-			callback(BatchResult{Index: i, Error: ctx.Err()})
-			callbackMu.Unlock()
+			safeCallback(BatchResult{Index: i, Error: ctx.Err()})
 			continue
 		}
 
@@ -195,9 +211,7 @@ func (c *Client) BatchWithCallback(ctx context.Context, requests []BatchRequest,
 			select {
 			case sem <- struct{}{}:
 			case <-ctx.Done():
-				callbackMu.Lock()
-				callback(BatchResult{Index: i, Error: ctx.Err()})
-				callbackMu.Unlock()
+				safeCallback(BatchResult{Index: i, Error: ctx.Err()})
 				continue
 			}
 		}
@@ -212,9 +226,7 @@ func (c *Client) BatchWithCallback(ctx context.Context, requests []BatchRequest,
 			err := c.Do(ctx, batchReq.Request, batchReq.Result)
 			result := BatchResult{Index: idx, Error: err}
 
-			callbackMu.Lock()
-			callback(result)
-			callbackMu.Unlock()
+			safeCallback(result)
 
 			if err != nil && opts.StopOnError {
 				stopMu.Lock()

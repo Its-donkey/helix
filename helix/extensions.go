@@ -3,6 +3,7 @@ package helix
 import (
 	"context"
 	"net/url"
+	"strconv"
 )
 
 // ExtensionConfigurationSegment represents a configuration segment.
@@ -144,7 +145,7 @@ func (c *Client) CreateExtensionSecret(ctx context.Context, extensionID string, 
 	q := url.Values{}
 	q.Set("extension_id", extensionID)
 	if delay > 0 {
-		q.Set("delay", url.QueryEscape(string(rune(delay))))
+		q.Set("delay", strconv.Itoa(delay))
 	}
 
 	var resp Response[ExtensionSecret]

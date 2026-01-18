@@ -2,13 +2,13 @@
 package helix
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"sync"
 	"time"
 )
@@ -224,13 +224,8 @@ func (c *Client) doWithMiddleware(ctx context.Context, req *Request, result inte
 	// Build middleware chain
 	var chain MiddlewareNext
 	chain = func(ctx context.Context, req *Request) (*MiddlewareResponse, error) {
-		// Final handler - execute the actual request
-		err := c.doWithRetry(ctx, req, result)
-		if err != nil {
-			return nil, err
-		}
-		// Return a dummy response for middleware (actual result is in 'result')
-		return &MiddlewareResponse{StatusCode: 200}, nil
+		// Final handler - execute the actual request and capture response info
+		return c.doWithRetryAndResponse(ctx, req, result)
 	}
 
 	// Wrap chain with middleware in reverse order
@@ -248,13 +243,22 @@ func (c *Client) doWithMiddleware(ctx context.Context, req *Request, result inte
 
 // doWithRetry executes a request with retry logic.
 func (c *Client) doWithRetry(ctx context.Context, req *Request, result interface{}) error {
+	_, err := c.doWithRetryAndResponse(ctx, req, result)
+	return err
+}
+
+// doWithRetryAndResponse executes a request with retry logic and returns response info for middleware.
+func (c *Client) doWithRetryAndResponse(ctx context.Context, req *Request, result interface{}) (*MiddlewareResponse, error) {
 	var lastErr error
+	var lastResp *MiddlewareResponse
 
 	for attempt := 0; attempt <= c.maxRetries; attempt++ {
-		err := c.doOnce(ctx, req, result)
+		resp, err := c.doOnceWithResponse(ctx, req, result)
 		if err == nil {
-			return nil
+			return resp, nil
 		}
+
+		lastResp = resp
 
 		// Check if it's a rate limit error
 		if apiErr, ok := err.(*APIError); ok && apiErr.StatusCode == http.StatusTooManyRequests {
@@ -271,7 +275,7 @@ func (c *Client) doWithRetry(ctx context.Context, req *Request, result interface
 					retryAfter = 0
 				}
 
-				return &RateLimitError{
+				return lastResp, &RateLimitError{
 					ResetAt:    resetAt,
 					Remaining:  remaining,
 					Limit:      limit,
@@ -303,7 +307,7 @@ func (c *Client) doWithRetry(ctx context.Context, req *Request, result interface
 			// Wait before retry
 			select {
 			case <-ctx.Done():
-				return ctx.Err()
+				return lastResp, ctx.Err()
 			case <-time.After(waitTime):
 				// Continue to next attempt
 			}
@@ -313,14 +317,20 @@ func (c *Client) doWithRetry(ctx context.Context, req *Request, result interface
 		}
 
 		// Not a rate limit error, return immediately
-		return err
+		return lastResp, err
 	}
 
-	return lastErr
+	return lastResp, lastErr
 }
 
 // doOnce executes a single API request without retries.
 func (c *Client) doOnce(ctx context.Context, req *Request, result interface{}) error {
+	_, err := c.doOnceWithResponse(ctx, req, result)
+	return err
+}
+
+// doOnceWithResponse executes a single API request and returns response info for middleware.
+func (c *Client) doOnceWithResponse(ctx context.Context, req *Request, result interface{}) (*MiddlewareResponse, error) {
 	// Build URL
 	reqURL := c.baseURL + req.Endpoint
 	if len(req.Query) > 0 {
@@ -329,20 +339,18 @@ func (c *Client) doOnce(ctx context.Context, req *Request, result interface{}) e
 
 	// Build body
 	var bodyReader io.Reader
-	var bodyBytes []byte
 	if req.Body != nil {
-		var err error
-		bodyBytes, err = json.Marshal(req.Body)
+		bodyBytes, err := json.Marshal(req.Body)
 		if err != nil {
-			return fmt.Errorf("marshaling request body: %w", err)
+			return nil, fmt.Errorf("marshaling request body: %w", err)
 		}
-		bodyReader = strings.NewReader(string(bodyBytes))
+		bodyReader = bytes.NewReader(bodyBytes)
 	}
 
 	// Create HTTP request
 	httpReq, err := http.NewRequestWithContext(ctx, req.Method, reqURL, bodyReader)
 	if err != nil {
-		return fmt.Errorf("creating request: %w", err)
+		return nil, fmt.Errorf("creating request: %w", err)
 	}
 
 	// Set headers
@@ -372,7 +380,7 @@ func (c *Client) doOnce(ctx context.Context, req *Request, result interface{}) e
 	// Execute request
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {
-		return fmt.Errorf("executing request: %w", err)
+		return nil, fmt.Errorf("executing request: %w", err)
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -382,20 +390,27 @@ func (c *Client) doOnce(ctx context.Context, req *Request, result interface{}) e
 	// Read response body
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("reading response body: %w", err)
+		return nil, fmt.Errorf("reading response body: %w", err)
+	}
+
+	// Build middleware response with real data
+	mwResp := &MiddlewareResponse{
+		StatusCode: resp.StatusCode,
+		Headers:    resp.Header.Clone(),
+		Body:       body,
 	}
 
 	// Check for errors
 	if resp.StatusCode >= 400 {
 		var errResp ErrorResponse
 		if err := json.Unmarshal(body, &errResp); err != nil {
-			return &APIError{
+			return mwResp, &APIError{
 				StatusCode: resp.StatusCode,
 				ErrorType:  "unknown",
 				Message:    string(body),
 			}
 		}
-		return &APIError{
+		return mwResp, &APIError{
 			StatusCode: resp.StatusCode,
 			ErrorType:  errResp.Error,
 			Message:    errResp.Message,
@@ -405,7 +420,7 @@ func (c *Client) doOnce(ctx context.Context, req *Request, result interface{}) e
 	// Parse response
 	if result != nil && len(body) > 0 {
 		if err := json.Unmarshal(body, result); err != nil {
-			return fmt.Errorf("parsing response: %w", err)
+			return mwResp, fmt.Errorf("parsing response: %w", err)
 		}
 	}
 
@@ -415,30 +430,34 @@ func (c *Client) doOnce(ctx context.Context, req *Request, result interface{}) e
 		c.cache.Set(ctx, cacheKey, body, c.cacheTTL)
 	}
 
-	return nil
+	return mwResp, nil
 }
 
 // updateRateLimit updates rate limit information from response headers.
+// Only updates state when headers are present AND parse successfully to avoid poisoning state.
 func (c *Client) updateRateLimit(resp *http.Response) {
 	c.rateMu.Lock()
 	defer c.rateMu.Unlock()
 
 	if limit := resp.Header.Get("Ratelimit-Limit"); limit != "" {
 		var l int
-		_, _ = fmt.Sscanf(limit, "%d", &l)
-		c.rateLimitLimit = l
+		if n, err := fmt.Sscanf(limit, "%d", &l); err == nil && n == 1 && l > 0 {
+			c.rateLimitLimit = l
+		}
 	}
 
 	if remaining := resp.Header.Get("Ratelimit-Remaining"); remaining != "" {
 		var r int
-		_, _ = fmt.Sscanf(remaining, "%d", &r)
-		c.rateLimitRemaining = r
+		if n, err := fmt.Sscanf(remaining, "%d", &r); err == nil && n == 1 && r >= 0 {
+			c.rateLimitRemaining = r
+		}
 	}
 
 	if reset := resp.Header.Get("Ratelimit-Reset"); reset != "" {
 		var r int64
-		_, _ = fmt.Sscanf(reset, "%d", &r)
-		c.rateLimitReset = time.Unix(r, 0)
+		if n, err := fmt.Sscanf(reset, "%d", &r); err == nil && n == 1 && r > 0 {
+			c.rateLimitReset = time.Unix(r, 0)
+		}
 	}
 }
 

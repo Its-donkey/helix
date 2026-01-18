@@ -2,7 +2,9 @@ package helix
 
 import (
 	"context"
+	"crypto"
 	"crypto/rsa"
+	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -580,6 +582,12 @@ func (c *AuthClient) requestToken(ctx context.Context, data url.Values) (*Token,
 }
 
 // AutoRefresh starts a goroutine that automatically refreshes the token before it expires.
+// If the token has no expiry set (ExpiresAt is zero), it will not attempt automatic refresh
+// until a token with a valid expiry is set.
+//
+// IMPORTANT: The caller MUST call the returned cancel function to stop the goroutine
+// when it's no longer needed, or ensure the parent context is eventually cancelled.
+// Failure to do so will result in a goroutine leak.
 func (c *AuthClient) AutoRefresh(ctx context.Context) (cancel func()) {
 	ctx, cancelFunc := context.WithCancel(ctx)
 
@@ -589,7 +597,19 @@ func (c *AuthClient) AutoRefresh(ctx context.Context) (cancel func()) {
 			token := c.token
 			c.mu.RUnlock()
 
+			// No token or no refresh token - wait and check again
 			if token == nil || token.RefreshToken == "" {
+				select {
+				case <-ctx.Done():
+					return
+				case <-time.After(time.Minute):
+					continue
+				}
+			}
+
+			// If ExpiresAt is zero (not set), we can't determine when to refresh.
+			// Wait and check again - token may be updated with proper expiry later.
+			if token.ExpiresAt.IsZero() {
 				select {
 				case <-ctx.Done():
 					return
@@ -602,6 +622,7 @@ func (c *AuthClient) AutoRefresh(ctx context.Context) (cancel func()) {
 			waitDuration := time.Until(refreshAt)
 
 			if waitDuration <= 0 {
+				// Token is expired or about to expire - refresh now
 				if _, err := c.RefreshCurrentToken(ctx); err != nil {
 					select {
 					case <-ctx.Done():
@@ -959,7 +980,36 @@ func (k *JWK) RSAPublicKey() (*rsa.PublicKey, error) {
 	}, nil
 }
 
+// IDTokenHeader represents the header of a JWT ID token.
+type IDTokenHeader struct {
+	Alg string `json:"alg"`
+	Typ string `json:"typ"`
+	Kid string `json:"kid"`
+}
+
+// ParseIDTokenHeader parses the header of an ID token.
+func ParseIDTokenHeader(idToken string) (*IDTokenHeader, error) {
+	parts := strings.Split(idToken, ".")
+	if len(parts) != 3 {
+		return nil, fmt.Errorf("invalid ID token format")
+	}
+
+	headerBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return nil, fmt.Errorf("decoding ID token header: %w", err)
+	}
+
+	var header IDTokenHeader
+	if err := json.Unmarshal(headerBytes, &header); err != nil {
+		return nil, fmt.Errorf("parsing ID token header: %w", err)
+	}
+
+	return &header, nil
+}
+
 // ParseIDToken parses an ID token without validating the signature.
+// WARNING: This function does NOT verify the JWT signature. For secure validation,
+// use VerifyAndParseIDToken instead.
 func ParseIDToken(idToken string) (*IDTokenClaims, error) {
 	parts := strings.Split(idToken, ".")
 	if len(parts) != 3 {
@@ -979,7 +1029,100 @@ func ParseIDToken(idToken string) (*IDTokenClaims, error) {
 	return &claims, nil
 }
 
+// VerifyIDTokenSignature verifies the JWT signature of an ID token using the provided JWKS.
+// This is the recommended way to validate ID tokens for security.
+func VerifyIDTokenSignature(idToken string, jwks *JWKS) error {
+	parts := strings.Split(idToken, ".")
+	if len(parts) != 3 {
+		return fmt.Errorf("invalid ID token format")
+	}
+
+	// Parse header to get key ID
+	header, err := ParseIDTokenHeader(idToken)
+	if err != nil {
+		return fmt.Errorf("parsing token header: %w", err)
+	}
+
+	// Only RS256 is supported by Twitch
+	if header.Alg != "RS256" {
+		return fmt.Errorf("unsupported signing algorithm: %s", header.Alg)
+	}
+
+	// Find the key in JWKS
+	jwk := jwks.GetKeyByID(header.Kid)
+	if jwk == nil {
+		return fmt.Errorf("key not found in JWKS: %s", header.Kid)
+	}
+
+	// Convert JWK to RSA public key
+	pubKey, err := jwk.RSAPublicKey()
+	if err != nil {
+		return fmt.Errorf("converting JWK to RSA key: %w", err)
+	}
+
+	// Decode signature
+	signature, err := base64.RawURLEncoding.DecodeString(parts[2])
+	if err != nil {
+		return fmt.Errorf("decoding signature: %w", err)
+	}
+
+	// Compute hash of header.payload
+	signedContent := parts[0] + "." + parts[1]
+	hash := sha256.Sum256([]byte(signedContent))
+
+	// Verify signature
+	if err := rsa.VerifyPKCS1v15(pubKey, crypto.SHA256, hash[:], signature); err != nil {
+		return fmt.Errorf("signature verification failed: %w", err)
+	}
+
+	return nil
+}
+
+// VerifyAndParseIDToken verifies the signature and parses an ID token.
+// This is the secure way to validate ID tokens - it fetches the JWKS, verifies
+// the signature, and then parses the claims.
+func (c *AuthClient) VerifyAndParseIDToken(ctx context.Context, idToken string) (*IDTokenClaims, error) {
+	// Fetch JWKS
+	jwks, err := c.GetJWKS(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("fetching JWKS: %w", err)
+	}
+
+	// Verify signature
+	if err := VerifyIDTokenSignature(idToken, jwks); err != nil {
+		return nil, err
+	}
+
+	// Parse claims (signature already verified)
+	claims, err := ParseIDToken(idToken)
+	if err != nil {
+		return nil, err
+	}
+
+	return claims, nil
+}
+
+// ValidateIDToken performs full validation of an ID token: signature verification,
+// issuer, audience, expiry, and optional nonce check.
+// This is the recommended method for securely validating OIDC ID tokens.
+func (c *AuthClient) ValidateIDToken(ctx context.Context, idToken string, nonce string) (*IDTokenClaims, error) {
+	// Verify signature and parse claims
+	claims, err := c.VerifyAndParseIDToken(ctx, idToken)
+	if err != nil {
+		return nil, err
+	}
+
+	// Validate claims
+	if err := c.ValidateIDTokenClaims(claims, nonce); err != nil {
+		return nil, err
+	}
+
+	return claims, nil
+}
+
 // ValidateIDTokenClaims validates the claims in an ID token.
+// WARNING: This only validates claims, not the JWT signature. For secure validation,
+// use ValidateIDToken instead which verifies the signature first.
 func (c *AuthClient) ValidateIDTokenClaims(claims *IDTokenClaims, nonce string) error {
 	if claims.Iss != "https://id.twitch.tv/oauth2" {
 		return fmt.Errorf("invalid issuer: %s", claims.Iss)

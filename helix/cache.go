@@ -93,6 +93,7 @@ func (c *MemoryCache) Clear(ctx context.Context) {
 }
 
 // evictExpired removes all expired entries (must be called with lock held).
+// Note: Deleting from a map during iteration is safe in Go when done in the same goroutine.
 func (c *MemoryCache) evictExpired() {
 	now := time.Now()
 	for key, entry := range c.entries {

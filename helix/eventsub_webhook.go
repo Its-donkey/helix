@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -296,7 +297,9 @@ func EventSubMiddleware(secret string, maxAge time.Duration) func(http.Handler) 
 }
 
 // MessageDeduplicator helps prevent processing duplicate EventSub messages.
+// It is safe for concurrent use.
 type MessageDeduplicator struct {
+	mu      sync.Mutex
 	seen    map[string]time.Time
 	maxAge  time.Duration
 	maxSize int
@@ -312,8 +315,11 @@ func NewMessageDeduplicator(maxAge time.Duration, maxSize int) *MessageDeduplica
 }
 
 // IsDuplicate returns true if this message ID has been seen before.
-// It also marks the message as seen.
+// It also marks the message as seen. This method is safe for concurrent use.
 func (d *MessageDeduplicator) IsDuplicate(messageID string) bool {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
 	now := time.Now()
 
 	// Clean up old entries if we're at capacity
@@ -335,9 +341,11 @@ func (d *MessageDeduplicator) IsDuplicate(messageID string) bool {
 	return false
 }
 
-// Clear removes all tracked message IDs.
+// Clear removes all tracked message IDs. This method is safe for concurrent use.
 func (d *MessageDeduplicator) Clear() {
+	d.mu.Lock()
 	d.seen = make(map[string]time.Time)
+	d.mu.Unlock()
 }
 
 // Common revocation reasons
