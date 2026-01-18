@@ -540,13 +540,15 @@ func (c *IRCClient) handleMessage(raw string) {
 
 	case ircRECONNECT:
 		// Twitch is requesting we reconnect
+		if c.onReconnect != nil {
+			c.onReconnect()
+		}
 		c.mu.Lock()
-		c.connected = false
 		if c.conn != nil {
 			_ = c.conn.Close()
 		}
 		c.mu.Unlock()
-		// readLoop will handle reconnection
+		// Note: connected stays true so readLoop's defer will trigger auto-reconnect
 	}
 }
 
@@ -561,6 +563,14 @@ func (c *IRCClient) reconnect() {
 		case <-stopChan:
 			return
 		case <-time.After(c.reconnectDelay):
+		}
+
+		// Check if auto-reconnect was disabled during the delay
+		c.mu.RLock()
+		shouldReconnect := c.autoReconnect
+		c.mu.RUnlock()
+		if !shouldReconnect {
+			return
 		}
 
 		if c.onReconnect != nil {
