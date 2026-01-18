@@ -83,7 +83,7 @@ jobs:
         uses: ncruces/go-coverage-report@v0
         with:
           coverage-file: coverage.out
-          report: false
+          report: true
           chart: true
           amend: true
         if: github.event_name == 'push'

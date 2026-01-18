@@ -3,7 +3,7 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/Its-donkey/kappopher.svg)](https://pkg.go.dev/github.com/Its-donkey/kappopher)
 [![Go Report Card](https://goreportcard.com/badge/github.com/Its-donkey/kappopher)](https://goreportcard.com/report/github.com/Its-donkey/kappopher)
 [![Tests](https://github.com/Its-donkey/kappopher/actions/workflows/test.yml/badge.svg)](https://github.com/Its-donkey/kappopher/actions/workflows/test.yml)
-[![Coverage](https://raw.githubusercontent.com/Its-donkey/kappopher/main/.github/coverage.svg)](https://github.com/Its-donkey/kappopher/actions/workflows/test.yml)
+[![Coverage](https://raw.githubusercontent.com/Its-donkey/kappopher/main/.github/coverage.svg)](https://github.com/Its-donkey/kappopher/wiki/Coverage-Report)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/Its-donkey/kappopher)](https://github.com/Its-donkey/kappopher)
 
