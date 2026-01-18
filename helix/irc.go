@@ -80,6 +80,8 @@ type IRCClient struct {
 	mu           sync.RWMutex
 	connected    bool
 	stopChan     chan struct{}
+	stopOnce     sync.Once      // ensures stopChan is closed only once
+	wg           sync.WaitGroup // tracks readLoop goroutine
 	writeMu      sync.Mutex
 	globalState  *GlobalUserState
 	pongReceived chan struct{}
@@ -95,6 +97,11 @@ type IRCOption func(*IRCClient)
 
 // NewIRCClient creates a new IRC client.
 func NewIRCClient(nick, token string, opts ...IRCOption) *IRCClient {
+	// Validate required inputs
+	if nick == "" || token == "" {
+		return nil
+	}
+
 	// Ensure token has oauth: prefix
 	if !strings.HasPrefix(token, "oauth:") {
 		token = "oauth:" + token
@@ -303,6 +310,7 @@ func (c *IRCClient) Connect(ctx context.Context) error {
 	c.mu.Unlock()
 
 	// Start read loop
+	c.wg.Add(1)
 	go c.readLoop()
 
 	// Rejoin channels
@@ -372,6 +380,7 @@ func (c *IRCClient) waitForAuth(ctx context.Context) error {
 
 // readLoop continuously reads messages from the WebSocket.
 func (c *IRCClient) readLoop() {
+	defer c.wg.Done()
 	defer func() {
 		c.mu.Lock()
 		wasConnected := c.connected
@@ -394,13 +403,25 @@ func (c *IRCClient) readLoop() {
 	reader := bufio.NewReader(nil)
 
 	for {
+		// Capture connection and stopChan under lock
+		c.mu.RLock()
+		conn := c.conn
+		stopChan := c.stopChan
+		c.mu.RUnlock()
+
+		// Check if we should stop
 		select {
-		case <-c.stopChan:
+		case <-stopChan:
 			return
 		default:
 		}
 
-		_, data, err := c.conn.ReadMessage()
+		// Check for nil connection
+		if conn == nil {
+			return
+		}
+
+		_, data, err := conn.ReadMessage()
 		if err != nil {
 			if c.onError != nil && !errors.Is(err, websocket.ErrCloseSent) {
 				c.onError(fmt.Errorf("reading message: %w", err))
@@ -427,6 +448,15 @@ func (c *IRCClient) readLoop() {
 
 // handleMessage processes a single IRC message.
 func (c *IRCClient) handleMessage(raw string) {
+	// Recover from handler panics to prevent crashing the read loop
+	defer func() {
+		if r := recover(); r != nil {
+			if c.onError != nil {
+				c.onError(fmt.Errorf("handler panic: %v", r))
+			}
+		}
+	}()
+
 	msg := parseIRCMessage(raw)
 
 	switch msg.Command {
@@ -510,13 +540,15 @@ func (c *IRCClient) handleMessage(raw string) {
 
 	case ircRECONNECT:
 		// Twitch is requesting we reconnect
+		if c.onReconnect != nil {
+			c.onReconnect()
+		}
 		c.mu.Lock()
-		c.connected = false
 		if c.conn != nil {
 			_ = c.conn.Close()
 		}
 		c.mu.Unlock()
-		// readLoop will handle reconnection
+		// Note: connected stays true so readLoop's defer will trigger auto-reconnect
 	}
 }
 
@@ -531,6 +563,14 @@ func (c *IRCClient) reconnect() {
 		case <-stopChan:
 			return
 		case <-time.After(c.reconnectDelay):
+		}
+
+		// Check if auto-reconnect was disabled during the delay
+		c.mu.RLock()
+		shouldReconnect := c.autoReconnect
+		c.mu.RUnlock()
+		if !shouldReconnect {
+			return
 		}
 
 		if c.onReconnect != nil {

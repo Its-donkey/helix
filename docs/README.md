@@ -28,8 +28,9 @@ This documentation provides detailed guides and examples for using the Twitch He
 | [PubSub Compatibility](pubsub-compat.md) | PubSub-style API backed by EventSub |
 | [Extensions](extensions.md) | Extension management |
 | [Games](games.md) | Game information |
-| [Goals](goals.md) | Creator goals, hype train |
+| [Goals](goals.md) | Creator goals |
 | [Guest Star](guest-star.md) | Guest star sessions |
+| [Hype Train](hype-train.md) | Hype train events and status |
 | [Ingest](ingest.md) | Ingest server endpoints |
 | [Moderation](moderation.md) | Bans, mods, AutoMod, shield mode |
 | [Polls](polls.md) | Create and manage polls |

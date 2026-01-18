@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -36,6 +37,21 @@ const (
 	WSCloseNetworkError          = 4006 // Network error
 	WSCloseInvalidReconnect      = 4007 // Invalid reconnect
 )
+
+// isExpectedCloseError returns true for errors that are expected when
+// a connection is deliberately closed (e.g., during reconnect or shutdown).
+func isExpectedCloseError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, websocket.ErrCloseSent) {
+		return true
+	}
+	// Check for common close-related error messages
+	errStr := err.Error()
+	return strings.Contains(errStr, "use of closed network connection") ||
+		strings.Contains(errStr, "i/o timeout")
+}
 
 // WebSocketMessage represents a message received from EventSub WebSocket.
 type WebSocketMessage struct {
@@ -77,6 +93,9 @@ type WebSocketNotificationPayload struct {
 	Event        json.RawMessage      `json:"event"`
 }
 
+// ErrAlreadyConnecting is returned when Connect is called while already connecting.
+var ErrAlreadyConnecting = errors.New("connection already in progress")
+
 // EventSubWebSocketClient manages an EventSub WebSocket connection.
 type EventSubWebSocketClient struct {
 	url              string
@@ -95,7 +114,10 @@ type EventSubWebSocketClient struct {
 	// State
 	mu           sync.RWMutex
 	connected    bool
+	connecting   bool           // prevents concurrent Connect() calls
 	stopChan     chan struct{}
+	stopOnce     sync.Once      // ensures stopChan is closed only once
+	wg           sync.WaitGroup // tracks readLoop goroutine
 	reconnectURL string
 }
 
@@ -165,13 +187,27 @@ func NewEventSubWebSocketClient(opts ...EventSubWSOption) *EventSubWebSocketClie
 
 // Connect establishes a WebSocket connection to EventSub.
 // Returns the session ID that should be used when creating subscriptions.
+// This method is safe for concurrent use - only one connection attempt will proceed.
 func (c *EventSubWebSocketClient) Connect(ctx context.Context) (string, error) {
 	c.mu.Lock()
 	if c.connected {
+		sessionID := c.sessionID
 		c.mu.Unlock()
-		return c.sessionID, nil
+		return sessionID, nil
 	}
+	if c.connecting {
+		c.mu.Unlock()
+		return "", ErrAlreadyConnecting
+	}
+	c.connecting = true
 	c.mu.Unlock()
+
+	// Ensure we clear connecting flag on exit
+	defer func() {
+		c.mu.Lock()
+		c.connecting = false
+		c.mu.Unlock()
+	}()
 
 	// Connect to WebSocket
 	conn, _, err := websocket.DefaultDialer.DialContext(ctx, c.url, nil)
@@ -182,6 +218,7 @@ func (c *EventSubWebSocketClient) Connect(ctx context.Context) (string, error) {
 	c.mu.Lock()
 	c.conn = conn
 	c.stopChan = make(chan struct{})
+	c.stopOnce = sync.Once{} // reset for new connection
 	c.mu.Unlock()
 
 	// Wait for welcome message
@@ -197,6 +234,7 @@ func (c *EventSubWebSocketClient) Connect(ctx context.Context) (string, error) {
 	c.mu.Unlock()
 
 	// Start message handler
+	c.wg.Add(1)
 	go c.readLoop()
 
 	return sessionID, nil
@@ -240,6 +278,7 @@ func (c *EventSubWebSocketClient) waitForWelcome(ctx context.Context) (string, e
 
 // readLoop continuously reads messages from the WebSocket.
 func (c *EventSubWebSocketClient) readLoop() {
+	defer c.wg.Done()
 	defer func() {
 		c.mu.Lock()
 		c.connected = false
@@ -250,29 +289,34 @@ func (c *EventSubWebSocketClient) readLoop() {
 	}()
 
 	for {
+		// Capture connection and stopChan under lock
+		c.mu.RLock()
+		conn := c.conn
+		stopChan := c.stopChan
+		timeout := c.keepaliveTimeout
+		c.mu.RUnlock()
+
+		// Check if we should stop
 		select {
-		case <-c.stopChan:
+		case <-stopChan:
 			return
 		default:
 		}
 
-		// Set read deadline based on keepalive timeout (with buffer)
-		c.mu.RLock()
-		timeout := c.keepaliveTimeout
-		conn := c.conn
-		c.mu.RUnlock()
-
+		// Check for nil connection
 		if conn == nil {
 			return
 		}
 
+		// Set read deadline based on keepalive timeout (with buffer)
 		if timeout > 0 {
 			_ = conn.SetReadDeadline(time.Now().Add(timeout + 10*time.Second))
 		}
 
 		_, data, err := conn.ReadMessage()
 		if err != nil {
-			if c.onError != nil && !errors.Is(err, websocket.ErrCloseSent) {
+			// Don't report errors for expected connection close scenarios
+			if c.onError != nil && !isExpectedCloseError(err) {
 				c.onError(fmt.Errorf("reading message: %w", err))
 			}
 			return
@@ -291,6 +335,15 @@ func (c *EventSubWebSocketClient) handleMessage(data []byte) {
 		}
 		return
 	}
+
+	// Recover from handler panics to prevent crashing the read loop
+	defer func() {
+		if r := recover(); r != nil {
+			if c.onError != nil {
+				c.onError(fmt.Errorf("handler panic: %v", r))
+			}
+		}
+	}()
 
 	switch msg.Metadata.MessageType {
 	case WSMessageTypeKeepalive:
@@ -365,18 +418,29 @@ func (c *EventSubWebSocketClient) handleRevocation(msg WebSocketMessage) {
 // Close closes the WebSocket connection.
 func (c *EventSubWebSocketClient) Close() error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-
 	if !c.connected {
+		c.mu.Unlock()
 		return nil
 	}
 
-	close(c.stopChan)
+	// Signal readLoop to stop (only once to prevent panic)
+	c.stopOnce.Do(func() {
+		close(c.stopChan)
+	})
 	c.connected = false
+	conn := c.conn
+	c.mu.Unlock()
 
-	if c.conn != nil {
-		return c.conn.Close()
+	// Close connection to unblock ReadMessage in readLoop
+	if conn != nil {
+		// Set immediate deadline to ensure ReadMessage unblocks quickly
+		_ = conn.SetReadDeadline(time.Now())
+		_ = conn.Close()
 	}
+
+	// Wait for readLoop to finish
+	c.wg.Wait()
+
 	return nil
 }
 
@@ -396,9 +460,25 @@ func (c *EventSubWebSocketClient) IsConnected() bool {
 
 // Reconnect connects to a new URL (typically from a reconnect message).
 func (c *EventSubWebSocketClient) Reconnect(ctx context.Context, url string) (string, error) {
-	c.mu.RLock()
+	// Stop old readLoop first
+	c.mu.Lock()
 	oldConn := c.conn
-	c.mu.RUnlock()
+	if c.stopChan != nil {
+		c.stopOnce.Do(func() {
+			close(c.stopChan)
+		})
+	}
+	c.mu.Unlock()
+
+	// Close old connection to unblock ReadMessage in readLoop
+	if oldConn != nil {
+		// Set immediate deadline to ensure ReadMessage unblocks quickly
+		_ = oldConn.SetReadDeadline(time.Now())
+		_ = oldConn.Close()
+	}
+
+	// Wait for old readLoop to finish
+	c.wg.Wait()
 
 	// Connect to new URL
 	newConn, _, err := websocket.DefaultDialer.DialContext(ctx, url, nil)
@@ -409,6 +489,7 @@ func (c *EventSubWebSocketClient) Reconnect(ctx context.Context, url string) (st
 	c.mu.Lock()
 	c.conn = newConn
 	c.stopChan = make(chan struct{})
+	c.stopOnce = sync.Once{} // reset for new connection
 	c.mu.Unlock()
 
 	// Wait for welcome on new connection
@@ -418,17 +499,13 @@ func (c *EventSubWebSocketClient) Reconnect(ctx context.Context, url string) (st
 		return "", err
 	}
 
-	// Close old connection
-	if oldConn != nil {
-		_ = oldConn.Close()
-	}
-
 	c.mu.Lock()
 	c.sessionID = sessionID
 	c.connected = true
 	c.mu.Unlock()
 
 	// Start new read loop
+	c.wg.Add(1)
 	go c.readLoop()
 
 	return sessionID, nil

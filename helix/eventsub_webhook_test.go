@@ -6,15 +6,43 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
 )
 
+// Official Twitch EventSub webhook test values from:
+// https://dev.twitch.tv/docs/eventsub/handling-webhook-events/
+const (
+	// Official Twitch example challenge
+	twitchExampleChallenge = "pogchamp-kappa-360noscope-vohiyo"
+	// Official Twitch example subscription ID
+	twitchExampleSubscriptionID = "f1c2a387-161a-49f9-a165-0f21d7a4e1c4"
+	// Official Twitch example broadcaster user ID
+	twitchExampleBroadcasterUserID = "12826"
+	// Official Twitch example user ID (follower)
+	twitchExampleUserID = "1337"
+	// Official Twitch example user login
+	twitchExampleUserLogin = "awesome_user"
+	// Official Twitch example user name
+	twitchExampleUserName = "Awesome_User"
+	// Official Twitch example broadcaster login
+	twitchExampleBroadcasterLogin = "twitch"
+	// Official Twitch example broadcaster name
+	twitchExampleBroadcasterName = "Twitch"
+	// Official Twitch example created_at timestamp
+	twitchExampleCreatedAt = "2019-11-16T10:11:12.634234626Z"
+	// Official Twitch example followed_at timestamp
+	twitchExampleFollowedAt = "2020-07-15T18:16:11.17106713Z"
+	// Official Twitch example webhook callback URL
+	twitchExampleCallbackURL = "https://example.com/webhooks/callback"
+)
+
 func TestEventSubWebhookHandler_Verification(t *testing.T) {
-	secret := "test-webhook-secret"
-	challenge := "test-challenge-string"
+	// Using official Twitch example secret format (64-char hex from crypto.randomBytes(32))
+	secret := "5f1a6e7cd2e7137ccf9e15b2f43fe63949eb84b1db83c1d5a867dc93429de4e4"
 
 	var receivedMsg *EventSubWebhookMessage
 	handler := NewEventSubWebhookHandler(
@@ -25,28 +53,41 @@ func TestEventSubWebhookHandler_Verification(t *testing.T) {
 		}),
 	)
 
-	// Create verification payload
+	// Create verification payload using official Twitch example values
+	// https://dev.twitch.tv/docs/eventsub/handling-webhook-events/
+	createdAt, _ := time.Parse(time.RFC3339Nano, twitchExampleCreatedAt)
 	payload := EventSubWebhookPayload{
 		Subscription: EventSubSubscription{
-			ID:     "sub123",
-			Type:   EventSubTypeStreamOnline,
-			Status: "webhook_callback_verification_pending",
+			ID:      twitchExampleSubscriptionID,
+			Type:    "channel.follow",
+			Version: "1",
+			Status:  "webhook_callback_verification_pending",
+			Condition: map[string]string{
+				"broadcaster_user_id": twitchExampleBroadcasterUserID,
+			},
+			Transport: EventSubTransport{
+				Method:   "webhook",
+				Callback: twitchExampleCallbackURL,
+			},
+			CreatedAt: createdAt,
+			Cost:      1,
 		},
-		Challenge: challenge,
+		Challenge: twitchExampleChallenge,
 	}
 	body, _ := json.Marshal(payload)
 
 	// Create request with proper headers
 	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
-	messageID := "msg-123"
+	messageID := "e76c6bd4-55c9-4987-8304-da1588d8988b"
 	timestamp := time.Now().UTC().Format(time.RFC3339)
 
 	req.Header.Set(EventSubHeaderMessageID, messageID)
 	req.Header.Set(EventSubHeaderMessageTimestamp, timestamp)
 	req.Header.Set(EventSubHeaderMessageType, EventSubMessageTypeVerification)
-	req.Header.Set(EventSubHeaderSubscriptionType, EventSubTypeStreamOnline)
+	req.Header.Set(EventSubHeaderSubscriptionType, "channel.follow")
+	req.Header.Set(EventSubHeaderSubscriptionVersion, "1")
 
-	// Sign the message
+	// Sign the message (official Twitch algorithm: HMAC-SHA256 of message_id + timestamp + body)
 	message := messageID + timestamp + string(body)
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(message))
@@ -57,23 +98,27 @@ func TestEventSubWebhookHandler_Verification(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
-	// Verify response
+	// Verify response - Twitch expects the challenge echoed back
 	if w.Code != http.StatusOK {
 		t.Errorf("expected status 200, got %d", w.Code)
 	}
-	if w.Body.String() != challenge {
-		t.Errorf("expected challenge %s, got %s", challenge, w.Body.String())
+	if w.Body.String() != twitchExampleChallenge {
+		t.Errorf("expected challenge %s, got %s", twitchExampleChallenge, w.Body.String())
 	}
 	if receivedMsg == nil {
 		t.Error("verification handler was not called")
 	}
-	if receivedMsg.Challenge != challenge {
+	if receivedMsg.Challenge != twitchExampleChallenge {
 		t.Errorf("expected challenge in message, got %s", receivedMsg.Challenge)
+	}
+	if receivedMsg.Subscription.ID != twitchExampleSubscriptionID {
+		t.Errorf("expected subscription ID %s, got %s", twitchExampleSubscriptionID, receivedMsg.Subscription.ID)
 	}
 }
 
 func TestEventSubWebhookHandler_Notification(t *testing.T) {
-	secret := "test-webhook-secret"
+	// Using official Twitch example secret format
+	secret := "5f1a6e7cd2e7137ccf9e15b2f43fe63949eb84b1db83c1d5a867dc93429de4e4"
 
 	var receivedMsg *EventSubWebhookMessage
 	handler := NewEventSubWebhookHandler(
@@ -83,24 +128,36 @@ func TestEventSubWebhookHandler_Notification(t *testing.T) {
 		}),
 	)
 
-	// Create notification payload
-	event := StreamOnlineEvent{
-		ID: "stream123",
-		EventSubBroadcaster: EventSubBroadcaster{
-			BroadcasterUserID:    "12345",
-			BroadcasterUserLogin: "testuser",
-			BroadcasterUserName:  "TestUser",
-		},
-		Type:      "live",
-		StartedAt: time.Now(),
+	// Create notification payload using official Twitch example values
+	// https://dev.twitch.tv/docs/eventsub/handling-webhook-events/
+	// Using channel.follow event structure from Twitch docs
+	followEvent := map[string]any{
+		"user_id":               twitchExampleUserID,
+		"user_login":            twitchExampleUserLogin,
+		"user_name":             twitchExampleUserName,
+		"broadcaster_user_id":   twitchExampleBroadcasterUserID,
+		"broadcaster_user_login": twitchExampleBroadcasterLogin,
+		"broadcaster_user_name": twitchExampleBroadcasterName,
+		"followed_at":           twitchExampleFollowedAt,
 	}
-	eventJSON, _ := json.Marshal(event)
+	eventJSON, _ := json.Marshal(followEvent)
 
+	createdAt, _ := time.Parse(time.RFC3339Nano, twitchExampleCreatedAt)
 	payload := EventSubWebhookPayload{
 		Subscription: EventSubSubscription{
-			ID:     "sub123",
-			Type:   EventSubTypeStreamOnline,
-			Status: "enabled",
+			ID:      twitchExampleSubscriptionID,
+			Type:    "channel.follow",
+			Version: "1",
+			Status:  "enabled",
+			Condition: map[string]string{
+				"broadcaster_user_id": twitchExampleBroadcasterUserID,
+			},
+			Transport: EventSubTransport{
+				Method:   "webhook",
+				Callback: twitchExampleCallbackURL,
+			},
+			CreatedAt: createdAt,
+			Cost:      1,
 		},
 		Event: eventJSON,
 	}
@@ -108,15 +165,16 @@ func TestEventSubWebhookHandler_Notification(t *testing.T) {
 
 	// Create request
 	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
-	messageID := "msg-456"
+	messageID := "befa7b53-d79d-478f-86b9-120f112b044e"
 	timestamp := time.Now().UTC().Format(time.RFC3339)
 
 	req.Header.Set(EventSubHeaderMessageID, messageID)
 	req.Header.Set(EventSubHeaderMessageTimestamp, timestamp)
 	req.Header.Set(EventSubHeaderMessageType, EventSubMessageTypeNotification)
-	req.Header.Set(EventSubHeaderSubscriptionType, EventSubTypeStreamOnline)
+	req.Header.Set(EventSubHeaderSubscriptionType, "channel.follow")
+	req.Header.Set(EventSubHeaderSubscriptionVersion, "1")
 
-	// Sign the message
+	// Sign the message (official Twitch HMAC-SHA256 algorithm)
 	message := messageID + timestamp + string(body)
 	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(message))
@@ -127,27 +185,30 @@ func TestEventSubWebhookHandler_Notification(t *testing.T) {
 	w := httptest.NewRecorder()
 	handler.ServeHTTP(w, req)
 
-	// Verify response
+	// Verify response - Twitch expects 2xx for successful notification handling
 	if w.Code != http.StatusNoContent {
 		t.Errorf("expected status 204, got %d", w.Code)
 	}
 	if receivedMsg == nil {
 		t.Fatal("notification handler was not called")
 	}
-	if receivedMsg.SubscriptionType != EventSubTypeStreamOnline {
-		t.Errorf("expected subscription type %s, got %s", EventSubTypeStreamOnline, receivedMsg.SubscriptionType)
+	if receivedMsg.SubscriptionType != "channel.follow" {
+		t.Errorf("expected subscription type channel.follow, got %s", receivedMsg.SubscriptionType)
+	}
+	if receivedMsg.Subscription.ID != twitchExampleSubscriptionID {
+		t.Errorf("expected subscription ID %s, got %s", twitchExampleSubscriptionID, receivedMsg.Subscription.ID)
 	}
 
-	// Parse the event
-	parsedEvent, err := ParseEventSubEvent[StreamOnlineEvent](receivedMsg)
-	if err != nil {
+	// Parse the event data
+	var parsedEvent map[string]any
+	if err := json.Unmarshal(receivedMsg.Event, &parsedEvent); err != nil {
 		t.Fatalf("failed to parse event: %v", err)
 	}
-	if parsedEvent.ID != "stream123" {
-		t.Errorf("expected event ID stream123, got %s", parsedEvent.ID)
+	if parsedEvent["user_id"] != twitchExampleUserID {
+		t.Errorf("expected user_id %s, got %v", twitchExampleUserID, parsedEvent["user_id"])
 	}
-	if parsedEvent.BroadcasterUserID != "12345" {
-		t.Errorf("expected broadcaster ID 12345, got %s", parsedEvent.BroadcasterUserID)
+	if parsedEvent["broadcaster_user_id"] != twitchExampleBroadcasterUserID {
+		t.Errorf("expected broadcaster_user_id %s, got %v", twitchExampleBroadcasterUserID, parsedEvent["broadcaster_user_id"])
 	}
 }
 
@@ -690,6 +751,47 @@ func TestParseEventSubEvent_Error(t *testing.T) {
 	}
 }
 
+func TestParseEventSubEvent_Success(t *testing.T) {
+	// Test successful parsing using official Twitch example event structure
+	// https://dev.twitch.tv/docs/eventsub/handling-webhook-events/
+	followEvent := map[string]string{
+		"user_id":                twitchExampleUserID,
+		"user_login":             twitchExampleUserLogin,
+		"user_name":              twitchExampleUserName,
+		"broadcaster_user_id":    twitchExampleBroadcasterUserID,
+		"broadcaster_user_login": twitchExampleBroadcasterLogin,
+		"broadcaster_user_name":  twitchExampleBroadcasterName,
+		"followed_at":            twitchExampleFollowedAt,
+	}
+	eventJSON, _ := json.Marshal(followEvent)
+
+	msg := &EventSubWebhookMessage{
+		Event: eventJSON,
+	}
+
+	// Parse into a struct type matching Twitch's channel.follow event
+	type FollowEvent struct {
+		UserID               string `json:"user_id"`
+		UserLogin            string `json:"user_login"`
+		UserName             string `json:"user_name"`
+		BroadcasterUserID    string `json:"broadcaster_user_id"`
+		BroadcasterUserLogin string `json:"broadcaster_user_login"`
+		BroadcasterUserName  string `json:"broadcaster_user_name"`
+		FollowedAt           string `json:"followed_at"`
+	}
+
+	event, err := ParseEventSubEvent[FollowEvent](msg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if event.UserID != twitchExampleUserID {
+		t.Errorf("expected user_id %s, got %s", twitchExampleUserID, event.UserID)
+	}
+	if event.BroadcasterUserID != twitchExampleBroadcasterUserID {
+		t.Errorf("expected broadcaster_user_id %s, got %s", twitchExampleBroadcasterUserID, event.BroadcasterUserID)
+	}
+}
+
 func TestEventSubWebhookHandler_VerificationWithoutHandler(t *testing.T) {
 	// Test verification without a handler - should accept by default
 	handler := NewEventSubWebhookHandler()
@@ -716,5 +818,112 @@ func TestEventSubWebhookHandler_VerificationWithoutHandler(t *testing.T) {
 	}
 	if w.Body.String() != "test-challenge" {
 		t.Errorf("expected challenge response, got %s", w.Body.String())
+	}
+}
+
+// errorBodyReader simulates a broken request body that fails on Read
+type errorBodyReader struct{}
+
+func (e *errorBodyReader) Read(p []byte) (n int, err error) {
+	return 0, fmt.Errorf("simulated body read error")
+}
+
+func (e *errorBodyReader) Close() error {
+	return nil
+}
+
+func TestEventSubWebhookHandler_BodyReadError(t *testing.T) {
+	// Test the io.ReadAll error path in ServeHTTP
+	handler := NewEventSubWebhookHandler()
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", &errorBodyReader{})
+	req.Header.Set(EventSubHeaderMessageID, "msg-123")
+	req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+	req.Header.Set(EventSubHeaderMessageType, EventSubMessageTypeNotification)
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400 for body read error, got %d", w.Code)
+	}
+}
+
+func TestEventSubMiddleware_BodyReadError(t *testing.T) {
+	// Test the io.ReadAll error path in EventSubMiddleware
+	secret := "test-secret"
+	maxAge := 10 * time.Minute
+
+	middleware := EventSubMiddleware(secret, maxAge)
+
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("next handler should not be called when body read fails")
+	})
+
+	handler := middleware(nextHandler)
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", &errorBodyReader{})
+	req.Header.Set(EventSubHeaderMessageID, "msg-123")
+	req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400 for body read error, got %d", w.Code)
+	}
+}
+
+func TestEventSubWebhookHandler_Revocation_OfficialExample(t *testing.T) {
+	// Test revocation using official Twitch example values
+	// https://dev.twitch.tv/docs/eventsub/handling-webhook-events/
+	var receivedMsg *EventSubWebhookMessage
+	handler := NewEventSubWebhookHandler(
+		WithRevocationHandler(func(msg *EventSubWebhookMessage) {
+			receivedMsg = msg
+		}),
+	)
+
+	createdAt, _ := time.Parse(time.RFC3339Nano, twitchExampleCreatedAt)
+	payload := EventSubWebhookPayload{
+		Subscription: EventSubSubscription{
+			ID:      twitchExampleSubscriptionID,
+			Type:    "channel.follow",
+			Version: "1",
+			Status:  "authorization_revoked", // Official Twitch revocation status
+			Condition: map[string]string{
+				"broadcaster_user_id": twitchExampleBroadcasterUserID,
+			},
+			Transport: EventSubTransport{
+				Method:   "webhook",
+				Callback: twitchExampleCallbackURL,
+			},
+			CreatedAt: createdAt,
+			Cost:      1,
+		},
+	}
+	body, _ := json.Marshal(payload)
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+	req.Header.Set(EventSubHeaderMessageID, "84c1e79a-2a4b-4c13-ba0b-4312293e9308")
+	req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+	req.Header.Set(EventSubHeaderMessageType, EventSubMessageTypeRevocation)
+	req.Header.Set(EventSubHeaderSubscriptionType, "channel.follow")
+	req.Header.Set(EventSubHeaderSubscriptionVersion, "1")
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNoContent {
+		t.Errorf("expected status 204, got %d", w.Code)
+	}
+	if receivedMsg == nil {
+		t.Error("revocation handler was not called")
+	}
+	if receivedMsg.Subscription.ID != twitchExampleSubscriptionID {
+		t.Errorf("expected subscription ID %s, got %s", twitchExampleSubscriptionID, receivedMsg.Subscription.ID)
+	}
+	if receivedMsg.Subscription.Status != "authorization_revoked" {
+		t.Errorf("expected status authorization_revoked, got %s", receivedMsg.Subscription.Status)
 	}
 }

@@ -8,8 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Separate `docs/hype-train.md` documentation for Hype Train API
+- Documentation for `GetHypeTrainStatus` endpoint (previously undocumented)
 
 ### Changed
+- Separated Hype Train API into its own file (`helix/hype_train.go`) to match Twitch API structure
+- Updated Goals and Hype Train tests to use official Twitch API response samples
+- Updated `docs/goals.md` to focus on Goals API only
+- Updated `docs/README.md` to list Goals and Hype Train as separate entries
 
 ### Fixed
 
