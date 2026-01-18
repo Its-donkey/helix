@@ -1608,6 +1608,7 @@ func TestIRCClient_HandleReconnectMessage(t *testing.T) {
 	connectCount := 0
 	secondConnected := make(chan struct{})
 	closeSignal := make(chan struct{})
+	reconnectCalled := make(chan struct{}, 1)
 	var mu sync.Mutex
 
 	mock := newMockIRCServer(func(conn *websocket.Conn) {
@@ -1640,13 +1641,15 @@ func TestIRCClient_HandleReconnectMessage(t *testing.T) {
 	})
 	defer mock.Close()
 
-	reconnectCalled := false
 	client := NewIRCClient("testuser", "token",
 		WithIRCURL(mock.URL()),
 		WithAutoReconnect(true),
 		WithReconnectDelay(50*time.Millisecond),
 		WithReconnectHandler(func() {
-			reconnectCalled = true
+			select {
+			case reconnectCalled <- struct{}{}:
+			default:
+			}
 		}),
 	)
 
@@ -1654,6 +1657,14 @@ func TestIRCClient_HandleReconnectMessage(t *testing.T) {
 	err := client.Connect(ctx)
 	if err != nil {
 		t.Fatalf("Connect failed: %v", err)
+	}
+
+	// Wait for reconnect handler to be called
+	select {
+	case <-reconnectCalled:
+		// Reconnect handler was called
+	case <-time.After(3 * time.Second):
+		t.Fatal("reconnect handler was not called after RECONNECT")
 	}
 
 	// Wait for second connection to be established after RECONNECT
@@ -1669,10 +1680,6 @@ func TestIRCClient_HandleReconnectMessage(t *testing.T) {
 		t.Errorf("expected at least 2 connections after RECONNECT, got %d", connectCount)
 	}
 	mu.Unlock()
-
-	if !reconnectCalled {
-		t.Error("reconnect handler was not called after RECONNECT")
-	}
 
 	close(closeSignal)
 	_ = client.Close()
