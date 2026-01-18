@@ -27,13 +27,7 @@ jobs:
         run: go mod download
 
       - name: Run tests
-        run: go test -v -race -coverprofile=coverage.out ./...
-
-      - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5
-        if: matrix.go-version == '1.24'
-        with:
-          file: coverage.out
+        run: go test -v -race ./...
 
   lint:
     name: Lint
@@ -68,3 +62,28 @@ jobs:
 
       - name: Build
         run: go build -v ./...
+
+  coverage:
+    name: Coverage
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+
+      - name: Run tests with coverage
+        run: go test -coverprofile=coverage.out ./...
+
+      - name: Generate coverage report
+        uses: ncruces/go-coverage-report@v0
+        with:
+          coverage-file: coverage.out
+          report: true
+          chart: true
+          amend: true
+        if: github.event_name == 'push'
