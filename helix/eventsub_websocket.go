@@ -445,13 +445,13 @@ func (c *EventSubWebSocketClient) Reconnect(ctx context.Context, url string) (st
 	}
 	c.mu.Unlock()
 
-	// Wait for old readLoop to finish
-	c.wg.Wait()
-
-	// Close old connection
+	// Close old connection to unblock ReadMessage in readLoop
 	if oldConn != nil {
 		_ = oldConn.Close()
 	}
+
+	// Wait for old readLoop to finish
+	c.wg.Wait()
 
 	// Connect to new URL
 	newConn, _, err := websocket.DefaultDialer.DialContext(ctx, url, nil)
