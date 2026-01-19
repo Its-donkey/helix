@@ -14,7 +14,6 @@
 </p>
 
 A comprehensive Twitch API toolkit for Go.
-**[View Full Documentation](https://its-donkey.github.io/kappopher/)**
 
 ## Features
 
@@ -31,6 +30,8 @@ A comprehensive Twitch API toolkit for Go.
 - **Batch Operations**: Concurrent batch request processing
 - **Rate Limiting**: Automatic rate limit tracking with retry support
 - **Type-Safe**: Fully typed request/response structures with Go generics
+
+**[View Full Documentation and a complete cookbook of examples](https://its-donkey.github.io/kappopher/)**
 
 ## Installation
 
