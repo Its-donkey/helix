@@ -10,6 +10,56 @@ import (
 	"time"
 )
 
+// Official Twitch API example values from https://dev.twitch.tv/docs/api/reference/#get-channel-stream-schedule
+const (
+	// Broadcaster info
+	twitchScheduleBroadcasterID    = "141981764"
+	twitchScheduleBroadcasterLogin = "twitchdev"
+	twitchScheduleBroadcasterName  = "TwitchDev"
+
+	// Segment IDs
+	twitchScheduleSegmentID1 = "eyJzZWdtZW50SUQiOiJlNGFjYzcyNC0zNzFmLTQwMmMtODFjYS0yM2FkYTc5NzU5ZDQiLCJpc29ZZWFyIjoyMDIxLCJpc29XZWVrIjoyNn0="
+	twitchScheduleSegmentID2 = "eyJzZWdtZW50SUQiOiI4Y2EwN2E2NC0xYTZkLTRjYWItYWE5Ni0xNjIyYzNjYWUzZDkiLCJpc29ZZWFyIjoyMDIxLCJpc29XZWVrIjoyMX0="
+
+	// Category info
+	twitchScheduleCategoryID   = "509670"
+	twitchScheduleCategoryName = "Science & Technology"
+
+	// Stream info
+	twitchScheduleTitle    = "TwitchDev Monthly Update // July 1, 2021"
+	twitchScheduleTimezone = "America/New_York"
+	twitchScheduleDuration = 60 // minutes
+
+	// iCalendar example from https://dev.twitch.tv/docs/api/reference/#get-channel-icalendar
+	twitchScheduleICalendar = `BEGIN:VCALENDAR
+PRODID:-//twitch.tv//StreamSchedule//1.0
+VERSION:2.0
+CALSCALE:GREGORIAN
+REFRESH-INTERVAL;VALUE=DURATION:PT1H
+NAME:TwitchDev
+BEGIN:VEVENT
+UID:e4acc724-371f-402c-81ca-23ada79759d4
+DTSTAMP:20210323T040131Z
+DTSTART;TZID=/America/New_York:20210701T140000
+DTEND;TZID=/America/New_York:20210701T150000
+SUMMARY:TwitchDev Monthly Update // July 1, 2021
+DESCRIPTION:Science & Technology.
+CATEGORIES:Science & Technology
+END:VEVENT
+END:VCALENDAR`
+)
+
+// Date/time values from Twitch API examples
+var (
+	// Stream times from https://dev.twitch.tv/docs/api/reference/#get-channel-stream-schedule
+	twitchScheduleStartTime = time.Date(2021, 7, 1, 18, 0, 0, 0, time.UTC)
+	twitchScheduleEndTime   = time.Date(2021, 7, 1, 19, 0, 0, 0, time.UTC)
+
+	// Vacation times from https://dev.twitch.tv/docs/api/reference/#update-channel-stream-schedule
+	twitchScheduleVacationStart = time.Date(2021, 5, 16, 0, 0, 0, 0, time.UTC)
+	twitchScheduleVacationEnd   = time.Date(2021, 5, 23, 0, 0, 0, 0, time.UTC)
+)
+
 // scheduleErrorTransport is a RoundTripper that always returns an error.
 type scheduleErrorTransport struct{}
 
@@ -40,41 +90,41 @@ func TestClient_GetChannelStreamSchedule(t *testing.T) {
 		}
 
 		broadcasterID := r.URL.Query().Get("broadcaster_id")
-		if broadcasterID != "12345" {
-			t.Errorf("expected broadcaster_id=12345, got %s", broadcasterID)
+		if broadcasterID != twitchScheduleBroadcasterID {
+			t.Errorf("expected broadcaster_id=%s, got %s", twitchScheduleBroadcasterID, broadcasterID)
 		}
 
 		resp := ScheduleResponse{
 			Data: Schedule{
-				BroadcasterID:    "12345",
-				BroadcasterName:  "Streamer",
-				BroadcasterLogin: "streamer",
+				BroadcasterID:    twitchScheduleBroadcasterID,
+				BroadcasterName:  twitchScheduleBroadcasterName,
+				BroadcasterLogin: twitchScheduleBroadcasterLogin,
 				Segments: []ScheduleSegment{
 					{
-						ID:          "seg1",
-						StartTime:   time.Now().Add(24 * time.Hour),
-						EndTime:     time.Now().Add(27 * time.Hour),
-						Title:       "Gaming Stream",
-						IsRecurring: true,
-						Category:    &Category{ID: "123", Name: "Gaming"},
+						ID:          twitchScheduleSegmentID1,
+						StartTime:   twitchScheduleStartTime,
+						EndTime:     twitchScheduleEndTime,
+						Title:       twitchScheduleTitle,
+						IsRecurring: false,
+						Category:    &Category{ID: twitchScheduleCategoryID, Name: twitchScheduleCategoryName},
 					},
 					{
-						ID:          "seg2",
-						StartTime:   time.Now().Add(48 * time.Hour),
-						EndTime:     time.Now().Add(51 * time.Hour),
-						Title:       "Just Chatting",
-						IsRecurring: false,
+						ID:          twitchScheduleSegmentID2,
+						StartTime:   twitchScheduleStartTime.Add(24 * time.Hour),
+						EndTime:     twitchScheduleEndTime.Add(24 * time.Hour),
+						Title:       twitchScheduleTitle,
+						IsRecurring: true,
 					},
 				},
 			},
-			Pagination: &Pagination{Cursor: "next"},
+			Pagination: &Pagination{Cursor: "eyJiIjpudWxsLCJhIjp7Ik9mZnNldCI6Mn19"},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
 	resp, err := client.GetChannelStreamSchedule(context.Background(), &GetChannelStreamScheduleParams{
-		BroadcasterID: "12345",
+		BroadcasterID: twitchScheduleBroadcasterID,
 	})
 
 	if err != nil {
@@ -83,8 +133,8 @@ func TestClient_GetChannelStreamSchedule(t *testing.T) {
 	if len(resp.Data.Segments) != 2 {
 		t.Fatalf("expected 2 segments, got %d", len(resp.Data.Segments))
 	}
-	if resp.Data.Segments[0].Title != "Gaming Stream" {
-		t.Errorf("expected 'Gaming Stream', got %s", resp.Data.Segments[0].Title)
+	if resp.Data.Segments[0].Title != twitchScheduleTitle {
+		t.Errorf("expected %q, got %s", twitchScheduleTitle, resp.Data.Segments[0].Title)
 	}
 }
 
@@ -92,11 +142,13 @@ func TestClient_GetChannelStreamSchedule_WithVacation(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		resp := ScheduleResponse{
 			Data: Schedule{
-				BroadcasterID: "12345",
-				Segments:      []ScheduleSegment{},
+				BroadcasterID:    twitchScheduleBroadcasterID,
+				BroadcasterName:  twitchScheduleBroadcasterName,
+				BroadcasterLogin: twitchScheduleBroadcasterLogin,
+				Segments:         []ScheduleSegment{},
 				Vacation: &Vacation{
-					StartTime: time.Now(),
-					EndTime:   time.Now().Add(7 * 24 * time.Hour),
+					StartTime: twitchScheduleVacationStart,
+					EndTime:   twitchScheduleVacationEnd,
 				},
 			},
 		}
@@ -105,7 +157,7 @@ func TestClient_GetChannelStreamSchedule_WithVacation(t *testing.T) {
 	defer server.Close()
 
 	resp, err := client.GetChannelStreamSchedule(context.Background(), &GetChannelStreamScheduleParams{
-		BroadcasterID: "12345",
+		BroadcasterID: twitchScheduleBroadcasterID,
 	})
 
 	if err != nil {
@@ -117,8 +169,6 @@ func TestClient_GetChannelStreamSchedule_WithVacation(t *testing.T) {
 }
 
 func TestClient_GetChannelStreamSchedule_WithParams(t *testing.T) {
-	startTime := time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)
-
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		ids := r.URL.Query()["id"]
 		if len(ids) != 2 {
@@ -136,16 +186,19 @@ func TestClient_GetChannelStreamSchedule_WithParams(t *testing.T) {
 		}
 
 		resp := ScheduleResponse{
-			Data: Schedule{Segments: []ScheduleSegment{}},
+			Data: Schedule{
+				BroadcasterID: twitchScheduleBroadcasterID,
+				Segments:      []ScheduleSegment{},
+			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
 	_, err := client.GetChannelStreamSchedule(context.Background(), &GetChannelStreamScheduleParams{
-		BroadcasterID: "12345",
-		IDs:           []string{"seg1", "seg2"},
-		StartTime:     startTime,
+		BroadcasterID: twitchScheduleBroadcasterID,
+		IDs:           []string{twitchScheduleSegmentID1, twitchScheduleSegmentID2},
+		StartTime:     twitchScheduleStartTime,
 		UTCOffset:     "-05:00",
 	})
 
@@ -164,8 +217,8 @@ func TestClient_UpdateChannelStreamSchedule(t *testing.T) {
 		}
 
 		broadcasterID := r.URL.Query().Get("broadcaster_id")
-		if broadcasterID != "12345" {
-			t.Errorf("expected broadcaster_id=12345, got %s", broadcasterID)
+		if broadcasterID != twitchScheduleBroadcasterID {
+			t.Errorf("expected broadcaster_id=%s, got %s", twitchScheduleBroadcasterID, broadcasterID)
 		}
 
 		isVacationEnabled := r.URL.Query().Get("is_vacation_enabled")
@@ -174,8 +227,8 @@ func TestClient_UpdateChannelStreamSchedule(t *testing.T) {
 		}
 
 		timezone := r.URL.Query().Get("timezone")
-		if timezone != "America/New_York" {
-			t.Errorf("expected timezone=America/New_York, got %s", timezone)
+		if timezone != twitchScheduleTimezone {
+			t.Errorf("expected timezone=%s, got %s", twitchScheduleTimezone, timezone)
 		}
 
 		w.WriteHeader(http.StatusNoContent)
@@ -184,9 +237,9 @@ func TestClient_UpdateChannelStreamSchedule(t *testing.T) {
 
 	vacationEnabled := true
 	err := client.UpdateChannelStreamSchedule(context.Background(), &UpdateChannelStreamScheduleParams{
-		BroadcasterID:     "12345",
+		BroadcasterID:     twitchScheduleBroadcasterID,
 		IsVacationEnabled: &vacationEnabled,
-		Timezone:          "America/New_York",
+		Timezone:          twitchScheduleTimezone,
 	})
 
 	if err != nil {
@@ -207,7 +260,7 @@ func TestClient_UpdateChannelStreamSchedule_DisableVacation(t *testing.T) {
 
 	vacationEnabled := false
 	err := client.UpdateChannelStreamSchedule(context.Background(), &UpdateChannelStreamScheduleParams{
-		BroadcasterID:     "12345",
+		BroadcasterID:     twitchScheduleBroadcasterID,
 		IsVacationEnabled: &vacationEnabled,
 	})
 
@@ -226,19 +279,19 @@ func TestClient_CreateChannelStreamScheduleSegment(t *testing.T) {
 		}
 
 		broadcasterID := r.URL.Query().Get("broadcaster_id")
-		if broadcasterID != "12345" {
-			t.Errorf("expected broadcaster_id=12345, got %s", broadcasterID)
+		if broadcasterID != twitchScheduleBroadcasterID {
+			t.Errorf("expected broadcaster_id=%s, got %s", twitchScheduleBroadcasterID, broadcasterID)
 		}
 
 		var params CreateChannelStreamScheduleSegmentParams
 		if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 			t.Fatalf("failed to decode body: %v", err)
 		}
-		if params.Duration != 180 {
-			t.Errorf("expected duration 180, got %d", params.Duration)
+		if params.Duration != twitchScheduleDuration {
+			t.Errorf("expected duration %d, got %d", twitchScheduleDuration, params.Duration)
 		}
-		if params.Title != "New Stream" {
-			t.Errorf("expected title 'New Stream', got %s", params.Title)
+		if params.Title != twitchScheduleTitle {
+			t.Errorf("expected title %q, got %s", twitchScheduleTitle, params.Title)
 		}
 
 		resp := struct {
@@ -251,10 +304,12 @@ func TestClient_CreateChannelStreamScheduleSegment(t *testing.T) {
 			}{
 				Segments: []ScheduleSegment{
 					{
-						ID:          "newseg",
+						ID:          twitchScheduleSegmentID1,
 						Title:       params.Title,
-						StartTime:   params.StartTime,
+						StartTime:   twitchScheduleStartTime,
+						EndTime:     twitchScheduleEndTime,
 						IsRecurring: params.IsRecurring,
+						Category:    &Category{ID: twitchScheduleCategoryID, Name: twitchScheduleCategoryName},
 					},
 				},
 			},
@@ -263,14 +318,14 @@ func TestClient_CreateChannelStreamScheduleSegment(t *testing.T) {
 	})
 	defer server.Close()
 
-	startTime := time.Now().Add(24 * time.Hour)
 	result, err := client.CreateChannelStreamScheduleSegment(context.Background(), &CreateChannelStreamScheduleSegmentParams{
-		BroadcasterID: "12345",
-		StartTime:     startTime,
-		Timezone:      "America/New_York",
-		Duration:      180,
-		Title:         "New Stream",
-		IsRecurring:   true,
+		BroadcasterID: twitchScheduleBroadcasterID,
+		StartTime:     twitchScheduleStartTime,
+		Timezone:      twitchScheduleTimezone,
+		Duration:      twitchScheduleDuration,
+		Title:         twitchScheduleTitle,
+		CategoryID:    twitchScheduleCategoryID,
+		IsRecurring:   false,
 	})
 
 	if err != nil {
@@ -279,8 +334,8 @@ func TestClient_CreateChannelStreamScheduleSegment(t *testing.T) {
 	if result == nil {
 		t.Fatal("expected result, got nil")
 	}
-	if result.ID != "newseg" {
-		t.Errorf("expected segment ID 'newseg', got %s", result.ID)
+	if result.ID != twitchScheduleSegmentID1 {
+		t.Errorf("expected segment ID %q, got %s", twitchScheduleSegmentID1, result.ID)
 	}
 }
 
@@ -296,13 +351,15 @@ func TestClient_UpdateChannelStreamScheduleSegment(t *testing.T) {
 		broadcasterID := r.URL.Query().Get("broadcaster_id")
 		segmentID := r.URL.Query().Get("id")
 
-		if broadcasterID != "12345" {
-			t.Errorf("expected broadcaster_id=12345, got %s", broadcasterID)
+		if broadcasterID != twitchScheduleBroadcasterID {
+			t.Errorf("expected broadcaster_id=%s, got %s", twitchScheduleBroadcasterID, broadcasterID)
 		}
-		if segmentID != "seg123" {
-			t.Errorf("expected id=seg123, got %s", segmentID)
+		if segmentID != twitchScheduleSegmentID1 {
+			t.Errorf("expected id=%s, got %s", twitchScheduleSegmentID1, segmentID)
 		}
 
+		// Response with updated duration (120 minutes) from Twitch example
+		updatedEndTime := twitchScheduleStartTime.Add(120 * time.Minute)
 		resp := struct {
 			Data struct {
 				Segments []ScheduleSegment `json:"segments"`
@@ -312,7 +369,13 @@ func TestClient_UpdateChannelStreamScheduleSegment(t *testing.T) {
 				Segments []ScheduleSegment `json:"segments"`
 			}{
 				Segments: []ScheduleSegment{
-					{ID: "seg123", Title: "Updated Title"},
+					{
+						ID:        twitchScheduleSegmentID1,
+						Title:     twitchScheduleTitle,
+						StartTime: twitchScheduleStartTime,
+						EndTime:   updatedEndTime,
+						Category:  &Category{ID: twitchScheduleCategoryID, Name: twitchScheduleCategoryName},
+					},
 				},
 			},
 		}
@@ -320,18 +383,18 @@ func TestClient_UpdateChannelStreamScheduleSegment(t *testing.T) {
 	})
 	defer server.Close()
 
-	newTitle := "Updated Title"
+	duration := 120 // Updated from 60 to 120 as in Twitch example
 	result, err := client.UpdateChannelStreamScheduleSegment(context.Background(), &UpdateChannelStreamScheduleSegmentParams{
-		BroadcasterID: "12345",
-		ID:            "seg123",
-		Title:         &newTitle,
+		BroadcasterID: twitchScheduleBroadcasterID,
+		ID:            twitchScheduleSegmentID1,
+		Duration:      &duration,
 	})
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Title != "Updated Title" {
-		t.Errorf("expected 'Updated Title', got %s", result.Title)
+	if result.Title != twitchScheduleTitle {
+		t.Errorf("expected %q, got %s", twitchScheduleTitle, result.Title)
 	}
 }
 
@@ -347,18 +410,19 @@ func TestClient_DeleteChannelStreamScheduleSegment(t *testing.T) {
 		broadcasterID := r.URL.Query().Get("broadcaster_id")
 		segmentID := r.URL.Query().Get("id")
 
-		if broadcasterID != "12345" {
-			t.Errorf("expected broadcaster_id=12345, got %s", broadcasterID)
+		if broadcasterID != twitchScheduleBroadcasterID {
+			t.Errorf("expected broadcaster_id=%s, got %s", twitchScheduleBroadcasterID, broadcasterID)
 		}
-		if segmentID != "seg123" {
-			t.Errorf("expected id=seg123, got %s", segmentID)
+		// Using segment ID 2 as in delete example
+		if segmentID != twitchScheduleSegmentID2 {
+			t.Errorf("expected id=%s, got %s", twitchScheduleSegmentID2, segmentID)
 		}
 
 		w.WriteHeader(http.StatusNoContent)
 	})
 	defer server.Close()
 
-	err := client.DeleteChannelStreamScheduleSegment(context.Background(), "12345", "seg123")
+	err := client.DeleteChannelStreamScheduleSegment(context.Background(), twitchScheduleBroadcasterID, twitchScheduleSegmentID2)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -366,7 +430,6 @@ func TestClient_DeleteChannelStreamScheduleSegment(t *testing.T) {
 }
 
 func TestClient_GetChannelICalendar(t *testing.T) {
-	expectedBody := "BEGIN:VCALENDAR\nVERSION:2.0\nEND:VCALENDAR"
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			t.Errorf("expected GET, got %s", r.Method)
@@ -376,21 +439,21 @@ func TestClient_GetChannelICalendar(t *testing.T) {
 		}
 
 		broadcasterID := r.URL.Query().Get("broadcaster_id")
-		if broadcasterID != "12345" {
-			t.Errorf("expected broadcaster_id=12345, got %s", broadcasterID)
+		if broadcasterID != twitchScheduleBroadcasterID {
+			t.Errorf("expected broadcaster_id=%s, got %s", twitchScheduleBroadcasterID, broadcasterID)
 		}
 
 		w.Header().Set("Content-Type", "text/calendar")
-		_, _ = w.Write([]byte(expectedBody))
+		_, _ = w.Write([]byte(twitchScheduleICalendar))
 	})
 	defer server.Close()
 
-	result, err := client.GetChannelICalendar(context.Background(), "12345")
+	result, err := client.GetChannelICalendar(context.Background(), twitchScheduleBroadcasterID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result != expectedBody {
-		t.Errorf("expected %q, got %q", expectedBody, result)
+	if result != twitchScheduleICalendar {
+		t.Errorf("expected iCalendar content, got %q", result)
 	}
 }
 
@@ -402,7 +465,7 @@ func TestClient_GetChannelICalendar_Error(t *testing.T) {
 		baseURL: "http://invalid",
 	}
 
-	_, err := client.GetChannelICalendar(context.Background(), "12345")
+	_, err := client.GetChannelICalendar(context.Background(), twitchScheduleBroadcasterID)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -416,7 +479,7 @@ func TestClient_GetChannelICalendar_ReadError(t *testing.T) {
 		baseURL: "http://test",
 	}
 
-	_, err := client.GetChannelICalendar(context.Background(), "12345")
+	_, err := client.GetChannelICalendar(context.Background(), twitchScheduleBroadcasterID)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -432,7 +495,7 @@ func TestClient_CreateChannelStreamScheduleSegment_EmptyResponse(t *testing.T) {
 			Data: struct {
 				Segments []ScheduleSegment `json:"segments"`
 			}{
-				Segments: []ScheduleSegment{}, // Empty segments
+				Segments: []ScheduleSegment{},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -440,10 +503,10 @@ func TestClient_CreateChannelStreamScheduleSegment_EmptyResponse(t *testing.T) {
 	defer server.Close()
 
 	result, err := client.CreateChannelStreamScheduleSegment(context.Background(), &CreateChannelStreamScheduleSegmentParams{
-		BroadcasterID: "12345",
-		StartTime:     time.Now(),
-		Timezone:      "UTC",
-		Duration:      60,
+		BroadcasterID: twitchScheduleBroadcasterID,
+		StartTime:     twitchScheduleStartTime,
+		Timezone:      twitchScheduleTimezone,
+		Duration:      twitchScheduleDuration,
 	})
 
 	if err != nil {
@@ -464,18 +527,18 @@ func TestClient_UpdateChannelStreamScheduleSegment_EmptyResponse(t *testing.T) {
 			Data: struct {
 				Segments []ScheduleSegment `json:"segments"`
 			}{
-				Segments: []ScheduleSegment{}, // Empty segments
+				Segments: []ScheduleSegment{},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
 	})
 	defer server.Close()
 
-	newTitle := "New Title"
+	duration := 120
 	result, err := client.UpdateChannelStreamScheduleSegment(context.Background(), &UpdateChannelStreamScheduleSegmentParams{
-		BroadcasterID: "12345",
-		ID:            "seg123",
-		Title:         &newTitle,
+		BroadcasterID: twitchScheduleBroadcasterID,
+		ID:            twitchScheduleSegmentID1,
+		Duration:      &duration,
 	})
 
 	if err != nil {
@@ -502,13 +565,10 @@ func TestClient_UpdateChannelStreamSchedule_WithVacationTimes(t *testing.T) {
 	})
 	defer server.Close()
 
-	vacationStart := time.Now().Add(24 * time.Hour)
-	vacationEnd := time.Now().Add(7 * 24 * time.Hour)
-
 	err := client.UpdateChannelStreamSchedule(context.Background(), &UpdateChannelStreamScheduleParams{
-		BroadcasterID:     "12345",
-		VacationStartTime: &vacationStart,
-		VacationEndTime:   &vacationEnd,
+		BroadcasterID:     twitchScheduleBroadcasterID,
+		VacationStartTime: &twitchScheduleVacationStart,
+		VacationEndTime:   &twitchScheduleVacationEnd,
 	})
 
 	if err != nil {
@@ -524,7 +584,7 @@ func TestClient_GetChannelStreamSchedule_Error(t *testing.T) {
 	defer server.Close()
 
 	_, err := client.GetChannelStreamSchedule(context.Background(), &GetChannelStreamScheduleParams{
-		BroadcasterID: "12345",
+		BroadcasterID: twitchScheduleBroadcasterID,
 	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -539,7 +599,7 @@ func TestClient_UpdateChannelStreamSchedule_Error(t *testing.T) {
 	defer server.Close()
 
 	err := client.UpdateChannelStreamSchedule(context.Background(), &UpdateChannelStreamScheduleParams{
-		BroadcasterID: "12345",
+		BroadcasterID: twitchScheduleBroadcasterID,
 	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -554,10 +614,10 @@ func TestClient_CreateChannelStreamScheduleSegment_Error(t *testing.T) {
 	defer server.Close()
 
 	_, err := client.CreateChannelStreamScheduleSegment(context.Background(), &CreateChannelStreamScheduleSegmentParams{
-		BroadcasterID: "12345",
-		StartTime:     time.Now(),
-		Timezone:      "UTC",
-		Duration:      60,
+		BroadcasterID: twitchScheduleBroadcasterID,
+		StartTime:     twitchScheduleStartTime,
+		Timezone:      twitchScheduleTimezone,
+		Duration:      twitchScheduleDuration,
 	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -571,11 +631,11 @@ func TestClient_UpdateChannelStreamScheduleSegment_Error(t *testing.T) {
 	})
 	defer server.Close()
 
-	title := "New Title"
+	duration := 120
 	_, err := client.UpdateChannelStreamScheduleSegment(context.Background(), &UpdateChannelStreamScheduleSegmentParams{
-		BroadcasterID: "12345",
-		ID:            "seg123",
-		Title:         &title,
+		BroadcasterID: twitchScheduleBroadcasterID,
+		ID:            twitchScheduleSegmentID1,
+		Duration:      &duration,
 	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
@@ -589,7 +649,7 @@ func TestClient_DeleteChannelStreamScheduleSegment_Error(t *testing.T) {
 	})
 	defer server.Close()
 
-	err := client.DeleteChannelStreamScheduleSegment(context.Background(), "12345", "seg123")
+	err := client.DeleteChannelStreamScheduleSegment(context.Background(), twitchScheduleBroadcasterID, twitchScheduleSegmentID2)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
