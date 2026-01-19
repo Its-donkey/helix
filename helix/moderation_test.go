@@ -8,37 +8,64 @@ import (
 	"time"
 )
 
+// Official Twitch API example values from https://dev.twitch.tv/docs/api/reference/
+const (
+	// Get Banned Users example
+	twitchBannedUserID         = "423374343"
+	twitchBannedUserLogin      = "glowillig"
+	twitchBannedUserName       = "glowillig"
+	twitchBannedModeratorID    = "141981764"
+	twitchBannedModeratorLogin = "twitchdev"
+	twitchBannedModeratorName  = "TwitchDev"
+	twitchBannedReason         = "Does not like pineapple on pizza."
+
+	// Ban User example
+	twitchBanBroadcasterID = "1234"
+	twitchBanModeratorID   = "5678"
+	twitchBanUserID        = "9876"
+
+	// Get Moderators example
+	twitchModeratorUserID    = "424596340"
+	twitchModeratorUserLogin = "quotrok"
+	twitchModeratorUserName  = "quotrok"
+
+	// Blocked Terms example
+	twitchBlockedTermBroadcasterID = "1234"
+	twitchBlockedTermModeratorID   = "5678"
+	twitchBlockedTermID            = "520e4d4e-0cda-49c7-821e-e5ef4f88c2f2"
+	twitchBlockedTermText          = "A phrase I'm not fond of"
+
+	// Shield Mode example
+	twitchShieldModeModeratorID    = "98765"
+	twitchShieldModeModeratorLogin = "simplysimple"
+	twitchShieldModeModeratorName  = "SimplySimple"
+)
+
 func TestClient_GetBannedUsers(t *testing.T) {
+	// Using official Twitch API example from https://dev.twitch.tv/docs/api/reference/#get-banned-users
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/moderation/banned" {
 			t.Errorf("expected /moderation/banned, got %s", r.URL.Path)
 		}
 
 		broadcasterID := r.URL.Query().Get("broadcaster_id")
-		if broadcasterID != "12345" {
-			t.Errorf("expected broadcaster_id=12345, got %s", broadcasterID)
+		if broadcasterID != twitchBannedModeratorID {
+			t.Errorf("expected broadcaster_id=%s, got %s", twitchBannedModeratorID, broadcasterID)
 		}
 
+		// Official Twitch API response example
 		resp := Response[BannedUser]{
 			Data: []BannedUser{
 				{
-					UserID:         "11111",
-					UserLogin:      "banned1",
-					UserName:       "Banned1",
-					ExpiresAt:      time.Now().Add(24 * time.Hour),
-					CreatedAt:      time.Now(),
-					Reason:         "Spam",
-					ModeratorID:    "67890",
-					ModeratorLogin: "mod1",
-					ModeratorName:  "Mod1",
-				},
-				{
-					UserID:      "22222",
-					UserLogin:   "banned2",
-					UserName:    "Banned2",
-					CreatedAt:   time.Now(),
-					Reason:      "Harassment",
-					ModeratorID: "67890",
+					UserID:         twitchBannedUserID,
+					UserLogin:      twitchBannedUserLogin,
+					UserName:       twitchBannedUserName,
+					ExpiresAt:      mustParseTime("2022-03-15T02:00:28Z"),
+					CreatedAt:      mustParseTime("2022-03-15T01:30:28Z"),
+					Reason:         twitchBannedReason,
+					ModeratorID:    twitchBannedModeratorID,
+					ModeratorLogin: twitchBannedModeratorLogin,
+					ModeratorName:  twitchBannedModeratorName,
 				},
 			},
 		}
@@ -47,14 +74,20 @@ func TestClient_GetBannedUsers(t *testing.T) {
 	defer server.Close()
 
 	resp, err := client.GetBannedUsers(context.Background(), &GetBannedUsersParams{
-		BroadcasterID: "12345",
+		BroadcasterID: twitchBannedModeratorID,
 	})
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(resp.Data) != 2 {
-		t.Fatalf("expected 2 banned users, got %d", len(resp.Data))
+	if len(resp.Data) != 1 {
+		t.Fatalf("expected 1 banned user, got %d", len(resp.Data))
+	}
+	if resp.Data[0].UserID != twitchBannedUserID {
+		t.Errorf("expected user_id %s, got %s", twitchBannedUserID, resp.Data[0].UserID)
+	}
+	if resp.Data[0].Reason != twitchBannedReason {
+		t.Errorf("expected reason %q, got %q", twitchBannedReason, resp.Data[0].Reason)
 	}
 }
 
@@ -71,8 +104,8 @@ func TestClient_GetBannedUsers_WithFilters(t *testing.T) {
 	defer server.Close()
 
 	_, err := client.GetBannedUsers(context.Background(), &GetBannedUsersParams{
-		BroadcasterID: "12345",
-		UserIDs:       []string{"11111", "22222"},
+		BroadcasterID: twitchBannedModeratorID,
+		UserIDs:       []string{twitchBannedUserID, "999999999"},
 	})
 
 	if err != nil {
@@ -81,6 +114,7 @@ func TestClient_GetBannedUsers_WithFilters(t *testing.T) {
 }
 
 func TestClient_BanUser(t *testing.T) {
+	// Using official Twitch API example from https://dev.twitch.tv/docs/api/reference/#ban-user
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
@@ -92,28 +126,25 @@ func TestClient_BanUser(t *testing.T) {
 		broadcasterID := r.URL.Query().Get("broadcaster_id")
 		moderatorID := r.URL.Query().Get("moderator_id")
 
-		if broadcasterID != "12345" || moderatorID != "67890" {
-			t.Errorf("expected broadcaster_id=12345, moderator_id=67890")
+		if broadcasterID != twitchBanBroadcasterID || moderatorID != twitchBanModeratorID {
+			t.Errorf("expected broadcaster_id=%s, moderator_id=%s", twitchBanBroadcasterID, twitchBanModeratorID)
 		}
 
 		var body BanUserParams
 		_ = json.NewDecoder(r.Body).Decode(&body)
 
-		if body.Data.UserID != "11111" {
-			t.Errorf("expected user_id=11111, got %s", body.Data.UserID)
-		}
-		if body.Data.Duration != 300 {
-			t.Errorf("expected duration=300, got %d", body.Data.Duration)
+		if body.Data.UserID != twitchBanUserID {
+			t.Errorf("expected user_id=%s, got %s", twitchBanUserID, body.Data.UserID)
 		}
 
+		// Official Twitch API response example
 		resp := Response[BanUserResponse]{
 			Data: []BanUserResponse{
 				{
-					BroadcasterID: "12345",
-					ModeratorID:   "67890",
-					UserID:        "11111",
-					CreatedAt:     time.Now(),
-					EndTime:       time.Now().Add(5 * time.Minute),
+					BroadcasterID: twitchBanBroadcasterID,
+					ModeratorID:   twitchBanModeratorID,
+					UserID:        twitchBanUserID,
+					CreatedAt:     mustParseTime("2021-09-28T18:22:31Z"),
 				},
 			},
 		}
@@ -122,20 +153,19 @@ func TestClient_BanUser(t *testing.T) {
 	defer server.Close()
 
 	result, err := client.BanUser(context.Background(), &BanUserParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "67890",
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
 		Data: BanUserData{
-			UserID:   "11111",
-			Duration: 300,
-			Reason:   "Test ban",
+			UserID: twitchBanUserID,
+			Reason: "Test ban",
 		},
 	})
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.UserID != "11111" {
-		t.Errorf("expected user_id 11111, got %s", result.UserID)
+	if result.UserID != twitchBanUserID {
+		t.Errorf("expected user_id %s, got %s", twitchBanUserID, result.UserID)
 	}
 }
 
@@ -150,7 +180,7 @@ func TestClient_BanUser_Permanent(t *testing.T) {
 
 		resp := Response[BanUserResponse]{
 			Data: []BanUserResponse{
-				{BroadcasterID: "12345", UserID: "11111"},
+				{BroadcasterID: twitchBanBroadcasterID, UserID: twitchBanUserID},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -158,10 +188,10 @@ func TestClient_BanUser_Permanent(t *testing.T) {
 	defer server.Close()
 
 	_, err := client.BanUser(context.Background(), &BanUserParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "67890",
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
 		Data: BanUserData{
-			UserID:   "11111",
+			UserID:   twitchBanUserID,
 			Duration: 0, // Permanent
 			Reason:   "Permanent ban",
 		},
@@ -185,7 +215,7 @@ func TestClient_UnbanUser(t *testing.T) {
 		moderatorID := r.URL.Query().Get("moderator_id")
 		userID := r.URL.Query().Get("user_id")
 
-		if broadcasterID != "12345" || moderatorID != "67890" || userID != "11111" {
+		if broadcasterID != twitchBanBroadcasterID || moderatorID != twitchBanModeratorID || userID != twitchBanUserID {
 			t.Errorf("unexpected query params")
 		}
 
@@ -193,7 +223,7 @@ func TestClient_UnbanUser(t *testing.T) {
 	})
 	defer server.Close()
 
-	err := client.UnbanUser(context.Background(), "12345", "67890", "11111")
+	err := client.UnbanUser(context.Background(), twitchBanBroadcasterID, twitchBanModeratorID, twitchBanUserID)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -201,15 +231,20 @@ func TestClient_UnbanUser(t *testing.T) {
 }
 
 func TestClient_GetModerators(t *testing.T) {
+	// Using official Twitch API example from https://dev.twitch.tv/docs/api/reference/#get-moderators
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/moderation/moderators" {
 			t.Errorf("expected /moderation/moderators, got %s", r.URL.Path)
 		}
 
+		// Official Twitch API response example
 		resp := Response[Moderator]{
 			Data: []Moderator{
-				{UserID: "11111", UserLogin: "mod1", UserName: "Mod1"},
-				{UserID: "22222", UserLogin: "mod2", UserName: "Mod2"},
+				{
+					UserID:    twitchModeratorUserID,
+					UserLogin: twitchModeratorUserLogin,
+					UserName:  twitchModeratorUserName,
+				},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -217,14 +252,17 @@ func TestClient_GetModerators(t *testing.T) {
 	defer server.Close()
 
 	resp, err := client.GetModerators(context.Background(), &GetModeratorsParams{
-		BroadcasterID: "12345",
+		BroadcasterID: twitchBanBroadcasterID,
 	})
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(resp.Data) != 2 {
-		t.Fatalf("expected 2 moderators, got %d", len(resp.Data))
+	if len(resp.Data) != 1 {
+		t.Fatalf("expected 1 moderator, got %d", len(resp.Data))
+	}
+	if resp.Data[0].UserID != twitchModeratorUserID {
+		t.Errorf("expected user_id %s, got %s", twitchModeratorUserID, resp.Data[0].UserID)
 	}
 }
 
@@ -241,7 +279,7 @@ func TestClient_AddChannelModerator(t *testing.T) {
 	})
 	defer server.Close()
 
-	err := client.AddChannelModerator(context.Background(), "12345", "67890")
+	err := client.AddChannelModerator(context.Background(), twitchBanBroadcasterID, twitchModeratorUserID)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -261,7 +299,7 @@ func TestClient_RemoveChannelModerator(t *testing.T) {
 	})
 	defer server.Close()
 
-	err := client.RemoveChannelModerator(context.Background(), "12345", "67890")
+	err := client.RemoveChannelModerator(context.Background(), twitchBanBroadcasterID, twitchModeratorUserID)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -278,8 +316,8 @@ func TestClient_DeleteChatMessages(t *testing.T) {
 		}
 
 		messageID := r.URL.Query().Get("message_id")
-		if messageID != "msg123" {
-			t.Errorf("expected message_id=msg123, got %s", messageID)
+		if messageID != "abc-123-def" {
+			t.Errorf("expected message_id=abc-123-def, got %s", messageID)
 		}
 
 		w.WriteHeader(http.StatusNoContent)
@@ -287,9 +325,9 @@ func TestClient_DeleteChatMessages(t *testing.T) {
 	defer server.Close()
 
 	err := client.DeleteChatMessages(context.Background(), &DeleteChatMessagesParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "67890",
-		MessageID:     "msg123",
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
+		MessageID:     "abc-123-def",
 	})
 
 	if err != nil {
@@ -309,8 +347,8 @@ func TestClient_DeleteChatMessages_All(t *testing.T) {
 	defer server.Close()
 
 	err := client.DeleteChatMessages(context.Background(), &DeleteChatMessagesParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "67890",
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
 	})
 
 	if err != nil {
@@ -319,20 +357,22 @@ func TestClient_DeleteChatMessages_All(t *testing.T) {
 }
 
 func TestClient_GetBlockedTerms(t *testing.T) {
+	// Using official Twitch API example from https://dev.twitch.tv/docs/api/reference/#get-blocked-terms
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/moderation/blocked_terms" {
 			t.Errorf("expected /moderation/blocked_terms, got %s", r.URL.Path)
 		}
 
+		// Official Twitch API response example
 		resp := Response[BlockedTerm]{
 			Data: []BlockedTerm{
 				{
-					BroadcasterID: "12345",
-					ModeratorID:   "67890",
-					ID:            "term1",
-					Text:          "badword",
-					CreatedAt:     time.Now(),
-					UpdatedAt:     time.Now(),
+					BroadcasterID: twitchBlockedTermBroadcasterID,
+					ModeratorID:   twitchBlockedTermModeratorID,
+					ID:            twitchBlockedTermID,
+					Text:          twitchBlockedTermText,
+					CreatedAt:     mustParseTime("2021-09-29T19:45:37Z"),
+					UpdatedAt:     mustParseTime("2021-09-29T19:45:37Z"),
 				},
 			},
 		}
@@ -341,8 +381,8 @@ func TestClient_GetBlockedTerms(t *testing.T) {
 	defer server.Close()
 
 	resp, err := client.GetBlockedTerms(context.Background(), &GetBlockedTermsParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "67890",
+		BroadcasterID: twitchBlockedTermBroadcasterID,
+		ModeratorID:   twitchBlockedTermModeratorID,
 	})
 
 	if err != nil {
@@ -351,9 +391,13 @@ func TestClient_GetBlockedTerms(t *testing.T) {
 	if len(resp.Data) != 1 {
 		t.Fatalf("expected 1 blocked term, got %d", len(resp.Data))
 	}
+	if resp.Data[0].Text != twitchBlockedTermText {
+		t.Errorf("expected text %q, got %q", twitchBlockedTermText, resp.Data[0].Text)
+	}
 }
 
 func TestClient_AddBlockedTerm(t *testing.T) {
+	// Using official Twitch API example from https://dev.twitch.tv/docs/api/reference/#add-blocked-term
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			t.Errorf("expected POST, got %s", r.Method)
@@ -365,13 +409,21 @@ func TestClient_AddBlockedTerm(t *testing.T) {
 		var body AddBlockedTermParams
 		_ = json.NewDecoder(r.Body).Decode(&body)
 
-		if body.Text != "newbadword" {
-			t.Errorf("expected text 'newbadword', got %s", body.Text)
+		if body.Text != twitchBlockedTermText {
+			t.Errorf("expected text %q, got %s", twitchBlockedTermText, body.Text)
 		}
 
+		// Official Twitch API response example
 		resp := Response[BlockedTerm]{
 			Data: []BlockedTerm{
-				{ID: "newterm", Text: "newbadword"},
+				{
+					BroadcasterID: twitchBlockedTermBroadcasterID,
+					ModeratorID:   twitchBlockedTermModeratorID,
+					ID:            twitchBlockedTermID,
+					Text:          twitchBlockedTermText,
+					CreatedAt:     mustParseTime("2021-09-29T19:45:37Z"),
+					UpdatedAt:     mustParseTime("2021-09-29T19:45:37Z"),
+				},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -379,16 +431,16 @@ func TestClient_AddBlockedTerm(t *testing.T) {
 	defer server.Close()
 
 	result, err := client.AddBlockedTerm(context.Background(), &AddBlockedTermParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "67890",
-		Text:          "newbadword",
+		BroadcasterID: twitchBlockedTermBroadcasterID,
+		ModeratorID:   twitchBlockedTermModeratorID,
+		Text:          twitchBlockedTermText,
 	})
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result.Text != "newbadword" {
-		t.Errorf("expected text 'newbadword', got %s", result.Text)
+	if result.Text != twitchBlockedTermText {
+		t.Errorf("expected text %q, got %s", twitchBlockedTermText, result.Text)
 	}
 }
 
@@ -402,15 +454,15 @@ func TestClient_RemoveBlockedTerm(t *testing.T) {
 		}
 
 		termID := r.URL.Query().Get("id")
-		if termID != "term123" {
-			t.Errorf("expected id=term123, got %s", termID)
+		if termID != twitchBlockedTermID {
+			t.Errorf("expected id=%s, got %s", twitchBlockedTermID, termID)
 		}
 
 		w.WriteHeader(http.StatusNoContent)
 	})
 	defer server.Close()
 
-	err := client.RemoveBlockedTerm(context.Background(), "12345", "67890", "term123")
+	err := client.RemoveBlockedTerm(context.Background(), twitchBlockedTermBroadcasterID, twitchBlockedTermModeratorID, twitchBlockedTermID)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -418,19 +470,21 @@ func TestClient_RemoveBlockedTerm(t *testing.T) {
 }
 
 func TestClient_GetShieldModeStatus(t *testing.T) {
+	// Using official Twitch API example from https://dev.twitch.tv/docs/api/reference/#get-shield-mode-status
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/moderation/shield_mode" {
 			t.Errorf("expected /moderation/shield_mode, got %s", r.URL.Path)
 		}
 
+		// Official Twitch API response example
 		resp := Response[ShieldModeStatus]{
 			Data: []ShieldModeStatus{
 				{
 					IsActive:        true,
-					ModeratorID:     "67890",
-					ModeratorLogin:  "mod1",
-					ModeratorName:   "Mod1",
-					LastActivatedAt: time.Now(),
+					ModeratorID:     twitchShieldModeModeratorID,
+					ModeratorLogin:  twitchShieldModeModeratorLogin,
+					ModeratorName:   twitchShieldModeModeratorName,
+					LastActivatedAt: mustParseTime("2022-07-26T17:16:03.123Z"),
 				},
 			},
 		}
@@ -438,7 +492,7 @@ func TestClient_GetShieldModeStatus(t *testing.T) {
 	})
 	defer server.Close()
 
-	result, err := client.GetShieldModeStatus(context.Background(), "12345", "67890")
+	result, err := client.GetShieldModeStatus(context.Background(), twitchBanBroadcasterID, twitchShieldModeModeratorID)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -446,9 +500,13 @@ func TestClient_GetShieldModeStatus(t *testing.T) {
 	if !result.IsActive {
 		t.Error("expected shield mode to be active")
 	}
+	if result.ModeratorID != twitchShieldModeModeratorID {
+		t.Errorf("expected moderator_id %s, got %s", twitchShieldModeModeratorID, result.ModeratorID)
+	}
 }
 
 func TestClient_UpdateShieldModeStatus(t *testing.T) {
+	// Using official Twitch API example from https://dev.twitch.tv/docs/api/reference/#update-shield-mode-status
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPut {
 			t.Errorf("expected PUT, got %s", r.Method)
@@ -464,9 +522,16 @@ func TestClient_UpdateShieldModeStatus(t *testing.T) {
 			t.Error("expected is_active to be true")
 		}
 
+		// Official Twitch API response example
 		resp := Response[ShieldModeStatus]{
 			Data: []ShieldModeStatus{
-				{IsActive: true},
+				{
+					IsActive:        true,
+					ModeratorID:     twitchShieldModeModeratorID,
+					ModeratorLogin:  twitchShieldModeModeratorLogin,
+					ModeratorName:   twitchShieldModeModeratorName,
+					LastActivatedAt: mustParseTime("2022-07-26T17:16:03.123Z"),
+				},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -474,8 +539,8 @@ func TestClient_UpdateShieldModeStatus(t *testing.T) {
 	defer server.Close()
 
 	result, err := client.UpdateShieldModeStatus(context.Background(), &UpdateShieldModeStatusParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "67890",
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchShieldModeModeratorID,
 		IsActive:      true,
 	})
 
@@ -499,8 +564,8 @@ func TestClient_WarnChatUser(t *testing.T) {
 		var body WarnChatUserParams
 		_ = json.NewDecoder(r.Body).Decode(&body)
 
-		if body.Data.UserID != "11111" {
-			t.Errorf("expected user_id=11111, got %s", body.Data.UserID)
+		if body.Data.UserID != twitchBanUserID {
+			t.Errorf("expected user_id=%s, got %s", twitchBanUserID, body.Data.UserID)
 		}
 		if body.Data.Reason != "First warning" {
 			t.Errorf("expected reason 'First warning', got %s", body.Data.Reason)
@@ -511,10 +576,10 @@ func TestClient_WarnChatUser(t *testing.T) {
 	defer server.Close()
 
 	err := client.WarnChatUser(context.Background(), &WarnChatUserParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "67890",
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
 		Data: WarnChatUserData{
-			UserID: "11111",
+			UserID: twitchBanUserID,
 			Reason: "First warning",
 		},
 	})
@@ -534,8 +599,8 @@ func TestClient_CheckAutoModStatus(t *testing.T) {
 		}
 
 		broadcasterID := r.URL.Query().Get("broadcaster_id")
-		if broadcasterID != "12345" {
-			t.Errorf("expected broadcaster_id=12345, got %s", broadcasterID)
+		if broadcasterID != twitchBanBroadcasterID {
+			t.Errorf("expected broadcaster_id=%s, got %s", twitchBanBroadcasterID, broadcasterID)
 		}
 
 		resp := Response[AutoModStatus]{
@@ -549,7 +614,7 @@ func TestClient_CheckAutoModStatus(t *testing.T) {
 	defer server.Close()
 
 	resp, err := client.CheckAutoModStatus(context.Background(), &CheckAutoModStatusParams{
-		BroadcasterID: "12345",
+		BroadcasterID: twitchBanBroadcasterID,
 		Data: []AutoModStatusMessage{
 			{MsgID: "msg1", MsgText: "Hello world"},
 			{MsgID: "msg2", MsgText: "Some bad content"},
@@ -579,8 +644,8 @@ func TestClient_ManageHeldAutoModMessages(t *testing.T) {
 		var body ManageHeldAutoModMessageParams
 		_ = json.NewDecoder(r.Body).Decode(&body)
 
-		if body.UserID != "67890" {
-			t.Errorf("expected user_id=67890, got %s", body.UserID)
+		if body.UserID != twitchBanModeratorID {
+			t.Errorf("expected user_id=%s, got %s", twitchBanModeratorID, body.UserID)
 		}
 		if body.MsgID != "msg123" {
 			t.Errorf("expected msg_id=msg123, got %s", body.MsgID)
@@ -594,7 +659,7 @@ func TestClient_ManageHeldAutoModMessages(t *testing.T) {
 	defer server.Close()
 
 	err := client.ManageHeldAutoModMessages(context.Background(), &ManageHeldAutoModMessageParams{
-		UserID: "67890",
+		UserID: twitchBanModeratorID,
 		MsgID:  "msg123",
 		Action: "ALLOW",
 	})
@@ -613,7 +678,7 @@ func TestClient_GetAutoModSettings(t *testing.T) {
 		broadcasterID := r.URL.Query().Get("broadcaster_id")
 		moderatorID := r.URL.Query().Get("moderator_id")
 
-		if broadcasterID != "12345" || moderatorID != "67890" {
+		if broadcasterID != twitchBanBroadcasterID || moderatorID != twitchBanModeratorID {
 			t.Errorf("unexpected query params")
 		}
 
@@ -621,8 +686,8 @@ func TestClient_GetAutoModSettings(t *testing.T) {
 		resp := Response[AutoModSettings]{
 			Data: []AutoModSettings{
 				{
-					BroadcasterID:           "12345",
-					ModeratorID:             "67890",
+					BroadcasterID:           twitchBanBroadcasterID,
+					ModeratorID:             twitchBanModeratorID,
 					OverallLevel:            &overallLevel,
 					Disability:              2,
 					Aggression:              3,
@@ -639,7 +704,7 @@ func TestClient_GetAutoModSettings(t *testing.T) {
 	})
 	defer server.Close()
 
-	result, err := client.GetAutoModSettings(context.Background(), "12345", "67890")
+	result, err := client.GetAutoModSettings(context.Background(), twitchBanBroadcasterID, twitchBanModeratorID)
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -670,8 +735,8 @@ func TestClient_UpdateAutoModSettings(t *testing.T) {
 
 	overallLevel := 4
 	result, err := client.UpdateAutoModSettings(context.Background(), &UpdateAutoModSettingsParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "67890",
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
 		OverallLevel:  &overallLevel,
 	})
 
@@ -698,11 +763,11 @@ func TestClient_GetUnbanRequests(t *testing.T) {
 			Data: []UnbanRequest{
 				{
 					ID:               "request123",
-					BroadcasterID:    "12345",
+					BroadcasterID:    twitchBanBroadcasterID,
 					BroadcasterLogin: "streamer",
 					BroadcasterName:  "Streamer",
 					ModeratorID:      "",
-					UserID:           "11111",
+					UserID:           twitchBanUserID,
 					UserLogin:        "banneduser",
 					UserName:         "BannedUser",
 					Text:             "Please unban me",
@@ -717,8 +782,8 @@ func TestClient_GetUnbanRequests(t *testing.T) {
 	defer server.Close()
 
 	resp, err := client.GetUnbanRequests(context.Background(), &GetUnbanRequestsParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "67890",
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
 		Status:        "pending",
 	})
 
@@ -768,8 +833,8 @@ func TestClient_ResolveUnbanRequest(t *testing.T) {
 	defer server.Close()
 
 	result, err := client.ResolveUnbanRequest(context.Background(), &ResolveUnbanRequestParams{
-		BroadcasterID:  "12345",
-		ModeratorID:    "67890",
+		BroadcasterID:  twitchBanBroadcasterID,
+		ModeratorID:    twitchBanModeratorID,
 		UnbanRequestID: "request123",
 		Status:         "approved",
 		ResolutionText: "Appeal accepted",
@@ -793,21 +858,16 @@ func TestClient_GetModeratedChannels(t *testing.T) {
 		}
 
 		userID := r.URL.Query().Get("user_id")
-		if userID != "12345" {
-			t.Errorf("expected user_id=12345, got %s", userID)
+		if userID != twitchModeratorUserID {
+			t.Errorf("expected user_id=%s, got %s", twitchModeratorUserID, userID)
 		}
 
 		resp := Response[ModeratedChannel]{
 			Data: []ModeratedChannel{
 				{
-					BroadcasterID:    "11111",
+					BroadcasterID:    twitchBanBroadcasterID,
 					BroadcasterLogin: "channel1",
 					BroadcasterName:  "Channel1",
-				},
-				{
-					BroadcasterID:    "22222",
-					BroadcasterLogin: "channel2",
-					BroadcasterName:  "Channel2",
 				},
 			},
 			Pagination: &Pagination{Cursor: "next-cursor"},
@@ -817,16 +877,18 @@ func TestClient_GetModeratedChannels(t *testing.T) {
 	defer server.Close()
 
 	resp, err := client.GetModeratedChannels(context.Background(), &GetModeratedChannelsParams{
-		UserID: "12345",
+		UserID: twitchModeratorUserID,
 	})
 
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if len(resp.Data) != 2 {
-		t.Fatalf("expected 2 moderated channels, got %d", len(resp.Data))
+	if len(resp.Data) != 1 {
+		t.Fatalf("expected 1 moderated channel, got %d", len(resp.Data))
 	}
 }
+
+// Error handling tests
 
 func TestClient_BanUser_Error(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
@@ -835,7 +897,11 @@ func TestClient_BanUser_Error(t *testing.T) {
 	})
 	defer server.Close()
 
-	_, err := client.BanUser(context.Background(), &BanUserParams{BroadcasterID: "12345", ModeratorID: "12345", Data: BanUserData{UserID: "67890"}})
+	_, err := client.BanUser(context.Background(), &BanUserParams{
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
+		Data:          BanUserData{UserID: twitchBanUserID},
+	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -848,7 +914,7 @@ func TestClient_GetModerators_Error(t *testing.T) {
 	})
 	defer server.Close()
 
-	_, err := client.GetModerators(context.Background(), &GetModeratorsParams{BroadcasterID: "12345"})
+	_, err := client.GetModerators(context.Background(), &GetModeratorsParams{BroadcasterID: twitchBanBroadcasterID})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -861,7 +927,11 @@ func TestClient_AddBlockedTerm_Error(t *testing.T) {
 	})
 	defer server.Close()
 
-	_, err := client.AddBlockedTerm(context.Background(), &AddBlockedTermParams{BroadcasterID: "12345", ModeratorID: "12345", Text: "badword"})
+	_, err := client.AddBlockedTerm(context.Background(), &AddBlockedTermParams{
+		BroadcasterID: twitchBlockedTermBroadcasterID,
+		ModeratorID:   twitchBlockedTermModeratorID,
+		Text:          "badword",
+	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -874,7 +944,7 @@ func TestClient_GetShieldModeStatus_Error(t *testing.T) {
 	})
 	defer server.Close()
 
-	_, err := client.GetShieldModeStatus(context.Background(), "12345", "12345")
+	_, err := client.GetShieldModeStatus(context.Background(), twitchBanBroadcasterID, twitchBanModeratorID)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -887,7 +957,11 @@ func TestClient_UpdateShieldModeStatus_Error(t *testing.T) {
 	})
 	defer server.Close()
 
-	_, err := client.UpdateShieldModeStatus(context.Background(), &UpdateShieldModeStatusParams{BroadcasterID: "12345", ModeratorID: "12345", IsActive: true})
+	_, err := client.UpdateShieldModeStatus(context.Background(), &UpdateShieldModeStatusParams{
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
+		IsActive:      true,
+	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -900,7 +974,7 @@ func TestClient_GetAutoModSettings_Error(t *testing.T) {
 	})
 	defer server.Close()
 
-	_, err := client.GetAutoModSettings(context.Background(), "12345", "12345")
+	_, err := client.GetAutoModSettings(context.Background(), twitchBanBroadcasterID, twitchBanModeratorID)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -913,7 +987,10 @@ func TestClient_UpdateAutoModSettings_Error(t *testing.T) {
 	})
 	defer server.Close()
 
-	_, err := client.UpdateAutoModSettings(context.Background(), &UpdateAutoModSettingsParams{BroadcasterID: "12345", ModeratorID: "12345"})
+	_, err := client.UpdateAutoModSettings(context.Background(), &UpdateAutoModSettingsParams{
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
+	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -926,7 +1003,7 @@ func TestClient_GetBannedUsers_Error(t *testing.T) {
 	})
 	defer server.Close()
 
-	_, err := client.GetBannedUsers(context.Background(), &GetBannedUsersParams{BroadcasterID: "12345"})
+	_, err := client.GetBannedUsers(context.Background(), &GetBannedUsersParams{BroadcasterID: twitchBanBroadcasterID})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -939,7 +1016,10 @@ func TestClient_GetBlockedTerms_Error(t *testing.T) {
 	})
 	defer server.Close()
 
-	_, err := client.GetBlockedTerms(context.Background(), &GetBlockedTermsParams{BroadcasterID: "12345", ModeratorID: "12345"})
+	_, err := client.GetBlockedTerms(context.Background(), &GetBlockedTermsParams{
+		BroadcasterID: twitchBlockedTermBroadcasterID,
+		ModeratorID:   twitchBlockedTermModeratorID,
+	})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -953,7 +1033,7 @@ func TestClient_CheckAutoModStatus_Error(t *testing.T) {
 	defer server.Close()
 
 	_, err := client.CheckAutoModStatus(context.Background(), &CheckAutoModStatusParams{
-		BroadcasterID: "12345",
+		BroadcasterID: twitchBanBroadcasterID,
 		Data:          []AutoModStatusMessage{{MsgID: "1", MsgText: "test"}},
 	})
 	if err == nil {
@@ -969,8 +1049,8 @@ func TestClient_GetUnbanRequests_Error(t *testing.T) {
 	defer server.Close()
 
 	_, err := client.GetUnbanRequests(context.Background(), &GetUnbanRequestsParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "12345",
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
 		Status:        "pending",
 	})
 	if err == nil {
@@ -986,8 +1066,8 @@ func TestClient_ResolveUnbanRequest_Error(t *testing.T) {
 	defer server.Close()
 
 	_, err := client.ResolveUnbanRequest(context.Background(), &ResolveUnbanRequestParams{
-		BroadcasterID:  "12345",
-		ModeratorID:    "12345",
+		BroadcasterID:  twitchBanBroadcasterID,
+		ModeratorID:    twitchBanModeratorID,
 		UnbanRequestID: "req123",
 		Status:         "approved",
 	})
@@ -1003,11 +1083,13 @@ func TestClient_GetModeratedChannels_Error(t *testing.T) {
 	})
 	defer server.Close()
 
-	_, err := client.GetModeratedChannels(context.Background(), &GetModeratedChannelsParams{UserID: "12345"})
+	_, err := client.GetModeratedChannels(context.Background(), &GetModeratedChannelsParams{UserID: twitchModeratorUserID})
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
 }
+
+// Empty response tests
 
 func TestClient_BanUser_EmptyResponse(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
@@ -1017,9 +1099,9 @@ func TestClient_BanUser_EmptyResponse(t *testing.T) {
 	defer server.Close()
 
 	result, err := client.BanUser(context.Background(), &BanUserParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "12345",
-		Data:          BanUserData{UserID: "67890"},
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
+		Data:          BanUserData{UserID: twitchBanUserID},
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -1038,7 +1120,7 @@ func TestClient_GetModerators_WithUserIDs(t *testing.T) {
 
 		resp := Response[Moderator]{
 			Data: []Moderator{
-				{UserID: "11111", UserLogin: "mod1", UserName: "Mod1"},
+				{UserID: twitchModeratorUserID, UserLogin: twitchModeratorUserLogin, UserName: twitchModeratorUserName},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -1046,8 +1128,8 @@ func TestClient_GetModerators_WithUserIDs(t *testing.T) {
 	defer server.Close()
 
 	resp, err := client.GetModerators(context.Background(), &GetModeratorsParams{
-		BroadcasterID: "12345",
-		UserIDs:       []string{"11111", "22222"},
+		BroadcasterID: twitchBanBroadcasterID,
+		UserIDs:       []string{twitchModeratorUserID, "999999999"},
 	})
 
 	if err != nil {
@@ -1066,8 +1148,8 @@ func TestClient_AddBlockedTerm_EmptyResponse(t *testing.T) {
 	defer server.Close()
 
 	result, err := client.AddBlockedTerm(context.Background(), &AddBlockedTermParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "12345",
+		BroadcasterID: twitchBlockedTermBroadcasterID,
+		ModeratorID:   twitchBlockedTermModeratorID,
 		Text:          "badword",
 	})
 	if err != nil {
@@ -1085,7 +1167,7 @@ func TestClient_GetShieldModeStatus_EmptyResponse(t *testing.T) {
 	})
 	defer server.Close()
 
-	result, err := client.GetShieldModeStatus(context.Background(), "12345", "12345")
+	result, err := client.GetShieldModeStatus(context.Background(), twitchBanBroadcasterID, twitchBanModeratorID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1102,8 +1184,8 @@ func TestClient_UpdateShieldModeStatus_EmptyResponse(t *testing.T) {
 	defer server.Close()
 
 	result, err := client.UpdateShieldModeStatus(context.Background(), &UpdateShieldModeStatusParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "12345",
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
 		IsActive:      true,
 	})
 	if err != nil {
@@ -1121,7 +1203,7 @@ func TestClient_GetAutoModSettings_EmptyResponse(t *testing.T) {
 	})
 	defer server.Close()
 
-	result, err := client.GetAutoModSettings(context.Background(), "12345", "12345")
+	result, err := client.GetAutoModSettings(context.Background(), twitchBanBroadcasterID, twitchBanModeratorID)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -1138,8 +1220,8 @@ func TestClient_UpdateAutoModSettings_EmptyResponse(t *testing.T) {
 	defer server.Close()
 
 	result, err := client.UpdateAutoModSettings(context.Background(), &UpdateAutoModSettingsParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "12345",
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
 	})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -1157,8 +1239,8 @@ func TestClient_ResolveUnbanRequest_EmptyResponse(t *testing.T) {
 	defer server.Close()
 
 	result, err := client.ResolveUnbanRequest(context.Background(), &ResolveUnbanRequestParams{
-		BroadcasterID:  "12345",
-		ModeratorID:    "12345",
+		BroadcasterID:  twitchBanBroadcasterID,
+		ModeratorID:    twitchBanModeratorID,
 		UnbanRequestID: "req123",
 		Status:         "approved",
 	})
@@ -1173,13 +1255,13 @@ func TestClient_ResolveUnbanRequest_EmptyResponse(t *testing.T) {
 func TestClient_GetUnbanRequests_WithUserID(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		userID := r.URL.Query().Get("user_id")
-		if userID != "67890" {
-			t.Errorf("expected user_id=67890, got %s", userID)
+		if userID != twitchBanUserID {
+			t.Errorf("expected user_id=%s, got %s", twitchBanUserID, userID)
 		}
 
 		resp := Response[UnbanRequest]{
 			Data: []UnbanRequest{
-				{ID: "req1", UserID: "67890", Status: "pending"},
+				{ID: "req1", UserID: twitchBanUserID, Status: "pending"},
 			},
 		}
 		_ = json.NewEncoder(w).Encode(resp)
@@ -1187,10 +1269,10 @@ func TestClient_GetUnbanRequests_WithUserID(t *testing.T) {
 	defer server.Close()
 
 	resp, err := client.GetUnbanRequests(context.Background(), &GetUnbanRequestsParams{
-		BroadcasterID: "12345",
-		ModeratorID:   "12345",
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
 		Status:        "pending",
-		UserID:        "67890",
+		UserID:        twitchBanUserID,
 	})
 
 	if err != nil {
@@ -1199,4 +1281,164 @@ func TestClient_GetUnbanRequests_WithUserID(t *testing.T) {
 	if len(resp.Data) != 1 {
 		t.Fatalf("expected 1 request, got %d", len(resp.Data))
 	}
+}
+
+// Suspicious user status tests
+
+func TestClient_AddSuspiciousUserStatus(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("expected POST, got %s", r.Method)
+		}
+		if r.URL.Path != "/moderation/suspicious_users" {
+			t.Errorf("expected /moderation/suspicious_users, got %s", r.URL.Path)
+		}
+
+		broadcasterID := r.URL.Query().Get("broadcaster_id")
+		moderatorID := r.URL.Query().Get("moderator_id")
+
+		if broadcasterID != twitchBanBroadcasterID {
+			t.Errorf("expected broadcaster_id=%s, got %s", twitchBanBroadcasterID, broadcasterID)
+		}
+		if moderatorID != twitchBanModeratorID {
+			t.Errorf("expected moderator_id=%s, got %s", twitchBanModeratorID, moderatorID)
+		}
+
+		var body AddSuspiciousUserStatusParams
+		_ = json.NewDecoder(r.Body).Decode(&body)
+
+		if body.UserID != twitchBanUserID {
+			t.Errorf("expected user_id=%s, got %s", twitchBanUserID, body.UserID)
+		}
+		if body.Status != SuspiciousUserStatusRestricted {
+			t.Errorf("expected status=restricted, got %s", body.Status)
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	})
+	defer server.Close()
+
+	err := client.AddSuspiciousUserStatus(context.Background(), &AddSuspiciousUserStatusParams{
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
+		UserID:        twitchBanUserID,
+		Status:        SuspiciousUserStatusRestricted,
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_AddSuspiciousUserStatus_Monitored(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		var body AddSuspiciousUserStatusParams
+		_ = json.NewDecoder(r.Body).Decode(&body)
+
+		if body.Status != SuspiciousUserStatusMonitored {
+			t.Errorf("expected status=monitored, got %s", body.Status)
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	})
+	defer server.Close()
+
+	err := client.AddSuspiciousUserStatus(context.Background(), &AddSuspiciousUserStatusParams{
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
+		UserID:        twitchBanUserID,
+		Status:        SuspiciousUserStatusMonitored,
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_AddSuspiciousUserStatus_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte(`{"error":"forbidden"}`))
+	})
+	defer server.Close()
+
+	err := client.AddSuspiciousUserStatus(context.Background(), &AddSuspiciousUserStatusParams{
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
+		UserID:        twitchBanUserID,
+		Status:        SuspiciousUserStatusRestricted,
+	})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+func TestClient_RemoveSuspiciousUserStatus(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodDelete {
+			t.Errorf("expected DELETE, got %s", r.Method)
+		}
+		if r.URL.Path != "/moderation/suspicious_users" {
+			t.Errorf("expected /moderation/suspicious_users, got %s", r.URL.Path)
+		}
+
+		broadcasterID := r.URL.Query().Get("broadcaster_id")
+		moderatorID := r.URL.Query().Get("moderator_id")
+		userID := r.URL.Query().Get("user_id")
+
+		if broadcasterID != twitchBanBroadcasterID {
+			t.Errorf("expected broadcaster_id=%s, got %s", twitchBanBroadcasterID, broadcasterID)
+		}
+		if moderatorID != twitchBanModeratorID {
+			t.Errorf("expected moderator_id=%s, got %s", twitchBanModeratorID, moderatorID)
+		}
+		if userID != twitchBanUserID {
+			t.Errorf("expected user_id=%s, got %s", twitchBanUserID, userID)
+		}
+
+		w.WriteHeader(http.StatusNoContent)
+	})
+	defer server.Close()
+
+	err := client.RemoveSuspiciousUserStatus(context.Background(), &RemoveSuspiciousUserStatusParams{
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
+		UserID:        twitchBanUserID,
+	})
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestClient_RemoveSuspiciousUserStatus_Error(t *testing.T) {
+	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, _ = w.Write([]byte(`{"error":"not found"}`))
+	})
+	defer server.Close()
+
+	err := client.RemoveSuspiciousUserStatus(context.Background(), &RemoveSuspiciousUserStatusParams{
+		BroadcasterID: twitchBanBroadcasterID,
+		ModeratorID:   twitchBanModeratorID,
+		UserID:        twitchBanUserID,
+	})
+
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+}
+
+// Helper function to parse time strings
+func mustParseTime(s string) time.Time {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		// Try with milliseconds
+		t, err = time.Parse("2006-01-02T15:04:05.000Z", s)
+		if err != nil {
+			panic("failed to parse time: " + s)
+		}
+	}
+	return t
 }
