@@ -112,4 +112,4 @@ jobs:
           git add .github/coverage.svg
           git diff --staged --quiet || git commit -m "Checking Coverage"
           git push
-        if: github.event_name == 'push'
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
