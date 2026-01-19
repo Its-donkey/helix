@@ -1,17 +1,7 @@
 title: Kappopher
 description: A comprehensive Go wrapper for the Twitch Helix API
-remote_theme: pages-themes/dinky@v0.2.0
-plugins:
-  - jekyll-remote-theme
-
-# Navigation structure
-nav:
-  - title: Getting Started
-    url: /
-  - title: API Reference
-    url: /api-reference
-  - title: Cookbook
-    url: /cookbook
+url: ""
+baseurl: ""
 
 # Syntax highlighting
 highlighter: rouge
@@ -24,7 +14,6 @@ kramdown:
 defaults:
   - scope:
       path: ""
-      type: "pages"
     values:
       layout: "default"
   - scope:
@@ -36,4 +25,7 @@ defaults:
 exclude:
   - General.html
   - "*.sh"
+  - Gemfile
   - Gemfile.lock
+  - node_modules
+  - vendor
