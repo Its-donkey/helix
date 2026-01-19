@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
+### Changed
+
+### Fixed
+
+## [1.0.2] - 2026-01-19 ([#45](https://github.com/Its-donkey/kappopher/pull/45))
+
+### Added
 - High-level EventSub WebSocket handlers: `WithEventSubRevocationHandler`, `WithEventSubReconnectHandler`, `WithEventSubErrorHandler`
 - Automatic reconnection handling for EventSub WebSocket when Twitch sends reconnect message
 - `CacheKeyWithContext()` function for cache key generation with base URL and token isolation
