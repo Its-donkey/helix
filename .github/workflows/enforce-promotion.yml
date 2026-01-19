@@ -4,6 +4,9 @@ on:
   pull_request:
     branches: [main, v2/proto]
 
+# Minimal permissions - this workflow only checks branch names
+permissions: {}
+
 jobs:
   check-source-branch:
     runs-on: ubuntu-latest

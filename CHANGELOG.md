@@ -8,10 +8,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- High-level EventSub WebSocket handlers: `WithEventSubRevocationHandler`, `WithEventSubReconnectHandler`, `WithEventSubErrorHandler`
+- Automatic reconnection handling for EventSub WebSocket when Twitch sends reconnect message
+- `CacheKeyWithContext()` function for cache key generation with base URL and token isolation
+- `TokenHash()` function to generate hashed tokens for cache key isolation
+- Body size limit (1MB) for EventSub webhook handlers to prevent memory exhaustion attacks
+- Future timestamp rejection in EventSub webhook handlers (with 1-minute clock skew tolerance)
 
 ### Changed
+- `MemoryCache.Get()` and `Set()` now copy byte slices to prevent mutation of cached data
+- `MessageDeduplicator` now properly enforces `maxSize` by evicting oldest entries when at capacity
+- `SetExtensionRequiredConfigurationParams` now includes `ExtensionID` field as required by Twitch API
+- Removed duplicate `irc/` package (functionality consolidated in `helix/` IRC implementation)
 
 ### Fixed
+- IRC `Close()` now uses `sync.Once` to prevent panic from closing `stopChan` multiple times
+- IRC `Close()` now waits for `readLoop()` to finish before returning
+- IRC `Close()` now properly closes in-progress connections (not just fully connected ones)
+- IRC `Connect()` is now serialized - concurrent calls return `ErrAlreadyConnected`
+- IRC `waitForAuth()` now respects context deadline with a 30-second default timeout
+- IRC handler panics are now recovered to prevent crashing the connection loop
+- IRC messages now sanitize CR/LF characters to prevent injection attacks
+- EventSub WebSocket `waitForWelcome()` now respects context deadline (uses whichever is sooner between context deadline and 10-second default)
+- EventSub WebSocket `Close()` now properly handles in-progress connections
+- EventSub WebSocket `Connect()` now closes existing connection before reconnecting
+- `ChatBotClient.Connect()` now returns an error if no authentication token is available instead of panicking
+- `extensionTokenProvider.GetToken()` is now thread-safe with proper mutex synchronization
+- `PubSubClient.Connect()` no longer holds the lock when calling the `onConnect` handler, preventing deadlocks
+- `PubSubClient.Close()` now returns combined errors using `errors.Join`
+- `PubSubClient` goroutines are now tracked with `sync.WaitGroup` to prevent leaks
+- `NewPubSubClient()` now validates that `helixClient` is not nil
+- `WaitForDeviceToken()` now validates that `deviceCode` is not nil and `Interval` > 0
+- `CreateToken()` now validates that `claims` is not nil
 
 ## [1.0.1] - 2026-01-18 ([#37](https://github.com/Its-donkey/kappopher/pull/37))
 

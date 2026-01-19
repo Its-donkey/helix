@@ -198,12 +198,28 @@ func IsRateLimitError(err error) bool {
 	return ok
 }
 
+// cacheKey generates a cache key that includes base URL and token hash
+// to prevent cache pollution across different clients or tokens.
+func (c *Client) cacheKey(endpoint, query string) string {
+	tokenHash := ""
+	if c.authClient != nil {
+		if token := c.authClient.GetToken(); token != nil {
+			tokenHash = TokenHash(token.AccessToken)
+		}
+	} else if c.tokenProvider != nil {
+		if token := c.tokenProvider.GetToken(); token != nil {
+			tokenHash = TokenHash(token.AccessToken)
+		}
+	}
+	return CacheKeyWithContext(c.baseURL, endpoint, query, tokenHash)
+}
+
 // Do executes an API request with automatic retry on rate limit (429).
 func (c *Client) Do(ctx context.Context, req *Request, result interface{}) error {
 	// Check cache for GET requests
 	if c.cacheEnabled && c.cache != nil && req.Method == http.MethodGet && !shouldSkipCache(ctx) {
-		cacheKey := CacheKey(req.Endpoint, req.Query.Encode())
-		if cached := c.cache.Get(ctx, cacheKey); cached != nil {
+		key := c.cacheKey(req.Endpoint, req.Query.Encode())
+		if cached := c.cache.Get(ctx, key); cached != nil {
 			if result != nil {
 				return json.Unmarshal(cached, result)
 			}
@@ -426,8 +442,8 @@ func (c *Client) doOnceWithResponse(ctx context.Context, req *Request, result in
 
 	// Cache successful GET responses
 	if c.cacheEnabled && c.cache != nil && req.Method == http.MethodGet && !shouldSkipCache(ctx) && len(body) > 0 {
-		cacheKey := CacheKey(req.Endpoint, req.Query.Encode())
-		c.cache.Set(ctx, cacheKey, body, c.cacheTTL)
+		key := c.cacheKey(req.Endpoint, req.Query.Encode())
+		c.cache.Set(ctx, key, body, c.cacheTTL)
 	}
 
 	return mwResp, nil

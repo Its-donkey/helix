@@ -265,6 +265,40 @@ func TestEventSubWebhookHandler_ExpiredTimestamp(t *testing.T) {
 	}
 }
 
+func TestEventSubWebhookHandler_FutureTimestamp(t *testing.T) {
+	secret := "test-secret"
+	handler := NewEventSubWebhookHandler(
+		WithWebhookSecret(secret),
+	)
+
+	body := []byte(`{"subscription":{},"challenge":"test"}`)
+	messageID := "msg-123"
+	// Timestamp 5 minutes in the future (beyond 1-minute tolerance)
+	timestamp := time.Now().Add(5 * time.Minute).UTC().Format(time.RFC3339)
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+	req.Header.Set(EventSubHeaderMessageID, messageID)
+	req.Header.Set(EventSubHeaderMessageTimestamp, timestamp)
+	req.Header.Set(EventSubHeaderMessageType, EventSubMessageTypeVerification)
+
+	// Sign with future timestamp
+	message := messageID + timestamp + string(body)
+	mac := hmac.New(sha256.New, []byte(secret))
+	mac.Write([]byte(message))
+	signature := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+	req.Header.Set(EventSubHeaderMessageSignature, signature)
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Errorf("expected status 400 for future timestamp, got %d", w.Code)
+	}
+	if !bytes.Contains(w.Body.Bytes(), []byte("future")) {
+		t.Errorf("expected error message about future timestamp, got %s", w.Body.String())
+	}
+}
+
 func TestEventSubWebhookHandler_Revocation(t *testing.T) {
 	var receivedMsg *EventSubWebhookMessage
 	handler := NewEventSubWebhookHandler(
@@ -375,6 +409,56 @@ func TestMessageDeduplicator_Cleanup(t *testing.T) {
 	// msg-1 should have been cleaned up since it was expired
 	if dedup.IsDuplicate("msg-1") {
 		t.Error("expired msg-1 should not be duplicate after cleanup")
+	}
+}
+
+func TestMessageDeduplicator_MaxSizeEnforcement(t *testing.T) {
+	// Test that maxSize is enforced even when entries are not expired
+	dedup := NewMessageDeduplicator(time.Hour, 3) // 1 hour maxAge, maxSize 3
+
+	// Fill up to capacity
+	dedup.IsDuplicate("msg-1")
+	dedup.IsDuplicate("msg-2")
+	dedup.IsDuplicate("msg-3")
+
+	// Check that we have exactly 3 entries (at capacity)
+	if len(dedup.seen) != 3 {
+		t.Errorf("expected 3 entries, got %d", len(dedup.seen))
+	}
+
+	// Verify msg-1, msg-2, msg-3 are in the map
+	if _, ok := dedup.seen["msg-1"]; !ok {
+		t.Error("msg-1 should be in the map")
+	}
+	if _, ok := dedup.seen["msg-2"]; !ok {
+		t.Error("msg-2 should be in the map")
+	}
+	if _, ok := dedup.seen["msg-3"]; !ok {
+		t.Error("msg-3 should be in the map")
+	}
+
+	// Add another message - should evict the oldest (msg-1)
+	dedup.IsDuplicate("msg-4")
+
+	// Should still have exactly 3 entries (maxSize enforced)
+	if len(dedup.seen) != 3 {
+		t.Errorf("expected 3 entries after eviction, got %d", len(dedup.seen))
+	}
+
+	// msg-1 should have been evicted as the oldest
+	if _, ok := dedup.seen["msg-1"]; ok {
+		t.Error("msg-1 should have been evicted")
+	}
+
+	// msg-2, msg-3, msg-4 should still be in the map
+	if _, ok := dedup.seen["msg-2"]; !ok {
+		t.Error("msg-2 should still be in the map")
+	}
+	if _, ok := dedup.seen["msg-3"]; !ok {
+		t.Error("msg-3 should still be in the map")
+	}
+	if _, ok := dedup.seen["msg-4"]; !ok {
+		t.Error("msg-4 should be in the map")
 	}
 }
 
@@ -498,6 +582,40 @@ func TestEventSubMiddleware(t *testing.T) {
 
 		if w.Code != http.StatusBadRequest {
 			t.Errorf("expected status 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("future timestamp", func(t *testing.T) {
+		nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			t.Error("next handler should not be called for future timestamp")
+		})
+
+		handler := middleware(nextHandler)
+
+		body := []byte(`{"subscription":{}}`)
+		messageID := "msg-123"
+		// Timestamp 5 minutes in the future (beyond 1-minute tolerance)
+		timestamp := time.Now().Add(5 * time.Minute).UTC().Format(time.RFC3339)
+
+		req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(body))
+		req.Header.Set(EventSubHeaderMessageID, messageID)
+		req.Header.Set(EventSubHeaderMessageTimestamp, timestamp)
+
+		// Create signature with future timestamp
+		message := messageID + timestamp + string(body)
+		mac := hmac.New(sha256.New, []byte(secret))
+		mac.Write([]byte(message))
+		signature := "sha256=" + hex.EncodeToString(mac.Sum(nil))
+		req.Header.Set(EventSubHeaderMessageSignature, signature)
+
+		w := httptest.NewRecorder()
+		handler.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", w.Code)
+		}
+		if !bytes.Contains(w.Body.Bytes(), []byte("future")) {
+			t.Errorf("expected error message about future timestamp, got %s", w.Body.String())
 		}
 	})
 }
@@ -871,6 +989,57 @@ func TestEventSubMiddleware_BodyReadError(t *testing.T) {
 
 	if w.Code != http.StatusBadRequest {
 		t.Errorf("expected status 400 for body read error, got %d", w.Code)
+	}
+}
+
+func TestEventSubWebhookHandler_BodyTooLarge(t *testing.T) {
+	handler := NewEventSubWebhookHandler()
+
+	// Create body larger than EventSubMaxBodySize (1MB)
+	largeBody := make([]byte, EventSubMaxBodySize+100)
+	for i := range largeBody {
+		largeBody[i] = 'a'
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(largeBody))
+	req.Header.Set(EventSubHeaderMessageType, EventSubMessageTypeNotification)
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("expected status 413, got %d", w.Code)
+	}
+}
+
+func TestEventSubMiddleware_BodyTooLarge(t *testing.T) {
+	secret := "test-secret"
+	maxAge := 10 * time.Minute
+
+	middleware := EventSubMiddleware(secret, maxAge)
+
+	nextHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("next handler should not be called when body is too large")
+	})
+
+	handler := middleware(nextHandler)
+
+	// Create body larger than EventSubMaxBodySize (1MB)
+	largeBody := make([]byte, EventSubMaxBodySize+100)
+	for i := range largeBody {
+		largeBody[i] = 'a'
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/webhook", bytes.NewReader(largeBody))
+	req.Header.Set(EventSubHeaderMessageID, "msg-123")
+	req.Header.Set(EventSubHeaderMessageTimestamp, time.Now().UTC().Format(time.RFC3339))
+	req.Header.Set(EventSubHeaderMessageSignature, "sha256=invalid")
+
+	w := httptest.NewRecorder()
+	handler.ServeHTTP(w, req)
+
+	if w.Code != http.StatusRequestEntityTooLarge {
+		t.Errorf("expected status 413, got %d", w.Code)
 	}
 }
 

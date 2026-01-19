@@ -2,6 +2,7 @@ package helix
 
 import (
 	"context"
+	"errors"
 	"sync"
 )
 
@@ -11,6 +12,7 @@ type ChatBotClient struct {
 	irc        *IRCClient
 	authClient *AuthClient
 	nick       string
+	ircURL     string // custom IRC URL for testing
 
 	// Event handlers
 	onMessage    func(*ChatMessage)
@@ -48,6 +50,13 @@ func NewChatBotClient(nick string, authClient *AuthClient, opts ...ChatBotOption
 	}
 
 	return c
+}
+
+// WithChatBotURL sets a custom IRC WebSocket URL (for testing).
+func WithChatBotURL(url string) ChatBotOption {
+	return func(c *ChatBotClient) {
+		c.ircURL = url
+	}
 }
 
 // OnMessage sets the handler for all chat messages.
@@ -164,7 +173,11 @@ func (c *ChatBotClient) Connect(ctx context.Context) error {
 		}
 	}
 
-	c.irc = NewIRCClient(c.nick, token,
+	if token == "" {
+		return errors.New("chatbot: no authentication token available")
+	}
+
+	ircOpts := []IRCOption{
 		WithMessageHandler(c.handleMessage),
 		WithUserNoticeHandler(c.handleUserNotice),
 		WithJoinHandler(c.handleJoin),
@@ -176,7 +189,15 @@ func (c *ChatBotClient) Connect(ctx context.Context) error {
 		WithConnectHandler(c.handleConnect),
 		WithDisconnectHandler(c.handleDisconnect),
 		WithIRCErrorHandler(c.handleError),
-	)
+	}
+	if c.ircURL != "" {
+		ircOpts = append(ircOpts, WithIRCURL(c.ircURL))
+	}
+	c.irc = NewIRCClient(c.nick, token, ircOpts...)
+
+	if c.irc == nil {
+		return errors.New("chatbot: failed to create IRC client (invalid nick or token)")
+	}
 
 	return c.irc.Connect(ctx)
 }

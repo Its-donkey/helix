@@ -237,14 +237,20 @@ jobs:
           REPO="${{ github.repository }}"
           PR_LINK="([#${PR_NUMBER}](https://github.com/${REPO}/pull/${PR_NUMBER}))"
 
-          # Check if PR link already exists in changelog
-          if grep -qE "^## \[${VERSION}\].*#${PR_NUMBER}" CHANGELOG.md; then
-            echo "PR link already exists in CHANGELOG.md"
+          # Check if any PR link already exists on the version line
+          if grep -qE "^## \[${VERSION}\].*\(#[0-9]+\)" CHANGELOG.md; then
+            echo "Version line already has a PR link in CHANGELOG.md"
             exit 0
           fi
 
           # Add PR link to the version line (use | delimiter to avoid conflicts with URLs)
           sed -i "s|^## \[${VERSION}\] - \([0-9-]*\)$|## [${VERSION}] - \1 ${PR_LINK}|" CHANGELOG.md
+
+          # Check if there are changes to commit
+          if git diff --quiet CHANGELOG.md; then
+            echo "No changes to CHANGELOG.md (version line format may not match expected pattern)"
+            exit 0
+          fi
 
           # Commit and push the change
           git config user.name "github-actions[bot]"

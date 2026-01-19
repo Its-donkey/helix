@@ -355,7 +355,15 @@ func (c *AuthClient) PollDeviceToken(ctx context.Context, deviceCode string) (*T
 }
 
 // WaitForDeviceToken polls for the device token until it's available or the context is cancelled.
+// Returns an error if deviceCode is nil or has an invalid interval.
 func (c *AuthClient) WaitForDeviceToken(ctx context.Context, deviceCode *DeviceCodeResponse) (*Token, error) {
+	if deviceCode == nil {
+		return nil, errors.New("device code cannot be nil")
+	}
+	if deviceCode.Interval <= 0 {
+		return nil, errors.New("device code interval must be positive")
+	}
+
 	ticker := time.NewTicker(time.Duration(deviceCode.Interval) * time.Second)
 	defer ticker.Stop()
 

@@ -83,11 +83,28 @@ func TestClient_SetExtensionRequiredConfiguration(t *testing.T) {
 			t.Errorf("expected /extensions/required_configuration, got %s", r.URL.Path)
 		}
 
+		// Verify broadcaster_id in query params
+		broadcasterID := r.URL.Query().Get("broadcaster_id")
+		if broadcasterID != "12345" {
+			t.Errorf("expected broadcaster_id=12345, got %s", broadcasterID)
+		}
+
+		// Verify body contains extension_id
+		var body SetExtensionRequiredConfigurationParams
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		if body.ExtensionID != "ext123" {
+			t.Errorf("expected extension_id 'ext123', got %s", body.ExtensionID)
+		}
+		if body.ExtensionVersion != "1.0.0" {
+			t.Errorf("expected extension_version '1.0.0', got %s", body.ExtensionVersion)
+		}
+
 		w.WriteHeader(http.StatusNoContent)
 	})
 	defer server.Close()
 
 	err := client.SetExtensionRequiredConfiguration(context.Background(), &SetExtensionRequiredConfigurationParams{
+		BroadcasterID:         "12345",
 		ExtensionID:           "ext123",
 		ExtensionVersion:      "1.0.0",
 		RequiredConfiguration: "config_version_1",
@@ -503,6 +520,7 @@ func TestClient_SetExtensionRequiredConfiguration_Error(t *testing.T) {
 	defer server.Close()
 
 	err := client.SetExtensionRequiredConfiguration(context.Background(), &SetExtensionRequiredConfigurationParams{
+		BroadcasterID:    "12345",
 		ExtensionID:      "ext123",
 		ExtensionVersion: "1.0.0",
 	})

@@ -1,7 +1,6 @@
 package helix
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -22,31 +21,38 @@ const (
 
 // IRC command constants
 const (
-	ircCAP         = "CAP"
-	ircPASS        = "PASS"
-	ircNICK        = "NICK"
-	ircJOIN        = "JOIN"
-	ircPART        = "PART"
-	ircPRIVMSG     = "PRIVMSG"
-	ircWHISPER     = "WHISPER"
-	ircPING        = "PING"
-	ircPONG        = "PONG"
-	ircNOTICE      = "NOTICE"
-	ircUSERNOTICE  = "USERNOTICE"
-	ircROOMSTATE   = "ROOMSTATE"
-	ircCLEARCHAT   = "CLEARCHAT"
-	ircCLEARMSG    = "CLEARMSG"
+	ircCAP             = "CAP"
+	ircJOIN            = "JOIN"
+	ircPART            = "PART"
+	ircPRIVMSG         = "PRIVMSG"
+	ircWHISPER         = "WHISPER"
+	ircPING            = "PING"
+	ircPONG            = "PONG"
+	ircNOTICE          = "NOTICE"
+	ircUSERNOTICE      = "USERNOTICE"
+	ircROOMSTATE       = "ROOMSTATE"
+	ircCLEARCHAT       = "CLEARCHAT"
+	ircCLEARMSG        = "CLEARMSG"
 	ircGLOBALUSERSTATE = "GLOBALUSERSTATE"
-	ircUSERSTATE   = "USERSTATE"
-	ircRECONNECT   = "RECONNECT"
+	ircUSERSTATE       = "USERSTATE"
+	ircRECONNECT       = "RECONNECT"
 )
 
 // IRC errors
 var (
-	ErrIRCNotConnected  = errors.New("irc: not connected")
+	ErrIRCNotConnected     = errors.New("irc: not connected")
 	ErrIRCAlreadyConnected = errors.New("irc: already connected")
-	ErrIRCAuthFailed    = errors.New("irc: authentication failed")
+	ErrIRCAuthFailed       = errors.New("irc: authentication failed")
+	ErrIRCInvalidNick      = errors.New("irc: nick is required")
+	ErrIRCInvalidToken     = errors.New("irc: token is required")
 )
+
+// sanitizeIRCMessage removes CR/LF characters to prevent IRC command injection.
+func sanitizeIRCMessage(msg string) string {
+	msg = strings.ReplaceAll(msg, "\r", "")
+	msg = strings.ReplaceAll(msg, "\n", "")
+	return msg
+}
 
 // IRCClient manages a connection to Twitch IRC.
 type IRCClient struct {
@@ -79,6 +85,7 @@ type IRCClient struct {
 	// State
 	mu           sync.RWMutex
 	connected    bool
+	connecting   bool
 	stopChan     chan struct{}
 	stopOnce     sync.Once      // ensures stopChan is closed only once
 	wg           sync.WaitGroup // tracks readLoop goroutine
@@ -96,10 +103,21 @@ type IRCClient struct {
 type IRCOption func(*IRCClient)
 
 // NewIRCClient creates a new IRC client.
+// Deprecated: Use NewIRCClientE instead which returns an error for invalid inputs.
+// This function returns nil if nick or token is empty.
 func NewIRCClient(nick, token string, opts ...IRCOption) *IRCClient {
-	// Validate required inputs
-	if nick == "" || token == "" {
-		return nil
+	client, _ := NewIRCClientE(nick, token, opts...)
+	return client
+}
+
+// NewIRCClientE creates a new IRC client with error handling.
+// Returns an error if nick or token is empty.
+func NewIRCClientE(nick, token string, opts ...IRCOption) (*IRCClient, error) {
+	if nick == "" {
+		return nil, ErrIRCInvalidNick
+	}
+	if token == "" {
+		return nil, ErrIRCInvalidToken
 	}
 
 	// Ensure token has oauth: prefix
@@ -126,7 +144,7 @@ func NewIRCClient(nick, token string, opts ...IRCOption) *IRCClient {
 		opt(c)
 	}
 
-	return c
+	return c, nil
 }
 
 // WithIRCURL sets a custom WebSocket URL.
@@ -269,7 +287,19 @@ func (c *IRCClient) Connect(ctx context.Context) error {
 		c.mu.Unlock()
 		return ErrIRCAlreadyConnected
 	}
+	if c.connecting {
+		c.mu.Unlock()
+		return ErrIRCAlreadyConnected
+	}
+	c.connecting = true
 	c.mu.Unlock()
+
+	// Ensure connecting flag is cleared on exit
+	defer func() {
+		c.mu.Lock()
+		c.connecting = false
+		c.mu.Unlock()
+	}()
 
 	conn, _, err := websocket.DefaultDialer.DialContext(ctx, c.url, nil)
 	if err != nil {
@@ -279,28 +309,41 @@ func (c *IRCClient) Connect(ctx context.Context) error {
 	c.mu.Lock()
 	c.conn = conn
 	c.stopChan = make(chan struct{})
+	c.stopOnce = sync.Once{} // reset for new connection
 	c.mu.Unlock()
 
 	// Request capabilities
 	caps := strings.Join(c.capabilities, " ")
 	if err := c.send(fmt.Sprintf("CAP REQ :%s", caps)); err != nil {
+		c.mu.Lock()
+		c.conn = nil
+		c.mu.Unlock()
 		_ = conn.Close()
 		return fmt.Errorf("requesting capabilities: %w", err)
 	}
 
 	// Authenticate
 	if err := c.send(fmt.Sprintf("PASS %s", c.token)); err != nil {
+		c.mu.Lock()
+		c.conn = nil
+		c.mu.Unlock()
 		_ = conn.Close()
 		return fmt.Errorf("sending PASS: %w", err)
 	}
 
 	if err := c.send(fmt.Sprintf("NICK %s", c.nick)); err != nil {
+		c.mu.Lock()
+		c.conn = nil
+		c.mu.Unlock()
 		_ = conn.Close()
 		return fmt.Errorf("sending NICK: %w", err)
 	}
 
 	// Wait for authentication response
 	if err := c.waitForAuth(ctx); err != nil {
+		c.mu.Lock()
+		c.conn = nil
+		c.mu.Unlock()
 		_ = conn.Close()
 		return err
 	}
@@ -322,7 +365,9 @@ func (c *IRCClient) Connect(ctx context.Context) error {
 	c.mu.RUnlock()
 
 	if len(channels) > 0 {
-		_ = c.Join(channels...)
+		if err := c.Join(channels...); err != nil && c.onError != nil {
+			c.onError(fmt.Errorf("rejoining channels: %w", err))
+		}
 	}
 
 	if c.onConnect != nil {
@@ -334,6 +379,14 @@ func (c *IRCClient) Connect(ctx context.Context) error {
 
 // waitForAuth waits for authentication confirmation.
 func (c *IRCClient) waitForAuth(ctx context.Context) error {
+	// Set read deadline based on context, defaulting to 30 seconds
+	deadline := time.Now().Add(30 * time.Second)
+	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
+		deadline = ctxDeadline
+	}
+	_ = c.conn.SetReadDeadline(deadline)
+	defer func() { _ = c.conn.SetReadDeadline(time.Time{}) }()
+
 	// Read messages until we get 001 (welcome) or NOTICE (auth failed)
 	for {
 		select {
@@ -344,6 +397,12 @@ func (c *IRCClient) waitForAuth(ctx context.Context) error {
 
 		_, data, err := c.conn.ReadMessage()
 		if err != nil {
+			// Check if context was cancelled (deadline-related error)
+			select {
+			case <-ctx.Done():
+				return ctx.Err()
+			default:
+			}
 			return fmt.Errorf("reading auth response: %w", err)
 		}
 
@@ -384,6 +443,7 @@ func (c *IRCClient) readLoop() {
 	defer func() {
 		c.mu.Lock()
 		wasConnected := c.connected
+		shouldReconnect := c.autoReconnect // capture under lock to avoid race
 		c.connected = false
 		if c.conn != nil {
 			_ = c.conn.Close()
@@ -395,12 +455,10 @@ func (c *IRCClient) readLoop() {
 		}
 
 		// Auto-reconnect
-		if wasConnected && c.autoReconnect {
+		if wasConnected && shouldReconnect {
 			go c.reconnect()
 		}
 	}()
-
-	reader := bufio.NewReader(nil)
 
 	for {
 		// Capture connection and stopChan under lock
@@ -429,34 +487,34 @@ func (c *IRCClient) readLoop() {
 			return
 		}
 
-		reader.Reset(strings.NewReader(string(data)))
-
 		lines := strings.Split(string(data), "\r\n")
 		for _, line := range lines {
 			if line == "" {
 				continue
 			}
 
-			if c.onRawMessage != nil {
-				c.onRawMessage(line)
-			}
+			// Recover from panics in handlers to prevent crashing the connection
+			func() {
+				defer func() {
+					if r := recover(); r != nil {
+						if c.onError != nil {
+							c.onError(fmt.Errorf("handler panic: %v", r))
+						}
+					}
+				}()
 
-			c.handleMessage(line)
+				if c.onRawMessage != nil {
+					c.onRawMessage(line)
+				}
+
+				c.handleMessage(line)
+			}()
 		}
 	}
 }
 
 // handleMessage processes a single IRC message.
 func (c *IRCClient) handleMessage(raw string) {
-	// Recover from handler panics to prevent crashing the read loop
-	defer func() {
-		if r := recover(); r != nil {
-			if c.onError != nil {
-				c.onError(fmt.Errorf("handler panic: %v", r))
-			}
-		}
-	}()
-
 	msg := parseIRCMessage(raw)
 
 	switch msg.Command {
@@ -557,7 +615,13 @@ func (c *IRCClient) reconnect() {
 	for {
 		c.mu.RLock()
 		stopChan := c.stopChan
+		shouldReconnect := c.autoReconnect
 		c.mu.RUnlock()
+
+		// Check if we should stop before waiting
+		if !shouldReconnect {
+			return
+		}
 
 		select {
 		case <-stopChan:
@@ -565,12 +629,21 @@ func (c *IRCClient) reconnect() {
 		case <-time.After(c.reconnectDelay):
 		}
 
-		// Check if auto-reconnect was disabled during the delay
+		// Re-check if auto-reconnect was disabled during the delay
 		c.mu.RLock()
-		shouldReconnect := c.autoReconnect
+		shouldReconnect = c.autoReconnect
+		stopChan = c.stopChan
 		c.mu.RUnlock()
+
 		if !shouldReconnect {
 			return
+		}
+
+		// Final check before Connect to minimize race window
+		select {
+		case <-stopChan:
+			return
+		default:
 		}
 
 		if c.onReconnect != nil {
@@ -610,22 +683,31 @@ func (c *IRCClient) send(message string) error {
 // Close closes the IRC connection.
 func (c *IRCClient) Close() error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
-
-	if !c.connected {
+	// Close if connected OR if there's an in-progress connection (conn != nil)
+	if !c.connected && c.conn == nil {
+		c.mu.Unlock()
 		return nil
 	}
 
 	c.autoReconnect = false
 	c.connected = false
 
-	if c.stopChan != nil {
-		close(c.stopChan)
+	// Signal readLoop to stop (only once to prevent panic)
+	c.stopOnce.Do(func() {
+		if c.stopChan != nil {
+			close(c.stopChan)
+		}
+	})
+	conn := c.conn
+	c.mu.Unlock()
+
+	// Close connection to unblock ReadMessage in readLoop
+	if conn != nil {
+		_ = conn.Close()
 	}
 
-	if c.conn != nil {
-		return c.conn.Close()
-	}
+	// Wait for readLoop to finish
+	c.wg.Wait()
 
 	return nil
 }
@@ -682,20 +764,28 @@ func (c *IRCClient) Part(channels ...string) error {
 }
 
 // Say sends a message to a channel.
+// The message is sanitized to prevent IRC command injection.
 func (c *IRCClient) Say(channel, message string) error {
 	channel = strings.ToLower(strings.TrimPrefix(channel, "#"))
+	message = sanitizeIRCMessage(message)
 	return c.send(fmt.Sprintf("PRIVMSG #%s :%s", channel, message))
 }
 
 // Reply sends a reply to a message.
+// The message is sanitized to prevent IRC command injection.
 func (c *IRCClient) Reply(channel, parentMsgID, message string) error {
 	channel = strings.ToLower(strings.TrimPrefix(channel, "#"))
+	parentMsgID = sanitizeIRCMessage(parentMsgID)
+	message = sanitizeIRCMessage(message)
 	return c.send(fmt.Sprintf("@reply-parent-msg-id=%s PRIVMSG #%s :%s", parentMsgID, channel, message))
 }
 
 // Whisper sends a whisper to a user.
 // Note: Whispers require verified bot status for high volume.
+// The message is sanitized to prevent IRC command injection.
 func (c *IRCClient) Whisper(user, message string) error {
+	user = sanitizeIRCMessage(user)
+	message = sanitizeIRCMessage(message)
 	return c.send(fmt.Sprintf("PRIVMSG #jtv :/w %s %s", user, message))
 }
 
