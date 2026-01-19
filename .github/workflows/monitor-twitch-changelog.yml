@@ -1,0 +1,100 @@
+name: Monitor Twitch Changelog
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Daily at 9am UTC
+  workflow_dispatch:  # Allow manual trigger
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  check-changelog:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check for changelog updates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          CHANGELOG_URL="https://dev.twitch.tv/docs/change-log/"
+          HASH_FILE=".github/twitch-changelog-hash"
+
+          # Fetch the changelog page
+          echo "Fetching Twitch changelog..."
+          HTTP_CODE=$(curl -s -w "%{http_code}" -o /tmp/changelog.html "$CHANGELOG_URL")
+
+          if [ "$HTTP_CODE" != "200" ]; then
+            echo "::warning::Failed to fetch changelog (HTTP $HTTP_CODE)"
+            exit 0
+          fi
+
+          # Extract text content and create hash (ignore script/style tags and whitespace variations)
+          NEW_HASH=$(sed -e 's/<script[^>]*>.*<\/script>//g' \
+                         -e 's/<style[^>]*>.*<\/style>//g' \
+                         -e 's/<[^>]*>//g' \
+                         /tmp/changelog.html | \
+                     tr -s '[:space:]' | \
+                     sha256sum | cut -d' ' -f1)
+
+          echo "New hash: $NEW_HASH"
+
+          # Get old hash if it exists
+          OLD_HASH=""
+          if [ -f "$HASH_FILE" ]; then
+            OLD_HASH=$(cat "$HASH_FILE")
+            echo "Old hash: $OLD_HASH"
+          else
+            echo "No previous hash found (first run)"
+          fi
+
+          # Compare hashes
+          if [ "$NEW_HASH" = "$OLD_HASH" ]; then
+            echo "No changes detected"
+            exit 0
+          fi
+
+          echo "Changelog has changed!"
+
+          # Check if there's already an open issue for this
+          EXISTING_ISSUE=$(gh issue list --state open --label "twitch-changelog" --json number --jq '.[0].number // empty')
+
+          if [ -n "$EXISTING_ISSUE" ]; then
+            echo "Open issue #$EXISTING_ISSUE already exists, adding comment"
+            gh issue comment "$EXISTING_ISSUE" --body "Another change detected on $(date -u +%Y-%m-%d). Please review: $CHANGELOG_URL"
+          else
+            echo "Creating new issue"
+            gh issue create \
+              --title "Twitch API changelog updated - $(date -u +%Y-%m-%d)" \
+              --label "twitch-changelog" \
+              --body "$(cat <<EOF
+The Twitch API changelog has been updated.
+
+**Review the changes:** $CHANGELOG_URL
+
+## Action needed
+- [ ] Review the changelog for new/updated/deprecated endpoints
+- [ ] Update kappopher to support any new endpoints
+- [ ] Update kappopher if any endpoints have changed
+- [ ] Close this issue when changes are addressed
+
+---
+*This issue was automatically created by the changelog monitor workflow.*
+EOF
+)"
+          fi
+
+          # Update the stored hash
+          echo "$NEW_HASH" > "$HASH_FILE"
+
+          # Commit the updated hash
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$HASH_FILE"
+          git commit -m "Update Twitch changelog hash [skip ci]"
+          git push
