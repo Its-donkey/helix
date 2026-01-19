@@ -1218,6 +1218,7 @@ const (
 	ScopeModeratorManageShoutouts       = "moderator:manage:shoutouts"
 	ScopeModeratorManageWarnings        = "moderator:manage:warnings"
 	ScopeModeratorManageUnbanRequests   = "moderator:manage:unban_requests"
+	ScopeModeratorManageSuspiciousUsers = "moderator:manage:suspicious_users"
 	ScopeModeratorReadAutomodSettings   = "moderator:read:automod_settings"
 	ScopeModeratorReadBannedUsers       = "moderator:read:banned_users"
 	ScopeModeratorReadBlockedTerms      = "moderator:read:blocked_terms"
