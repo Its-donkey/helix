@@ -376,6 +376,7 @@ func (c *Client) readLoop() {
 	defer func() {
 		c.mu.Lock()
 		wasConnected := c.connected
+		shouldReconnect := c.autoReconnect // capture under lock to avoid race
 		c.connected = false
 		if c.conn != nil {
 			_ = c.conn.Close()
@@ -387,7 +388,7 @@ func (c *Client) readLoop() {
 		}
 
 		// Auto-reconnect
-		if wasConnected && c.autoReconnect {
+		if wasConnected && shouldReconnect {
 			go c.reconnect()
 		}
 	}()
