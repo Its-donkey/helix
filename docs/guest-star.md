@@ -345,6 +345,5 @@ if err != nil {
     fmt.Printf("Failed to update slot settings: %v\n", err)
 }
 ```
-description: **Returns:** No response body on success (HTTP 204 No Content)
----
+**Returns:** No response body on success (HTTP 204 No Content)
 

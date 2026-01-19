@@ -271,6 +271,5 @@ fmt.Printf("Ended poll: %s with status %s\n", resp.Data[0].Title, resp.Data[0].S
     }
   ]
 }
-description: ```
----
+```
 

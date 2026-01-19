@@ -416,6 +416,5 @@ result, err := client.GetUsers(ctx, params)
 
 - [Quick Start](quickstart.md) - Basic setup and usage
 - [Auth](auth.md) - Authentication and token management
-description: - [EventSub](eventsub.md) - Real-time event subscriptions
----
+- [EventSub](eventsub.md) - Real-time event subscriptions
 

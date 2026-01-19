@@ -217,6 +217,5 @@ wsClient := helix.NewEventSubWebSocketClient(
 Note: Expected close errors (like "use of closed network connection" during shutdown) are automatically filtered and won't trigger the error handler.
 
 ## Supported Event Types
-description: See [EventSub documentation](eventsub.md) for a complete list of event types.
----
+See [EventSub documentation](eventsub.md) for a complete list of event types.
 

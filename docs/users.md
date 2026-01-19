@@ -466,6 +466,5 @@ fmt.Printf("Scopes: %v\n", auth.Scopes)
     }
   ]
 }
-description: ```
----
+```
 

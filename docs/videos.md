@@ -118,6 +118,5 @@ for _, videoID := range resp.Data {
 - `videoIDs` ([]string): Array of video IDs to delete
 
 **Returns:**
-description: - Array of deleted video IDs
----
+- Array of deleted video IDs
 

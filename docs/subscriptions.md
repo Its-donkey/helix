@@ -157,6 +157,5 @@ if sub != nil {
 ```
 
 **Response:**
-description: - Returns `UserSubscription` object if subscribed, `nil` if not subscribed
----
+- Returns `UserSubscription` object if subscribed, `nil` if not subscribed
 

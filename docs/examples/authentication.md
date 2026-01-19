@@ -474,6 +474,5 @@ helix.CommonScopes.Channel // channel:manage:*, channel:read:*
 
 // Full broadcaster access
 helix.CommonScopes.Broadcaster // all broadcaster-level scopes
-description: ```
----
+```
 

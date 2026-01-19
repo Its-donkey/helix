@@ -319,6 +319,5 @@ Key differences:
 1. Requires a Helix client (for creating EventSub subscriptions via API)
 2. Uses `context.Context` for all operations
 3. Messages are wrapped in a `PubSubMessage` envelope with the EventSub type
-description: 4. Event payloads use EventSub format (not old PubSub format)
----
+4. Event payloads use EventSub format (not old PubSub format)
 

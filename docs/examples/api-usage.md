@@ -220,6 +220,5 @@ helix.CommonScopes.Bot         // Bot functionality
 helix.CommonScopes.Moderation  // Moderation tools
 helix.CommonScopes.Channel     // Channel management
 helix.CommonScopes.Broadcaster // Full broadcaster access
-description: ```
----
+```
 

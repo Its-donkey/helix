@@ -287,6 +287,5 @@ fmt.Printf("Ended prediction: %s with status %s\n", resp.Data[0].Title, resp.Dat
     }
   ]
 }
-description: ```
----
+```
 

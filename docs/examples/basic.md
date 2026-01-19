@@ -280,6 +280,5 @@ if err != nil {
 if len(users.Data) == 0 {
     fmt.Println("User not found")
 }
-description: ```
----
+```
 

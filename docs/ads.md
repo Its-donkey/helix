@@ -119,6 +119,5 @@ for _, schedule := range resp.Data {
     }
   ]
 }
-description: ```
----
+```
 

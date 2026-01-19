@@ -69,6 +69,5 @@ resp, err := client.GetExtensionConfigurationSegment(ctx, &helix.GetExtensionCon
     Segment:       []string{"broadcaster"},
     BroadcasterID: "67890",
 })
-description: ```
----
+```
 

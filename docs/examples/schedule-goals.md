@@ -444,6 +444,5 @@ func main() {
         fmt.Printf("   🎮 %s\n\n", category)
     }
 }
-description: ```
----
+```
 

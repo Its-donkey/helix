@@ -305,6 +305,5 @@ for _, shard := range resp.Data {
     }
   ]
 }
-description: ```
----
+```
 

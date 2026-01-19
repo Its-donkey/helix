@@ -391,6 +391,5 @@ if resp.Pagination.Cursor != "" {
   - `ID` (string): Marker ID
   - `CreatedAt` (string): UTC timestamp when the marker was created
   - `Description` (string): Marker description
-description: - `PositionSeconds` (int): Position in the stream (in seconds)
----
+- `PositionSeconds` (int): Position in the stream (in seconds)
 

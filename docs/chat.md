@@ -745,6 +745,5 @@ for _, emote := range resp.Data {
     "cursor": "eyJiIjpudWxsLCJhIjoiMTUwMzQ0MTc3NjQyNDQyMjAwMCJ9"
   }
 }
-description: ```
----
+```
 

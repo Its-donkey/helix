@@ -251,6 +251,5 @@ For reference, here are the EventSub event types that PubSub topics map to:
 | `channel-subscribe-events-v1` | `channel.subscribe`, `channel.subscription.gift`, `channel.subscription.message` |
 | `automod-queue` | `automod.message.hold` |
 | `chat_moderator_actions` | `channel.moderate` |
-description: | `whispers` | `user.whisper.message` |
----
+| `whispers` | `user.whisper.message` |
 

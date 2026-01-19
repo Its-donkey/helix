@@ -155,6 +155,5 @@ for _, status := range resp.Data {
 - `INVALID_ID`: The entitlement ID is not valid
 - `NOT_FOUND`: The entitlement was not found
 - `UNAUTHORIZED`: The app or user is not authorized to update this entitlement
-description: - `UPDATE_FAILED`: The update failed for an unknown reason
----
+- `UPDATE_FAILED`: The update failed for an unknown reason
 

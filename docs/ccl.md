@@ -62,6 +62,5 @@ for _, label := range resp.Data {
     }
   ]
 }
-description: ```
----
+```
 

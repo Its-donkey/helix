@@ -424,6 +424,5 @@ version = helix.GetEventSubVersion(helix.EventSubTypeChannelHypeTrainBegin)
 
 version = helix.GetEventSubVersion(helix.EventSubTypeStreamOnline)
 // Returns "1" for most events
-description: ```
----
+```
 

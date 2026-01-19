@@ -112,6 +112,5 @@ for _, team := range resp.Data {
     }
   ]
 }
-description: ```
----
+```
 

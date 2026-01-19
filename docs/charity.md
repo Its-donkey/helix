@@ -120,6 +120,5 @@ if resp.Pagination.Cursor != "" {
     "cursor": "eyJiIjpudWxsLCJhIjoiMTU2ODc0NTE3NjQyNDQyMjAwMCJ9"
   }
 }
-description: ```
----
+```
 

@@ -388,6 +388,5 @@ for _, redemption := range resp.Data {
     }
   ]
 }
-description: ```
----
+```
 

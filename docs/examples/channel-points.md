@@ -383,6 +383,5 @@ func (q *RewardQueue) Size() int {
     defer q.mu.Unlock()
     return len(q.queue)
 }
-description: ```
----
+```
 

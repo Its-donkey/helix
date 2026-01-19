@@ -440,6 +440,5 @@ func main() {
     revenue := float64(tiers["1000"])*2.50 + float64(tiers["2000"])*5.00 + float64(tiers["3000"])*12.50
     fmt.Printf("Estimated Monthly Revenue: $%.2f\n", revenue)
 }
-description: ```
----
+```
 

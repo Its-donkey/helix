@@ -836,6 +836,5 @@ if err != nil {
     fmt.Printf("Failed to remove suspicious user status: %v\n", err)
 }
 ```
-description: **Response:** This endpoint returns 204 No Content on success.
----
+**Response:** This endpoint returns 204 No Content on success.
 

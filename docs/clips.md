@@ -265,6 +265,5 @@ for _, clip := range resp.Data {
     }
   ]
 }
-description: ```
----
+```
 

@@ -169,6 +169,5 @@ if err != nil {
 ```
 
 ## Supported Event Types
-description: See [EventSub documentation](eventsub.md) for a complete list of event types.
----
+See [EventSub documentation](eventsub.md) for a complete list of event types.
 

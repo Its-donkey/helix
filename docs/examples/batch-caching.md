@@ -686,6 +686,5 @@ func main() {
     rateLimit := client.GetRateLimitInfo()
     fmt.Printf("Rate Limit: %d/%d remaining\n", rateLimit.Remaining, rateLimit.Limit)
 }
-description: ```
----
+```
 

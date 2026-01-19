@@ -254,6 +254,5 @@ helix.WithRawMessageHandler(func(raw string) {
 
 - [IRC Client Examples](examples/irc-client.md) - Complete code examples
 - [Chat Bot Example](examples/chatbot.md) - Building a chat bot
-description: - [Chat API](chat.md) - Helix API chat endpoints
----
+- [Chat API](chat.md) - Helix API chat endpoints
 

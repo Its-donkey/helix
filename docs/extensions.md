@@ -564,6 +564,5 @@ for _, tx := range resp.Data {
     "cursor": "eyJiIjpudWxsLCJhIjp7Ik9mZnNldCI6MjB9fQ"
   }
 }
-description: ```
----
+```
 

@@ -28,6 +28,5 @@ if err != nil {
 - `Message` (string, required): The whisper message to send (max 500 characters)
 
 **Sample Response:**
-description: Returns `204 No Content` on success with an empty response body.
----
+Returns `204 No Content` on success with an empty response body.
 

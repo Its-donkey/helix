@@ -62,6 +62,5 @@ fmt.Println("Raid cancelled successfully")
 **Sample Response:**
 ```
 No response body. Returns 204 No Content on success.
-description: ```
----
+```
 

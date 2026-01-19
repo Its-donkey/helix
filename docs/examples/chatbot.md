@@ -377,6 +377,5 @@ func (b *ChatBot) EnableEmoteOnlyMode(ctx context.Context) error {
 }
 
 func boolPtr(b bool) *bool { return &b }
-description: ```
----
+```
 

@@ -73,6 +73,5 @@ You can receive real-time updates when goals are created, updated, or achieved u
 - `channel.goal.begin` - A goal is created
 - `channel.goal.progress` - Progress is made toward a goal
 - `channel.goal.end` - A goal ends (achieved or cancelled)
-description: See [EventSub documentation](eventsub.md) for more details.
----
+See [EventSub documentation](eventsub.md) for more details.
 

@@ -529,6 +529,5 @@ func main() {
     fmt.Println("Auto-raid bot running...")
     select {}
 }
-description: ```
----
+```
 

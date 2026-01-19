@@ -557,6 +557,5 @@ func main() {
             i+1, allClips[i].Title, allClips[i].ViewCount, allClips[i].CreatorName)
     }
 }
-description: ```
----
+```
 

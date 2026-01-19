@@ -320,6 +320,5 @@ if err != nil {
 - `SegmentID` - Required. ID of the segment to delete
 
 **Sample Response:**
-description: This endpoint returns no content on success (HTTP 204 No Content).
----
+This endpoint returns no content on success (HTTP 204 No Content).
 

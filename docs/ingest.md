@@ -144,6 +144,5 @@ if server != nil {
 - `streamKey` (string): The broadcaster's stream key to insert into the URL template
 
 **Returns:**
-description: - `string`: Complete RTMP URL ready for use with streaming software
----
+- `string`: Complete RTMP URL ready for use with streaming software
 

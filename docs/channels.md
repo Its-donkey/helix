@@ -283,6 +283,5 @@ if err != nil {
 ```json
 {}
 ```
-description: Note: This endpoint returns no content on success (204 No Content).
----
+Note: This endpoint returns no content on success (204 No Content).
 

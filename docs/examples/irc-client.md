@@ -567,6 +567,5 @@ func main() {
 **Use EventSub when:**
 - You need non-chat events (follows, subs, etc.)
 - Building a dashboard/overlay
-description: - You need reliable delivery with acknowledgment
----
+- You need reliable delivery with acknowledgment
 

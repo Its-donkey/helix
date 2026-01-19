@@ -295,6 +295,5 @@ for _, cheermote := range resp.Data {
     }
   ]
 }
-description: ```
----
+```
 

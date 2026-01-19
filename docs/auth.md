@@ -611,6 +611,5 @@ if err != nil {
         // Other error
     }
 }
-description: ```
----
+```
 
