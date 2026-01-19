@@ -14,10 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `TokenHash()` function to generate hashed tokens for cache key isolation
 - Body size limit (1MB) for EventSub webhook handlers to prevent memory exhaustion attacks
 - Future timestamp rejection in EventSub webhook handlers (with 1-minute clock skew tolerance)
+- `InvalidateCacheWithContext()` method for context-aware cache invalidation with token isolation
 
 ### Changed
 - `MemoryCache.Get()` and `Set()` now copy byte slices to prevent mutation of cached data
 - `MessageDeduplicator` now properly enforces `maxSize` by evicting oldest entries when at capacity
+- `MessageDeduplicator` now treats `maxSize <= 0` as unlimited (previously broke deduplication)
 - `SetExtensionRequiredConfigurationParams` now includes `ExtensionID` field as required by Twitch API
 - Removed duplicate `irc/` package (functionality consolidated in `helix/` IRC implementation)
 
@@ -38,8 +40,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PubSubClient.Close()` now returns combined errors using `errors.Join`
 - `PubSubClient` goroutines are now tracked with `sync.WaitGroup` to prevent leaks
 - `NewPubSubClient()` now validates that `helixClient` is not nil
+- `NewEventSubWebSocket()` now validates that `helixClient` is not nil
 - `WaitForDeviceToken()` now validates that `deviceCode` is not nil and `Interval` > 0
 - `CreateToken()` now validates that `claims` is not nil
+- `PubSubClient.Listen()` now handles empty response from `CreateEventSubSubscription` instead of panicking
+- `PubSubClient.handleReconnect()` now copies `ws` under lock to prevent race conditions
+- `EventSubWebSocket.handleReconnect()` now copies `ws` under lock to prevent race conditions
+- IRC `Join`/`Part`/`Say`/`Reply` now sanitize channel names to prevent IRC command injection
 
 ## [1.0.1] - 2026-01-18 ([#37](https://github.com/Its-donkey/kappopher/pull/37))
 

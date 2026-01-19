@@ -337,6 +337,13 @@ func (c *PubSubClient) Listen(ctx context.Context, topic string) error {
 			}
 			return fmt.Errorf("creating subscription for %s: %w", eventType, err)
 		}
+		if sub == nil {
+			// Cleanup any created subscriptions on failure
+			for _, id := range subIDs {
+				_ = c.client.DeleteEventSubSubscription(ctx, id)
+			}
+			return fmt.Errorf("creating subscription for %s: empty response", eventType)
+		}
 
 		subIDs = append(subIDs, sub.ID)
 		c.subToTopic[sub.ID] = topic
@@ -491,10 +498,22 @@ func (c *PubSubClient) handleReconnect(reconnectURL string) {
 	go func() {
 		defer c.wg.Done()
 
+		// Copy ws under lock to avoid race with Close/Connect
+		c.mu.RLock()
+		ws := c.ws
+		c.mu.RUnlock()
+
+		if ws == nil {
+			if c.onError != nil {
+				c.onError(fmt.Errorf("reconnecting: connection already closed"))
+			}
+			return
+		}
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 
-		newSessionID, err := c.ws.Reconnect(ctx, reconnectURL)
+		newSessionID, err := ws.Reconnect(ctx, reconnectURL)
 		if err != nil {
 			if c.onError != nil {
 				c.onError(fmt.Errorf("reconnecting: %w", err))

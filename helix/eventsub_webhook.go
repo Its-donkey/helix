@@ -356,7 +356,8 @@ func (d *MessageDeduplicator) IsDuplicate(messageID string) bool {
 	}
 
 	// Clean up old entries if we're at or over capacity
-	if len(d.seen) >= d.maxSize {
+	// maxSize <= 0 means unlimited capacity
+	if d.maxSize > 0 && len(d.seen) >= d.maxSize {
 		// First, remove expired entries
 		for id, seenAt := range d.seen {
 			if now.Sub(seenAt) > d.maxAge {
@@ -365,7 +366,7 @@ func (d *MessageDeduplicator) IsDuplicate(messageID string) bool {
 		}
 
 		// If still at capacity after removing expired entries, remove oldest entries
-		for len(d.seen) >= d.maxSize {
+		for d.maxSize > 0 && len(d.seen) >= d.maxSize {
 			var oldestID string
 			var oldestTime time.Time
 			for id, seenAt := range d.seen {

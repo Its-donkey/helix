@@ -192,9 +192,21 @@ func (c *Client) ClearCache(ctx context.Context) {
 }
 
 // InvalidateCache removes a specific cached response.
+// Note: This uses a simple cache key without token context. If you're using
+// context-aware caching (different users sharing the same cache), use
+// InvalidateCacheWithContext instead.
 func (c *Client) InvalidateCache(ctx context.Context, endpoint string, query string) {
 	if c.cache != nil {
 		c.cache.Delete(ctx, CacheKey(endpoint, query))
+	}
+}
+
+// InvalidateCacheWithContext removes a specific cached response using context-aware keys.
+// Use this when sharing a cache across multiple users/tokens.
+// The tokenHash should be generated using TokenHash(token).
+func (c *Client) InvalidateCacheWithContext(ctx context.Context, endpoint, query, tokenHash string) {
+	if c.cache != nil {
+		c.cache.Delete(ctx, CacheKeyWithContext(c.baseURL, endpoint, query, tokenHash))
 	}
 }
 

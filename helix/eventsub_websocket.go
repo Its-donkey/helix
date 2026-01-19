@@ -585,7 +585,12 @@ func WithEventSubErrorHandler(fn func(error)) EventSubWebSocketOption {
 }
 
 // NewEventSubWebSocket creates a new high-level EventSub WebSocket manager.
+// Returns nil if helixClient is nil.
 func NewEventSubWebSocket(helixClient *Client, opts ...EventSubWebSocketOption) *EventSubWebSocket {
+	if helixClient == nil {
+		return nil
+	}
+
 	e := &EventSubWebSocket{
 		client:   helixClient,
 		handlers: make(map[string]func(json.RawMessage)),
@@ -648,11 +653,23 @@ func (e *EventSubWebSocket) Connect(ctx context.Context) error {
 
 // handleReconnect handles the reconnect process when Twitch sends a reconnect message.
 func (e *EventSubWebSocket) handleReconnect(reconnectURL string) {
+	// Copy ws under lock to avoid race with Close/Connect
+	e.mu.RLock()
+	ws := e.ws
+	e.mu.RUnlock()
+
+	if ws == nil {
+		if e.onError != nil {
+			e.onError(fmt.Errorf("reconnect failed: connection already closed"))
+		}
+		return
+	}
+
 	// Use a background context with timeout for reconnection
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	newSessionID, err := e.ws.Reconnect(ctx, reconnectURL)
+	newSessionID, err := ws.Reconnect(ctx, reconnectURL)
 	if err != nil {
 		if e.onError != nil {
 			e.onError(fmt.Errorf("reconnect failed: %w", err))

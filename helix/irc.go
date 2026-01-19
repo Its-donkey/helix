@@ -720,10 +720,12 @@ func (c *IRCClient) IsConnected() bool {
 }
 
 // Join joins one or more channels.
+// Channel names are sanitized to prevent IRC command injection.
 func (c *IRCClient) Join(channels ...string) error {
 	c.mu.Lock()
 	for _, ch := range channels {
-		c.channels[strings.ToLower(strings.TrimPrefix(ch, "#"))] = true
+		ch = sanitizeIRCMessage(strings.ToLower(strings.TrimPrefix(ch, "#")))
+		c.channels[ch] = true
 	}
 	c.mu.Unlock()
 
@@ -732,7 +734,7 @@ func (c *IRCClient) Join(channels ...string) error {
 	}
 
 	for _, ch := range channels {
-		ch = strings.ToLower(strings.TrimPrefix(ch, "#"))
+		ch = sanitizeIRCMessage(strings.ToLower(strings.TrimPrefix(ch, "#")))
 		if err := c.send(fmt.Sprintf("JOIN #%s", ch)); err != nil {
 			return fmt.Errorf("joining %s: %w", ch, err)
 		}
@@ -742,10 +744,12 @@ func (c *IRCClient) Join(channels ...string) error {
 }
 
 // Part leaves one or more channels.
+// Channel names are sanitized to prevent IRC command injection.
 func (c *IRCClient) Part(channels ...string) error {
 	c.mu.Lock()
 	for _, ch := range channels {
-		delete(c.channels, strings.ToLower(strings.TrimPrefix(ch, "#")))
+		ch = sanitizeIRCMessage(strings.ToLower(strings.TrimPrefix(ch, "#")))
+		delete(c.channels, ch)
 	}
 	c.mu.Unlock()
 
@@ -754,7 +758,7 @@ func (c *IRCClient) Part(channels ...string) error {
 	}
 
 	for _, ch := range channels {
-		ch = strings.ToLower(strings.TrimPrefix(ch, "#"))
+		ch = sanitizeIRCMessage(strings.ToLower(strings.TrimPrefix(ch, "#")))
 		if err := c.send(fmt.Sprintf("PART #%s", ch)); err != nil {
 			return fmt.Errorf("parting %s: %w", ch, err)
 		}
@@ -764,17 +768,17 @@ func (c *IRCClient) Part(channels ...string) error {
 }
 
 // Say sends a message to a channel.
-// The message is sanitized to prevent IRC command injection.
+// The channel name and message are sanitized to prevent IRC command injection.
 func (c *IRCClient) Say(channel, message string) error {
-	channel = strings.ToLower(strings.TrimPrefix(channel, "#"))
+	channel = sanitizeIRCMessage(strings.ToLower(strings.TrimPrefix(channel, "#")))
 	message = sanitizeIRCMessage(message)
 	return c.send(fmt.Sprintf("PRIVMSG #%s :%s", channel, message))
 }
 
 // Reply sends a reply to a message.
-// The message is sanitized to prevent IRC command injection.
+// The channel name, parent message ID, and message are sanitized to prevent IRC command injection.
 func (c *IRCClient) Reply(channel, parentMsgID, message string) error {
-	channel = strings.ToLower(strings.TrimPrefix(channel, "#"))
+	channel = sanitizeIRCMessage(strings.ToLower(strings.TrimPrefix(channel, "#")))
 	parentMsgID = sanitizeIRCMessage(parentMsgID)
 	message = sanitizeIRCMessage(message)
 	return c.send(fmt.Sprintf("@reply-parent-msg-id=%s PRIVMSG #%s :%s", parentMsgID, channel, message))
