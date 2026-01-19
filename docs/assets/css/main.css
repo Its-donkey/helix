@@ -533,6 +533,16 @@ body {
     margin-left: calc(-1 * var(--space-md));
     margin-right: calc(-1 * var(--space-md));
     border-radius: 0;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-word;
+  }
+
+  .content pre code {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    word-break: break-word;
   }
 
   .content table {
