@@ -5,7 +5,7 @@ title: Kappopher Documentation
 
 <div style="text-align: center; margin-bottom: 2rem;">
   <img src="{{ '/assets/images/logo.png' | relative_url }}" alt="Kappopher" style="width: 180px; height: 180px;">
-  <h1 style="margin-top: 1rem; margin-bottom: 0.5rem;">Kappopher</h1>
+  <h1 style="margin-top: 1rem;">Kappopher</h1>
   <p style="font-size: 1.125rem; color: #53535F;">A comprehensive Go wrapper for the Twitch Helix API with full endpoint coverage, multiple authentication flows, and real-time event support.</p>
 </div>
 

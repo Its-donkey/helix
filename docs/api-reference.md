@@ -3,8 +3,6 @@ layout: default
 title: API Reference
 ---
 
-# API Reference
-
 Complete documentation for all Twitch Helix API endpoints.
 
 ## Authentication

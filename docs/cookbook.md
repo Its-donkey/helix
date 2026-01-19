@@ -3,8 +3,6 @@ layout: default
 title: Cookbook
 ---
 
-# Cookbook
-
 Comprehensive code examples covering all kappopher features.
 
 ## Getting Started

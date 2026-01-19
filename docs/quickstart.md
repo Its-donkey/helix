@@ -1,5 +1,3 @@
-# Quick Start Guide
-
 Get up and running with the Twitch Helix API wrapper.
 
 ## Installation
