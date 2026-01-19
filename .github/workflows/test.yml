@@ -70,8 +70,6 @@ jobs:
   coverage:
     name: Coverage
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
 
     steps:
       - name: Checkout code
@@ -85,31 +83,7 @@ jobs:
       - name: Run tests with coverage
         run: go test -coverprofile=coverage.out ./...
 
-      - name: Generate and commit coverage badge
+      - name: Report coverage
         run: |
-          # Extract coverage percentage
-          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}' | sed 's/%//')
-
-          # Determine badge color based on coverage
-          if (( $(echo "$COVERAGE >= 80" | bc -l) )); then
-            COLOR="brightgreen"
-          elif (( $(echo "$COVERAGE >= 60" | bc -l) )); then
-            COLOR="yellow"
-          else
-            COLOR="red"
-          fi
-
-          # Generate SVG badge
-          cat > .github/coverage.svg << 'SVGEOF'
-          <svg xmlns="http://www.w3.org/2000/svg" width="106" height="20"><linearGradient id="b" x2="0" y2="100%"><stop offset="0" stop-color="#bbb" stop-opacity=".1"/><stop offset="1" stop-opacity=".1"/></linearGradient><mask id="a"><rect width="106" height="20" rx="3" fill="#fff"/></mask><g mask="url(#a)"><path fill="#555" d="M0 0h61v20H0z"/><path fill="COLORPLACEHOLDER" d="M61 0h45v20H61z"/><path fill="url(#b)" d="M0 0h106v20H0z"/></g><g fill="#fff" text-anchor="middle" font-family="DejaVu Sans,Verdana,Geneva,sans-serif" font-size="11"><text x="30.5" y="15" fill="#010101" fill-opacity=".3">coverage</text><text x="30.5" y="14">coverage</text><text x="82.5" y="15" fill="#010101" fill-opacity=".3">COVPLACEHOLDER%</text><text x="82.5" y="14">COVPLACEHOLDER%</text></g></svg>
-          SVGEOF
-          sed -i "s/COLORPLACEHOLDER/${COLOR}/g" .github/coverage.svg
-          sed -i "s/COVPLACEHOLDER/${COVERAGE}/g" .github/coverage.svg
-
-          # Commit and push
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .github/coverage.svg
-          git diff --staged --quiet || git commit -m "Checking Coverage"
-          git push
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+          COVERAGE=$(go tool cover -func=coverage.out | grep total | awk '{print $3}')
+          echo "## Coverage: $COVERAGE" >> $GITHUB_STEP_SUMMARY
