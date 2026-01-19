@@ -5,10 +5,12 @@ This documentation provides detailed guides and examples for using the Twitch He
 ## Table of Contents
 
 - [Quick Start](quickstart.md) - Installation, basic usage, authentication, and error handling
-- [Available Endpoints](#available-endpoints) - All API methods
+- [Helix API](#helix-api) - All API endpoints
+- [IRC Client](#irc-client) - Real-time chat for bots
+- [Advanced Features](#advanced-features) - Batch operations, caching, EventSub
 - [Examples](#examples) - Working code samples
 
-## Available Endpoints
+## Helix API
 
 | Category | Documentation |
 |----------|---------------|
@@ -16,16 +18,14 @@ This documentation provides detailed guides and examples for using the Twitch He
 | [Analytics](analytics.md) | Extension and game analytics |
 | [Auth](auth.md) | OAuth flows, token management, OIDC |
 | [Bits](bits.md) | Bits leaderboard, cheermotes |
-| [Channel Points](channel-points.md) | Custom rewards, redemptions |
-| [Channels](channels.md) | Channel info, followers, editors, VIPs |
+| [Channel Points](Projects/Programming/Kappopher/Documents/channel-points.md) | Custom rewards, redemptions |
+| [Channels](Projects/Programming/Kappopher/Documents/channels.md) | Channel info, followers, editors, VIPs |
 | [Charity](charity.md) | Charity campaigns and donations |
 | [Chat](chat.md) | Chatters, emotes, badges, settings, messages |
 | [Clips](clips.md) | Create and get clips |
 | [CCL](ccl.md) | Content classification labels |
 | [Conduits](conduits.md) | EventSub conduit management |
 | [Entitlements](entitlements.md) | Drops entitlements |
-| [EventSub](eventsub.md) | Event subscriptions |
-| [PubSub Compatibility](pubsub-compat.md) | PubSub-style API backed by EventSub |
 | [Extensions](extensions.md) | Extension management |
 | [Games](games.md) | Game information |
 | [Goals](goals.md) | Creator goals |
@@ -45,14 +45,28 @@ This documentation provides detailed guides and examples for using the Twitch He
 | [Videos](videos.md) | VODs, highlights, uploads |
 | [Whispers](whispers.md) | Send whisper messages |
 
+## IRC Client
+
+| Category | Documentation |
+|----------|---------------|
+| [IRC Client](Projects/Programming/Kappopher/Documents/irc-client.md) | WebSocket-based chat client for building bots |
+
+## Advanced Features
+
+| Category | Documentation |
+|----------|---------------|
+| [EventSub](eventsub.md) | Event subscriptions (WebSocket & Webhooks) |
+| [PubSub Compatibility](pubsub-compat.md) | PubSub-style API backed by EventSub |
+| [Advanced](advanced.md) | Batch operations, rate limiting, caching, middleware |
+
 ## Examples
 
 See the [examples](./examples/) directory for code samples:
 
-- [Basic Usage](./examples/basic.md) - Simple API calls and error handling
-- [Chat Bot](./examples/chatbot.md) - Building a chat bot
-- [API Usage](./examples/api-usage.md) - Common API patterns
-- [EventSub Webhooks](./examples/eventsub-webhooks.md) - Webhook notifications
-- [EventSub WebSocket](./examples/eventsub-websocket.md) - Real-time events
-- [PubSub Migration](./examples/pubsub-migration.md) - Migrating from PubSub to EventSub
-- [Extension JWT](./examples/extension-jwt.md) - Extension authentication
+- [Basic Usage](basic.md) - Simple API calls and error handling
+- [Chat Bot](chatbot.md) - Building a chat bot
+- [API Usage](api-usage.md) - Common API patterns
+- [EventSub Webhooks](eventsub-webhooks.md) - Webhook notifications
+- [EventSub WebSocket](eventsub-websocket.md) - Real-time events
+- [PubSub Migration](pubsub-migration.md) - Migrating from PubSub to EventSub
+- [Extension JWT](Projects/Programming/Kappopher/Documents/examples/extension-jwt.md) - Extension authentication

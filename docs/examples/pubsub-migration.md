@@ -4,7 +4,24 @@ This example demonstrates how to use the PubSub compatibility layer to receive r
 
 > **Note:** Twitch PubSub was decommissioned on April 14, 2025. This compatibility layer uses EventSub WebSocket internally but provides a PubSub-like API for easier migration.
 
+## Overview
+
+If you're migrating from the old Twitch PubSub system, this compatibility layer provides a familiar API while using EventSub WebSocket under the hood.
+
+**Why use this compatibility layer**:
+- Familiar topic-based subscription model
+- Minimal code changes from old PubSub code
+- Automatic translation of PubSub topics to EventSub subscriptions
+- Same event data, just with EventSub field names
+
+**What changes**:
+- Event field names follow EventSub conventions (slightly different from old PubSub)
+- Some topics create multiple EventSub subscriptions (e.g., subscribe-events creates 3)
+- Uses WebSocket instead of the old PubSub WebSocket endpoint
+
 ## Basic Usage
+
+The PubSub client wraps EventSub WebSocket with a topic-based API similar to the original PubSub.
 
 ```go
 package main

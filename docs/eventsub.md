@@ -266,3 +266,160 @@ This allows existing code using `IsGoldenKappaTrain` to continue working while y
 ### User Events
 
 - `EventSubTypeUserUpdate` - User profile updated
+
+## Helper Functions
+
+These convenience functions simplify common EventSub operations.
+
+### Condition Builders
+
+Build condition maps for EventSub subscriptions:
+
+```go
+// For channel events (broadcaster_user_id)
+cond := helix.BroadcasterCondition("12345")
+// Returns: map[string]string{"broadcaster_user_id": "12345"}
+
+// For events requiring moderator (follows v2, chat settings, etc.)
+cond := helix.BroadcasterModeratorCondition("12345", "67890")
+// Returns: map[string]string{"broadcaster_user_id": "12345", "moderator_user_id": "67890"}
+
+// For user events (user_id)
+cond := helix.UserCondition("12345")
+// Returns: map[string]string{"user_id": "12345"}
+
+// For channel points with optional reward filter
+cond := helix.ChannelPointsCondition("12345", "reward-uuid")
+// Returns: map[string]string{"broadcaster_user_id": "12345", "reward_id": "reward-uuid"}
+```
+
+### SubscribeToChannel
+
+Subscribe to channel events with automatic version selection.
+
+```go
+transport := helix.CreateEventSubTransport{
+    Method:    "websocket",
+    SessionID: wsClient.SessionID(),
+}
+
+// Subscribe to stream online events
+sub, err := client.SubscribeToChannel(ctx, helix.EventSubTypeStreamOnline, "12345", transport)
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("Subscribed: %s\n", sub.ID)
+
+// Subscribe to raid events
+sub, err = client.SubscribeToChannel(ctx, helix.EventSubTypeChannelRaid, "12345", transport)
+```
+
+### SubscribeToChannelWithModerator
+
+Subscribe to channel events that require moderator authorization (e.g., follows v2, chat settings).
+
+```go
+transport := helix.CreateEventSubTransport{
+    Method:    "websocket",
+    SessionID: wsClient.SessionID(),
+}
+
+// Subscribe to follow events (requires moderator)
+sub, err := client.SubscribeToChannelWithModerator(ctx,
+    helix.EventSubTypeChannelFollow,
+    "12345",  // broadcaster ID
+    "67890",  // moderator ID (often same as broadcaster)
+    transport,
+)
+
+// Subscribe to chat settings updates
+sub, err = client.SubscribeToChannelWithModerator(ctx,
+    helix.EventSubTypeChannelChatSettingsUpdate,
+    "12345",
+    "67890",
+    transport,
+)
+```
+
+### SubscribeToUser
+
+Subscribe to user-specific events.
+
+```go
+transport := helix.CreateEventSubTransport{
+    Method:    "websocket",
+    SessionID: wsClient.SessionID(),
+}
+
+// Subscribe to user update events
+sub, err := client.SubscribeToUser(ctx, helix.EventSubTypeUserUpdate, "12345", transport)
+
+// Subscribe to whisper events
+sub, err = client.SubscribeToUser(ctx, helix.EventSubTypeWhisperReceived, "12345", transport)
+```
+
+### GetAllSubscriptions
+
+Retrieve all EventSub subscriptions with automatic pagination.
+
+```go
+// Get all subscriptions
+subs, err := client.GetAllSubscriptions(ctx, nil)
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("Total subscriptions: %d\n", len(subs))
+
+// Get all enabled subscriptions
+subs, err = client.GetAllSubscriptions(ctx, &helix.GetEventSubSubscriptionsParams{
+    Status: "enabled",
+})
+
+// Get all subscriptions of a specific type
+subs, err = client.GetAllSubscriptions(ctx, &helix.GetEventSubSubscriptionsParams{
+    Type: helix.EventSubTypeStreamOnline,
+})
+
+// Get all subscriptions for a user
+subs, err = client.GetAllSubscriptions(ctx, &helix.GetEventSubSubscriptionsParams{
+    UserID: "12345",
+})
+```
+
+### DeleteAllSubscriptions
+
+Delete all EventSub subscriptions matching a filter.
+
+```go
+// Delete all subscriptions (use with caution!)
+deleted, err := client.DeleteAllSubscriptions(ctx, nil)
+if err != nil {
+    log.Fatal(err)
+}
+fmt.Printf("Deleted %d subscriptions\n", deleted)
+
+// Delete all subscriptions of a specific type
+deleted, err = client.DeleteAllSubscriptions(ctx, &helix.GetEventSubSubscriptionsParams{
+    Type: helix.EventSubTypeStreamOnline,
+})
+
+// Delete all failed subscriptions
+deleted, err = client.DeleteAllSubscriptions(ctx, &helix.GetEventSubSubscriptionsParams{
+    Status: "webhook_callback_verification_failed",
+})
+```
+
+### GetEventSubVersion
+
+Get the current default version for an EventSub subscription type.
+
+```go
+version := helix.GetEventSubVersion(helix.EventSubTypeChannelFollow)
+// Returns "2" for channel.follow
+
+version = helix.GetEventSubVersion(helix.EventSubTypeChannelHypeTrainBegin)
+// Returns "2" for hype train events (v1 deprecated)
+
+version = helix.GetEventSubVersion(helix.EventSubTypeStreamOnline)
+// Returns "1" for most events
+```

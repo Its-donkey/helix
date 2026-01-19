@@ -2,9 +2,28 @@
 
 Real-time event streaming without requiring a public endpoint.
 
+## Overview
+
+EventSub WebSocket provides real-time Twitch events over a persistent WebSocket connection. Unlike webhooks, no public HTTPS endpoint is required.
+
+**Advantages over Webhooks**:
+- No public endpoint needed - works behind firewalls/NAT
+- Lower latency - direct connection, no HTTP overhead
+- Simpler setup - no SSL certificates required
+- Ideal for bots, overlays, and local applications
+
+**How it works**:
+1. Connect to Twitch's WebSocket endpoint
+2. Receive a session ID in the welcome message
+3. Create subscriptions using the session ID
+4. Receive events on the WebSocket connection
+5. Handle keepalives and reconnection messages
+
+**Connection limits**: Each WebSocket session can have up to 300 subscriptions. For more, use multiple connections.
+
 ## Low-Level Client
 
-Full control over WebSocket connection and event handling:
+Full control over WebSocket connection and event handling. Use this when you need direct access to connection lifecycle events or custom subscription management.
 
 ```go
 package main
@@ -86,7 +105,9 @@ func main() {
 
 ## High-Level Wrapper
 
-Simplified interface that manages subscriptions automatically:
+Simplified interface that manages subscriptions automatically. The `Subscribe` method handles both creating the EventSub subscription and registering the event handler in one call.
+
+**Recommended for most use cases** - handles session management, subscription creation, and event routing internally.
 
 ```go
 package main
@@ -146,7 +167,9 @@ func main() {
 
 ## Handling Reconnection
 
-Twitch may send a reconnect message before maintenance. Handle it gracefully:
+Twitch sends a reconnect message when the server needs to migrate your connection (e.g., before maintenance). You have 30 seconds to reconnect to the new URL.
+
+**Important**: Your subscriptions are preserved - just reconnect to the new URL and continue receiving events.
 
 ```go
 wsClient := helix.NewEventSubWebSocketClient(
@@ -167,6 +190,10 @@ wsClient := helix.NewEventSubWebSocketClient(
 ```
 
 ## Error Handling
+
+Handle connection errors and implement automatic reconnection. Common errors include network issues, connection timeouts, and server-side disconnects.
+
+**Best practice**: Implement exponential backoff when reconnecting to avoid overwhelming the server.
 
 ```go
 wsClient := helix.NewEventSubWebSocketClient(
@@ -189,4 +216,4 @@ Note: Expected close errors (like "use of closed network connection" during shut
 
 ## Supported Event Types
 
-See [EventSub documentation](../eventsub.md) for a complete list of event types.
+See [EventSub documentation](eventsub.md) for a complete list of event types.

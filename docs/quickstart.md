@@ -200,6 +200,6 @@ fmt.Printf("Requests remaining: %d, resets at: %s\n", remaining, reset)
 
 ## Next Steps
 
-- Browse the [Available Endpoints](README.md#available-endpoints) to see all API methods
+- Browse the [Available Endpoints](Projects/Programming/Kappopher/Documents/README.md#available-endpoints) to see all API methods
 - Check out [complete examples](./examples/) for working code samples
 - Read the [Auth documentation](auth.md) for detailed authentication info

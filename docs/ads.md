@@ -2,6 +2,25 @@
 
 Manage commercial breaks and ad schedules for Twitch channels.
 
+## Overview
+
+Control advertising on your Twitch channel programmatically:
+
+**Commercial Breaks**: Run ads during your stream
+- Start commercials of various lengths (30-180 seconds)
+- Check cooldown before next commercial
+
+**Ad Schedule**: Manage automatic ad scheduling
+- View upcoming scheduled ads
+- Check preroll-free time remaining
+- Snooze scheduled ads (limited per stream)
+
+## Prerequisites
+
+- **Start Commercial:** `channel:edit:commercial` scope
+- **Ad Schedule (read):** `channel:read:ads` scope
+- **Ad Schedule (manage):** `channel:manage:ads` scope
+
 ## StartCommercial
 
 Start a commercial break on a channel.

@@ -2,7 +2,24 @@
 
 For Twitch Extensions that require JWT authentication.
 
+## Overview
+
+Twitch Extensions use JSON Web Tokens (JWT) to securely authenticate requests between your Extension Backend Service (EBS) and Twitch's API. JWTs are signed with your extension's secret, ensuring requests are authorized.
+
+**When you need JWT authentication**:
+- Sending messages to the extension PubSub
+- Accessing extension configuration segments
+- Making API calls that require extension context
+- Authenticating requests from your EBS to Twitch
+
+**Key concepts**:
+- **Extension Secret**: A base64-encoded secret from your Extension settings, used to sign JWTs
+- **EBS Token**: Authenticates your backend service to Twitch
+- **Broadcaster Token**: Performs actions on behalf of a specific broadcaster's channel
+
 ## Creating JWT Tokens
+
+Create tokens for different authorization contexts. The JWT handler manages signing and claims automatically.
 
 ```go
 package main
@@ -43,6 +60,8 @@ func main() {
 ```
 
 ## Using with Extension Client
+
+The `ExtensionClient` automatically handles JWT token creation and attachment for extension API calls.
 
 ```go
 package main
@@ -111,9 +130,11 @@ client.SetExtensionJWT(jwt)
 
 ## Token Types
 
+Different token types authorize different actions. Choose the appropriate type based on what your request needs to do.
+
 ### EBS Token
 
-Used for Extension Backend Service calls:
+General-purpose token for your Extension Backend Service. Use this for operations that don't require specific broadcaster context.
 
 ```go
 ebsToken, _ := jwt.CreateEBSToken(time.Hour)
@@ -121,7 +142,7 @@ ebsToken, _ := jwt.CreateEBSToken(time.Hour)
 
 ### Broadcaster Token
 
-Used for calls on behalf of a specific broadcaster:
+Used when performing actions in the context of a specific broadcaster's channel. Required for channel-specific operations like sending PubSub messages to a channel or reading channel configuration.
 
 ```go
 broadcasterToken, _ := jwt.CreateBroadcasterToken("channel-id", time.Hour)
@@ -129,7 +150,7 @@ broadcasterToken, _ := jwt.CreateBroadcasterToken("channel-id", time.Hour)
 
 ### Custom Claims
 
-For advanced use cases with custom claims:
+For advanced use cases where you need fine-grained control over token permissions, including PubSub listen/send permissions and custom roles.
 
 ```go
 token, _ := jwt.CreateToken(helix.ExtensionJWTClaims{
@@ -145,4 +166,4 @@ token, _ := jwt.CreateToken(helix.ExtensionJWTClaims{
 
 ## Extension API Endpoints
 
-See [Extensions documentation](../extensions.md) for all available extension endpoints.
+See [Extensions documentation](extensions.md) for all available extension endpoints.

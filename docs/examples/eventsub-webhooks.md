@@ -2,7 +2,30 @@
 
 Handle EventSub webhook notifications with built-in signature verification.
 
+## Overview
+
+EventSub Webhooks allow Twitch to push real-time notifications to your server. Unlike WebSocket, webhooks require a publicly accessible HTTPS endpoint.
+
+**When to use Webhooks**:
+- Server-side applications with a public endpoint
+- When you need events even when your app isn't actively connected
+- For high-reliability scenarios (Twitch retries failed deliveries)
+
+**When to use WebSocket instead**:
+- Client-side or local applications
+- When you don't have a public HTTPS endpoint
+- For simpler setup without SSL certificate management
+
+**How it works**:
+1. Your server exposes an HTTPS endpoint
+2. You create subscriptions telling Twitch where to send events
+3. Twitch verifies your endpoint ownership via a challenge request
+4. Twitch sends signed notifications to your endpoint
+5. Your handler verifies signatures and processes events
+
 ## Basic Setup
+
+The handler automatically verifies HMAC signatures to ensure notifications are from Twitch.
 
 ```go
 handler := helix.NewEventSubWebhookHandler(
@@ -26,6 +49,11 @@ http.Handle("/webhook", handler)
 ```
 
 ## Complete Example
+
+A full webhook server handling multiple event types. The handler uses separate callbacks for:
+- **Notifications**: Actual events (follows, subscriptions, stream status, etc.)
+- **Verification**: Challenge requests when creating subscriptions
+- **Revocation**: When Twitch revokes a subscription (e.g., token expired)
 
 ```go
 package main
@@ -110,7 +138,12 @@ func handleRevocation(msg *helix.EventSubWebhookMessage) {
 
 ## Creating Subscriptions
 
-To receive webhook notifications, you must first create EventSub subscriptions:
+After setting up your webhook handler, create subscriptions to tell Twitch which events to send.
+
+**Important**:
+- The callback URL must be HTTPS (HTTP is not accepted)
+- The secret must match between subscription creation and webhook handler
+- Twitch will send a verification challenge immediately after subscription creation
 
 ```go
 ctx := context.Background()
@@ -135,4 +168,4 @@ if err != nil {
 
 ## Supported Event Types
 
-See [EventSub documentation](../eventsub.md) for a complete list of event types.
+See [EventSub documentation](eventsub.md) for a complete list of event types.

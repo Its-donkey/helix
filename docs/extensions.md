@@ -1,12 +1,12 @@
 # Extensions API
 
-Some endpoints require [Extension JWT authentication](extension-jwt.md) instead of standard OAuth tokens.
+Some endpoints require [Extension JWT authentication](Projects/Programming/Kappopher/Documents/extension-jwt.md) instead of standard OAuth tokens.
 
 ## GetExtensionConfigurationSegment
 
 Get extension configuration segments (broadcaster, developer, or global).
 
-**Requires:** [Extension JWT](extension-jwt.md)
+**Requires:** [Extension JWT](Projects/Programming/Kappopher/Documents/extension-jwt.md)
 
 ```go
 resp, err := client.GetExtensionConfigurationSegment(ctx, &helix.GetExtensionConfigurationSegmentParams{
@@ -47,7 +47,7 @@ for _, segment := range resp.Data {
 
 Set extension configuration segment data.
 
-**Requires:** [Extension JWT](extension-jwt.md)
+**Requires:** [Extension JWT](Projects/Programming/Kappopher/Documents/extension-jwt.md)
 
 ```go
 err := client.SetExtensionConfigurationSegment(ctx, &helix.SetExtensionConfigurationSegmentParams{
@@ -66,7 +66,7 @@ No response body on success (204 No Content)
 
 Set the required configuration for an extension.
 
-**Requires:** [Extension JWT](extension-jwt.md)
+**Requires:** [Extension JWT](Projects/Programming/Kappopher/Documents/extension-jwt.md)
 
 ```go
 err := client.SetExtensionRequiredConfiguration(ctx, &helix.SetExtensionRequiredConfigurationParams{
@@ -83,7 +83,7 @@ No response body on success (204 No Content)
 
 Send a PubSub message to extension users.
 
-**Requires:** [Extension JWT](extension-jwt.md)
+**Requires:** [Extension JWT](Projects/Programming/Kappopher/Documents/extension-jwt.md)
 
 ```go
 // Broadcast to all users viewing the channel
@@ -157,7 +157,7 @@ for _, channel := range resp.Data {
 
 Get the secrets for an extension.
 
-**Requires:** [Extension JWT](extension-jwt.md)
+**Requires:** [Extension JWT](Projects/Programming/Kappopher/Documents/extension-jwt.md)
 
 ```go
 resp, err := client.GetExtensionSecrets(ctx, "your-extension-id")
@@ -196,7 +196,7 @@ for _, secret := range resp.Data {
 
 Create a new secret for an extension.
 
-**Requires:** [Extension JWT](extension-jwt.md)
+**Requires:** [Extension JWT](Projects/Programming/Kappopher/Documents/extension-jwt.md)
 
 ```go
 // Create a new secret with a 300-second delay before activation
@@ -233,7 +233,7 @@ for _, secret := range resp.Data {
 
 Send a chat message from an extension.
 
-**Requires:** [Extension JWT](extension-jwt.md)
+**Requires:** [Extension JWT](Projects/Programming/Kappopher/Documents/extension-jwt.md)
 
 ```go
 err := client.SendExtensionChatMessage(ctx, &helix.SendExtensionChatMessageParams{
@@ -251,7 +251,7 @@ No response body on success (204 No Content)
 
 Get information about an extension (any version).
 
-**Requires:** [Extension JWT](extension-jwt.md)
+**Requires:** [Extension JWT](Projects/Programming/Kappopher/Documents/extension-jwt.md)
 
 ```go
 // Get latest version
