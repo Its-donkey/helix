@@ -1,4 +1,6 @@
-# Extensions API
+---
+layout: default
+title: Extensions API
 
 Some endpoints require [Extension JWT authentication](Projects/Programming/Kappopher/Documents/extension-jwt.md) instead of standard OAuth tokens.
 
@@ -562,4 +564,6 @@ for _, tx := range resp.Data {
     "cursor": "eyJiIjpudWxsLCJhIjp7Ik9mZnNldCI6MjB9fQ"
   }
 }
-```
+description: ```
+---
+

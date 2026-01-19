@@ -1,4 +1,6 @@
-# Chat API
+---
+layout: default
+title: Chat API
 
 Manage chat rooms, emotes, badges, settings, and send messages to Twitch channels.
 
@@ -743,4 +745,6 @@ for _, emote := range resp.Data {
     "cursor": "eyJiIjpudWxsLCJhIjoiMTUwMzQ0MTc3NjQyNDQyMjAwMCJ9"
   }
 }
-```
+description: ```
+---
+

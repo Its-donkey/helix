@@ -1,4 +1,6 @@
-# Authentication Examples
+---
+layout: default
+title: Authentication Examples
 
 Complete examples for all OAuth 2.0 authentication flows supported by the Twitch API.
 
@@ -472,4 +474,6 @@ helix.CommonScopes.Channel // channel:manage:*, channel:read:*
 
 // Full broadcaster access
 helix.CommonScopes.Broadcaster // all broadcaster-level scopes
-```
+description: ```
+---
+

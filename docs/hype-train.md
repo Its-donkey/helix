@@ -1,4 +1,6 @@
-# Hype Train API
+---
+layout: default
+title: Hype Train API
 
 Manage hype train events for Twitch channels.
 
@@ -187,5 +189,6 @@ For real-time hype train events, use EventSub subscriptions instead of polling t
 - `channel.hype_train.begin` - Hype train starts
 - `channel.hype_train.progress` - Hype train level increases
 - `channel.hype_train.end` - Hype train ends
+description: See [EventSub documentation](eventsub.md) for more details.
+---
 
-See [EventSub documentation](eventsub.md) for more details.

@@ -1,4 +1,6 @@
-# Videos & Clips Examples
+---
+layout: default
+title: Videos & Clips Examples
 
 Work with VODs, highlights, and clips.
 
@@ -555,4 +557,6 @@ func main() {
             i+1, allClips[i].Title, allClips[i].ViewCount, allClips[i].CreatorName)
     }
 }
-```
+description: ```
+---
+

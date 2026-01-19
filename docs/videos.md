@@ -1,4 +1,6 @@
-# Videos API
+---
+layout: default
+title: Videos API
 
 Retrieve and manage Twitch videos (VODs, highlights, and uploads).
 
@@ -116,4 +118,6 @@ for _, videoID := range resp.Data {
 - `videoIDs` ([]string): Array of video IDs to delete
 
 **Returns:**
-- Array of deleted video IDs
+description: - Array of deleted video IDs
+---
+

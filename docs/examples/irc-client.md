@@ -1,4 +1,6 @@
-# IRC Client Examples
+---
+layout: default
+title: IRC Client Examples
 
 Build chat bots using the low-level IRC/WebSocket client.
 
@@ -565,4 +567,6 @@ func main() {
 **Use EventSub when:**
 - You need non-chat events (follows, subs, etc.)
 - Building a dashboard/overlay
-- You need reliable delivery with acknowledgment
+description: - You need reliable delivery with acknowledgment
+---
+

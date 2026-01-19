@@ -1,4 +1,6 @@
-# API Usage Examples
+---
+layout: default
+title: API Usage Examples
 
 Quick reference for common Twitch Helix API operations. These snippets show the most frequently used endpoints organized by category.
 
@@ -218,4 +220,6 @@ helix.CommonScopes.Bot         // Bot functionality
 helix.CommonScopes.Moderation  // Moderation tools
 helix.CommonScopes.Channel     // Channel management
 helix.CommonScopes.Broadcaster // Full broadcaster access
-```
+description: ```
+---
+

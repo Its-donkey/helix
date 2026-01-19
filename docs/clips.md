@@ -1,4 +1,6 @@
-# Clips API
+---
+layout: default
+title: Clips API
 
 Create and retrieve Twitch clips from broadcasts and VODs.
 
@@ -263,4 +265,6 @@ for _, clip := range resp.Data {
     }
   ]
 }
-```
+description: ```
+---
+

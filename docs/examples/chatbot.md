@@ -1,4 +1,6 @@
-# Chat Bot Example
+---
+layout: default
+title: Chat Bot Example
 
 Build a Twitch chat bot using the Helix API and EventSub WebSocket for real-time message handling.
 
@@ -375,4 +377,6 @@ func (b *ChatBot) EnableEmoteOnlyMode(ctx context.Context) error {
 }
 
 func boolPtr(b bool) *bool { return &b }
-```
+description: ```
+---
+

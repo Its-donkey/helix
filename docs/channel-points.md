@@ -1,4 +1,6 @@
-# Channel Points API
+---
+layout: default
+title: Channel Points API
 
 Manage custom Channel Points rewards and redemptions.
 
@@ -386,4 +388,6 @@ for _, redemption := range resp.Data {
     }
   ]
 }
-```
+description: ```
+---
+

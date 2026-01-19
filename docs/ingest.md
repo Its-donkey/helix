@@ -1,4 +1,6 @@
-# Ingest Servers API
+---
+layout: default
+title: Ingest Servers API
 
 Get information about Twitch ingest servers for streaming.
 
@@ -142,4 +144,6 @@ if server != nil {
 - `streamKey` (string): The broadcaster's stream key to insert into the URL template
 
 **Returns:**
-- `string`: Complete RTMP URL ready for use with streaming software
+description: - `string`: Complete RTMP URL ready for use with streaming software
+---
+

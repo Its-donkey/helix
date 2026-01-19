@@ -1,4 +1,6 @@
-# Schedule & Goals Examples
+---
+layout: default
+title: Schedule & Goals Examples
 
 Manage stream schedules and track creator goals.
 
@@ -442,4 +444,6 @@ func main() {
         fmt.Printf("   🎮 %s\n\n", category)
     }
 }
-```
+description: ```
+---
+

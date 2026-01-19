@@ -1,4 +1,6 @@
-# Batch Operations & Caching Examples
+---
+layout: default
+title: Batch Operations & Caching Examples
 
 Efficient API usage with batch requests, caching, rate limiting, and middleware.
 
@@ -684,4 +686,6 @@ func main() {
     rateLimit := client.GetRateLimitInfo()
     fmt.Printf("Rate Limit: %d/%d remaining\n", rateLimit.Remaining, rateLimit.Limit)
 }
-```
+description: ```
+---
+

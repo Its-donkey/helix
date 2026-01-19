@@ -1,4 +1,6 @@
-# Advanced Features
+---
+layout: default
+title: Advanced Features
 
 This guide covers advanced features for optimizing performance and handling complex use cases.
 
@@ -414,4 +416,6 @@ result, err := client.GetUsers(ctx, params)
 
 - [Quick Start](quickstart.md) - Basic setup and usage
 - [Auth](auth.md) - Authentication and token management
-- [EventSub](eventsub.md) - Real-time event subscriptions
+description: - [EventSub](eventsub.md) - Real-time event subscriptions
+---
+

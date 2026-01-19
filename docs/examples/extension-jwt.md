@@ -1,4 +1,6 @@
-# Extension JWT Authentication
+---
+layout: default
+title: Extension JWT Authentication
 
 For Twitch Extensions that require JWT authentication.
 
@@ -165,5 +167,6 @@ token, _ := jwt.CreateToken(helix.ExtensionJWTClaims{
 ```
 
 ## Extension API Endpoints
+description: See [Extensions documentation](extensions.md) for all available extension endpoints.
+---
 
-See [Extensions documentation](extensions.md) for all available extension endpoints.

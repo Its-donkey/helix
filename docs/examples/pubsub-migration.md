@@ -1,4 +1,6 @@
-# PubSub Migration Example
+---
+layout: default
+title: PubSub Migration Example
 
 This example demonstrates how to use the PubSub compatibility layer to receive real-time events using familiar PubSub-style topic subscriptions.
 
@@ -249,4 +251,6 @@ For reference, here are the EventSub event types that PubSub topics map to:
 | `channel-subscribe-events-v1` | `channel.subscribe`, `channel.subscription.gift`, `channel.subscription.message` |
 | `automod-queue` | `automod.message.hold` |
 | `chat_moderator_actions` | `channel.moderate` |
-| `whispers` | `user.whisper.message` |
+description: | `whispers` | `user.whisper.message` |
+---
+

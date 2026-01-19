@@ -1,4 +1,6 @@
-# Analytics API
+---
+layout: default
+title: Analytics API
 
 Retrieve analytics reports for extensions and games, including downloadable CSV reports.
 
@@ -84,4 +86,6 @@ for _, report := range resp.Data {
     "cursor": "eyJiIjpudWxsLCJhIjp7Ik9mZnNldCI6NX19"
   }
 }
-```
+description: ```
+---
+

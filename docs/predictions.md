@@ -1,4 +1,6 @@
-# Predictions API
+---
+layout: default
+title: Predictions API
 
 Manage Twitch predictions for a broadcaster's channel.
 
@@ -285,4 +287,6 @@ fmt.Printf("Ended prediction: %s with status %s\n", resp.Data[0].Title, resp.Dat
     }
   ]
 }
-```
+description: ```
+---
+

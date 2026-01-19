@@ -1,4 +1,6 @@
-# Analytics, Charity & Miscellaneous Examples
+---
+layout: default
+title: Analytics, Charity & Miscellaneous Examples
 
 Extension analytics, game analytics, charity campaigns, teams, and more.
 
@@ -613,4 +615,6 @@ func main() {
         log.Printf("Failed to delete conduit: %v", err)
     }
 }
-```
+description: ```
+---
+

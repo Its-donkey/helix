@@ -1,4 +1,6 @@
-# PubSub Compatibility Layer
+---
+layout: default
+title: PubSub Compatibility Layer
 
 The PubSub compatibility layer provides a familiar PubSub-style API (`Listen`/`Unlisten` with topic strings) while internally using EventSub WebSocket. This enables a smooth migration path for developers transitioning from the deprecated Twitch PubSub system.
 
@@ -317,4 +319,6 @@ Key differences:
 1. Requires a Helix client (for creating EventSub subscriptions via API)
 2. Uses `context.Context` for all operations
 3. Messages are wrapped in a `PubSubMessage` envelope with the EventSub type
-4. Event payloads use EventSub format (not old PubSub format)
+description: 4. Event payloads use EventSub format (not old PubSub format)
+---
+

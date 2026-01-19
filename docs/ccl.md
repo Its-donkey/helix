@@ -1,4 +1,6 @@
-# Content Classification Labels API
+---
+layout: default
+title: Content Classification Labels API
 
 Content Classification Labels (CCL) are used to categorize streams based on their content. These labels help viewers make informed decisions about the content they watch.
 
@@ -60,4 +62,6 @@ for _, label := range resp.Data {
     }
   ]
 }
-```
+description: ```
+---
+

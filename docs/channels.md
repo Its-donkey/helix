@@ -1,4 +1,6 @@
-# Channels API
+---
+layout: default
+title: Channels API
 
 Retrieve and manage Twitch channel information, followers, editors, and VIPs.
 
@@ -281,5 +283,6 @@ if err != nil {
 ```json
 {}
 ```
+description: Note: This endpoint returns no content on success (204 No Content).
+---
 
-Note: This endpoint returns no content on success (204 No Content).

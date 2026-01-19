@@ -1,4 +1,6 @@
-# EventSub Webhooks
+---
+layout: default
+title: EventSub Webhooks
 
 Handle EventSub webhook notifications with built-in signature verification.
 
@@ -167,5 +169,6 @@ if err != nil {
 ```
 
 ## Supported Event Types
+description: See [EventSub documentation](eventsub.md) for a complete list of event types.
+---
 
-See [EventSub documentation](eventsub.md) for a complete list of event types.

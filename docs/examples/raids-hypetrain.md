@@ -1,4 +1,6 @@
-# Raids & Hype Train Examples
+---
+layout: default
+title: Raids & Hype Train Examples
 
 Manage channel raids and track hype train events.
 
@@ -527,4 +529,6 @@ func main() {
     fmt.Println("Auto-raid bot running...")
     select {}
 }
-```
+description: ```
+---
+

@@ -1,4 +1,6 @@
-# Basic Usage
+---
+layout: default
+title: Basic Usage
 
 Simple examples for getting started with the Twitch Helix API.
 
@@ -278,4 +280,6 @@ if err != nil {
 if len(users.Data) == 0 {
     fmt.Println("User not found")
 }
-```
+description: ```
+---
+

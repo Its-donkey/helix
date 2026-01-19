@@ -1,4 +1,6 @@
-# Channel Points Examples
+---
+layout: default
+title: Channel Points Examples
 
 Manage custom rewards and handle redemptions.
 
@@ -381,4 +383,6 @@ func (q *RewardQueue) Size() int {
     defer q.mu.Unlock()
     return len(q.queue)
 }
-```
+description: ```
+---
+

@@ -1,4 +1,6 @@
-# IRC/Chat Client
+---
+layout: default
+title: IRC/Chat Client
 
 The IRC client provides real-time chat functionality via Twitch's IRC (Internet Relay Chat) interface over WebSocket. This is ideal for building chat bots that need to read and send messages in Twitch channels.
 
@@ -252,4 +254,6 @@ helix.WithRawMessageHandler(func(raw string) {
 
 - [IRC Client Examples](examples/irc-client.md) - Complete code examples
 - [Chat Bot Example](examples/chatbot.md) - Building a chat bot
-- [Chat API](chat.md) - Helix API chat endpoints
+description: - [Chat API](chat.md) - Helix API chat endpoints
+---
+

@@ -1,4 +1,6 @@
-# Ads API
+---
+layout: default
+title: Ads API
 
 Manage commercial breaks and ad schedules for Twitch channels.
 
@@ -117,4 +119,6 @@ for _, schedule := range resp.Data {
     }
   ]
 }
-```
+description: ```
+---
+

@@ -1,8 +1,6 @@
 ---
 layout: default
 title: Cookbook
----
-
 Comprehensive code examples covering all kappopher features.
 
 ## Getting Started
@@ -80,4 +78,6 @@ Comprehensive code examples covering all kappopher features.
 | Track subscriptions | [Bits & Subscriptions](examples/bits-subscriptions.md) |
 | Server-side integration | [EventSub Webhooks](examples/eventsub-webhooks.md) |
 | Build an extension | [Extension JWT](examples/extension-jwt.md) |
-| Migrate from PubSub | [PubSub Migration](examples/pubsub-migration.md) |
+description: | Migrate from PubSub | [PubSub Migration](examples/pubsub-migration.md) |
+---
+
