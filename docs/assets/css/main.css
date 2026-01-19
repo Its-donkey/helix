@@ -188,9 +188,80 @@ body {
   padding: var(--space-2xl) var(--space-lg);
 }
 
-.content-container {
-  max-width: 900px;
+.content-wrapper {
+  max-width: 1400px;
   margin: 0 auto;
+  display: flex;
+  gap: var(--space-2xl);
+}
+
+.content-container {
+  flex: 1;
+  max-width: 900px;
+  min-width: 0;
+}
+
+/* ========================================
+   Sidebar
+   ======================================== */
+
+.sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 88px;
+  height: fit-content;
+  max-height: calc(100vh - 112px);
+  overflow-y: auto;
+}
+
+.sidebar-nav {
+  padding-right: var(--space-md);
+}
+
+.sidebar-section {
+  margin-bottom: var(--space-lg);
+}
+
+.sidebar-section h3 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--light-text-muted);
+  margin-bottom: var(--space-sm);
+  padding-left: var(--space-sm);
+}
+
+.sidebar-section ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.sidebar-section li {
+  margin: 0;
+}
+
+.sidebar-section a {
+  display: block;
+  padding: var(--space-xs) var(--space-sm);
+  color: var(--light-text);
+  text-decoration: none;
+  font-size: 0.875rem;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+}
+
+.sidebar-section a:hover {
+  background: var(--purple-subtle);
+  color: var(--purple-dark);
+}
+
+.sidebar-section a.active {
+  background: var(--purple-primary);
+  color: white;
+  font-weight: 500;
 }
 
 .page-header {
@@ -462,6 +533,16 @@ body {
 /* ========================================
    Responsive Design
    ======================================== */
+
+@media (max-width: 1024px) {
+  .sidebar {
+    display: none;
+  }
+
+  .content-wrapper {
+    display: block;
+  }
+}
 
 @media (max-width: 768px) {
   .nav-links {

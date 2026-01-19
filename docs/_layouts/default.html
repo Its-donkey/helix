@@ -37,19 +37,76 @@
   </nav>
 
   <main class="main-content">
-    <div class="content-container">
-      {% if page.title and page.url != '/' %}
-      <header class="page-header">
-        <h1>{{ page.title }}</h1>
-        {% if page.description %}
-        <p class="page-description">{{ page.description }}</p>
+    <div class="content-wrapper">
+      <aside class="sidebar">
+        <nav class="sidebar-nav">
+          <div class="sidebar-section">
+            <h3>Getting Started</h3>
+            <ul>
+              <li><a href="{{ '/quickstart' | relative_url }}"{% if page.url contains 'quickstart' %} class="active"{% endif %}>Quick Start</a></li>
+              <li><a href="{{ '/api-reference' | relative_url }}"{% if page.url contains 'api-reference' %} class="active"{% endif %}>API Reference</a></li>
+              <li><a href="{{ '/cookbook' | relative_url }}"{% if page.url contains 'cookbook' %} class="active"{% endif %}>Cookbook</a></li>
+            </ul>
+          </div>
+          <div class="sidebar-section">
+            <h3>Authentication</h3>
+            <ul>
+              <li><a href="{{ '/auth' | relative_url }}"{% if page.url contains '/auth' %} class="active"{% endif %}>OAuth Flows</a></li>
+              <li><a href="{{ '/extension-jwt' | relative_url }}"{% if page.url == '/extension-jwt' or page.url == '/extension-jwt.html' %} class="active"{% endif %}>Extension JWT</a></li>
+            </ul>
+          </div>
+          <div class="sidebar-section">
+            <h3>Real-Time</h3>
+            <ul>
+              <li><a href="{{ '/eventsub' | relative_url }}"{% if page.url contains 'eventsub' and page.url contains 'examples' == false %} class="active"{% endif %}>EventSub</a></li>
+              <li><a href="{{ '/irc-client' | relative_url }}"{% if page.url == '/irc-client' or page.url == '/irc-client.html' %} class="active"{% endif %}>IRC Client</a></li>
+              <li><a href="{{ '/pubsub-compat' | relative_url }}"{% if page.url contains 'pubsub-compat' %} class="active"{% endif %}>PubSub Compat</a></li>
+            </ul>
+          </div>
+          <div class="sidebar-section">
+            <h3>API Endpoints</h3>
+            <ul>
+              <li><a href="{{ '/channels' | relative_url }}"{% if page.url contains '/channels' %} class="active"{% endif %}>Channels</a></li>
+              <li><a href="{{ '/streams' | relative_url }}"{% if page.url contains '/streams' %} class="active"{% endif %}>Streams</a></li>
+              <li><a href="{{ '/users' | relative_url }}"{% if page.url contains '/users' %} class="active"{% endif %}>Users</a></li>
+              <li><a href="{{ '/chat' | relative_url }}"{% if page.url == '/chat' or page.url == '/chat.html' %} class="active"{% endif %}>Chat</a></li>
+              <li><a href="{{ '/moderation' | relative_url }}"{% if page.url contains '/moderation' %} class="active"{% endif %}>Moderation</a></li>
+              <li><a href="{{ '/channel-points' | relative_url }}"{% if page.url contains '/channel-points' %} class="active"{% endif %}>Channel Points</a></li>
+              <li><a href="{{ '/bits' | relative_url }}"{% if page.url contains '/bits' %} class="active"{% endif %}>Bits</a></li>
+              <li><a href="{{ '/subscriptions' | relative_url }}"{% if page.url contains '/subscriptions' %} class="active"{% endif %}>Subscriptions</a></li>
+            </ul>
+          </div>
+          <div class="sidebar-section">
+            <h3>Advanced</h3>
+            <ul>
+              <li><a href="{{ '/advanced' | relative_url }}"{% if page.url contains '/advanced' %} class="active"{% endif %}>Batch & Caching</a></li>
+              <li><a href="{{ '/conduits' | relative_url }}"{% if page.url contains '/conduits' %} class="active"{% endif %}>Conduits</a></li>
+            </ul>
+          </div>
+          <div class="sidebar-section">
+            <h3>Help</h3>
+            <ul>
+              <li><a href="{{ '/faq' | relative_url }}"{% if page.url contains '/faq' %} class="active"{% endif %}>FAQ</a></li>
+              <li><a href="{{ '/troubleshooting' | relative_url }}"{% if page.url contains '/troubleshooting' %} class="active"{% endif %}>Troubleshooting</a></li>
+              <li><a href="{{ '/migration' | relative_url }}"{% if page.url contains '/migration' %} class="active"{% endif %}>Migration Guide</a></li>
+            </ul>
+          </div>
+        </nav>
+      </aside>
+      <div class="content-container">
+        {% if page.title and page.url != '/' %}
+        <header class="page-header">
+          <h1>{{ page.title }}</h1>
+          {% if page.description %}
+          <p class="page-description">{{ page.description }}</p>
+          {% endif %}
+        </header>
         {% endif %}
-      </header>
-      {% endif %}
 
-      <article class="content">
-        {{ content }}
-      </article>
+        <article class="content">
+          {{ content }}
+        </article>
+      </div>
     </div>
   </main>
 
