@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Channels API
-
-Retrieve and manage Twitch channel information, followers, editors, and VIPs.
+description: Retrieve and manage Twitch channel information, followers, editors, and VIPs.
+---
 
 ## GetChannelInformation
 

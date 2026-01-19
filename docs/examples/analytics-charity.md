@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Analytics, Charity & Miscellaneous Examples
-
-Extension analytics, game analytics, charity campaigns, teams, and more.
+description: Extension analytics, game analytics, charity campaigns, teams, and more.
+---
 
 ## Overview
 

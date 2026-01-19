@@ -1,8 +1,8 @@
 ---
 layout: default
 title: API Usage Examples
-
-Quick reference for common Twitch Helix API operations. These snippets show the most frequently used endpoints organized by category.
+description: Quick reference for common Twitch Helix API operations. These snippets show the most frequently used endpoints organized by category.
+---
 
 For complete examples with error handling and setup, see [Basic Usage](basic.md).
 

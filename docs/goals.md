@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Goals API
-
-Manage creator goals for Twitch channels.
+description: Manage creator goals for Twitch channels.
+---
 
 ## GetCreatorGoals
 

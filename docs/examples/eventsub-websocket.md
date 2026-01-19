@@ -1,8 +1,8 @@
 ---
 layout: default
 title: EventSub WebSocket
-
-Real-time event streaming without requiring a public endpoint.
+description: Real-time event streaming without requiring a public endpoint.
+---
 
 ## Overview
 

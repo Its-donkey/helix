@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Authentication Examples
-
-Complete examples for all OAuth 2.0 authentication flows supported by the Twitch API.
+description: Complete examples for all OAuth 2.0 authentication flows supported by the Twitch API.
+---
 
 ## Overview
 

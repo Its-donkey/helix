@@ -1,8 +1,8 @@
 ---
 layout: default
 title: EventSub API
-
-Manage Twitch EventSub subscriptions for real-time event notifications.
+description: Manage Twitch EventSub subscriptions for real-time event notifications.
+---
 
 ## GetEventSubSubscriptions
 

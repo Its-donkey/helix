@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Search API
-
-Search for categories (games) and channels on Twitch.
+description: Search for categories (games) and channels on Twitch.
+---
 
 ## SearchCategories
 

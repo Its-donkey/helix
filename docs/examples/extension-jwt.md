@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Extension JWT Authentication
-
-For Twitch Extensions that require JWT authentication.
+description: For Twitch Extensions that require JWT authentication.
+---
 
 ## Overview
 

@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Charity API
-
-Manage charity campaigns and donations for Twitch channels.
+description: Manage charity campaigns and donations for Twitch channels.
+---
 
 ## GetCharityCampaign
 

@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Ingest Servers API
-
-Get information about Twitch ingest servers for streaming.
+description: Get information about Twitch ingest servers for streaming.
+---
 
 > **Note:** This endpoint uses a different base URL (`ingest.twitch.tv`) than the Helix API.
 

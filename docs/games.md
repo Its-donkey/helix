@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Games API
-
-Retrieve information about games and categories on Twitch.
+description: Retrieve information about games and categories on Twitch.
+---
 
 ## GetGames
 

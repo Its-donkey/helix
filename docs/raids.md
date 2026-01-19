@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Raids API
-
-Manage raids between Twitch channels.
+description: Manage raids between Twitch channels.
+---
 
 ## StartRaid
 

@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Streams API
-
-Get information about active streams and manage stream markers.
+description: Get information about active streams and manage stream markers.
+---
 
 ## GetStreams
 

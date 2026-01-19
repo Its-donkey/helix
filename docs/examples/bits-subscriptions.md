@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Bits & Subscriptions Examples
-
-Work with Bits leaderboards, cheermotes, and channel subscriptions.
+description: Work with Bits leaderboards, cheermotes, and channel subscriptions.
+---
 
 ## Overview
 

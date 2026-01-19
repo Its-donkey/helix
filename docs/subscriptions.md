@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Subscriptions API
-
-Retrieve subscriber information for Twitch channels.
+description: Retrieve subscriber information for Twitch channels.
+---
 
 ## GetBroadcasterSubscriptions
 

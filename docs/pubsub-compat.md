@@ -1,8 +1,8 @@
 ---
 layout: default
 title: PubSub Compatibility Layer
-
-The PubSub compatibility layer provides a familiar PubSub-style API (`Listen`/`Unlisten` with topic strings) while internally using EventSub WebSocket. This enables a smooth migration path for developers transitioning from the deprecated Twitch PubSub system.
+description: The PubSub compatibility layer provides a familiar PubSub-style API (`Listen`/`Unlisten` with topic strings) while internally using EventSub WebSocket. This enables a smooth migration path for developers transitioning from the deprecated Twitch PubSub system.
+---
 
 > **Note:** Twitch PubSub was fully decommissioned on April 14, 2025. This compatibility layer uses EventSub under the hood, which is Twitch's current real-time event system.
 

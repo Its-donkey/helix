@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Videos & Clips Examples
-
-Work with VODs, highlights, and clips.
+description: Work with VODs, highlights, and clips.
+---
 
 ## Overview
 

@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Polls API
-
-Manage Twitch polls for a broadcaster's channel.
+description: Manage Twitch polls for a broadcaster's channel.
+---
 
 ## GetPolls
 

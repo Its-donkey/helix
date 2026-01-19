@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Chat API
-
-Manage chat rooms, emotes, badges, settings, and send messages to Twitch channels.
+description: Manage chat rooms, emotes, badges, settings, and send messages to Twitch channels.
+---
 
 ## GetChatters
 

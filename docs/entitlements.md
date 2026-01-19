@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Drops Entitlements API
-
-Manage Twitch Drops entitlements for games and viewers.
+description: Manage Twitch Drops entitlements for games and viewers.
+---
 
 ## GetDropsEntitlements
 

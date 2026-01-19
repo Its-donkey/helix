@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Clips API
-
-Create and retrieve Twitch clips from broadcasts and VODs.
+description: Create and retrieve Twitch clips from broadcasts and VODs.
+---
 
 ## CreateClip
 

@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Extensions API
-
-Some endpoints require [Extension JWT authentication](Projects/Programming/Kappopher/Documents/extension-jwt.md) instead of standard OAuth tokens.
+description: Some endpoints require [Extension JWT authentication](Projects/Programming/Kappopher/Documents/extension-jwt.md) instead of standard OAuth tokens.
+---
 
 ## GetExtensionConfigurationSegment
 

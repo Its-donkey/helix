@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Schedule & Goals Examples
-
-Manage stream schedules and track creator goals.
+description: Manage stream schedules and track creator goals.
+---
 
 ## Overview
 

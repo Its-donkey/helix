@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Schedule API
-
-Manage Twitch channel stream schedules.
+description: Manage Twitch channel stream schedules.
+---
 
 ## GetChannelStreamSchedule
 

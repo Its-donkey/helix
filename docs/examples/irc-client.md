@@ -1,8 +1,8 @@
 ---
 layout: default
 title: IRC Client Examples
-
-Build chat bots using the low-level IRC/WebSocket client.
+description: Build chat bots using the low-level IRC/WebSocket client.
+---
 
 ## Overview
 

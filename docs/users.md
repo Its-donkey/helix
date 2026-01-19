@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Users API
-
-Retrieve and manage Twitch user information, blocks, and extensions.
+description: Retrieve and manage Twitch user information, blocks, and extensions.
+---
 
 ## GetUsers
 

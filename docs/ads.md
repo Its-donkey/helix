@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Ads API
-
-Manage commercial breaks and ad schedules for Twitch channels.
+description: Manage commercial breaks and ad schedules for Twitch channels.
+---
 
 ## Overview
 

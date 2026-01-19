@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Whispers API
-
-Send private whisper messages between Twitch users.
+description: Send private whisper messages between Twitch users.
+---
 
 ## SendWhisper
 

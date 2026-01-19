@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Basic Usage
-
-Simple examples for getting started with the Twitch Helix API.
+description: Simple examples for getting started with the Twitch Helix API.
+---
 
 ## Overview
 

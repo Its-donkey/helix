@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Extension JWT Authentication
-
-Certain Twitch Extension API endpoints require a special **Extension JWT** (JSON Web Token) instead of a regular OAuth access token.
+description: Certain Twitch Extension API endpoints require a special **Extension JWT** (JSON Web Token) instead of a regular OAuth access token.
+---
 
 ## How It Works
 

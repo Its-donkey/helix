@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Analytics API
-
-Retrieve analytics reports for extensions and games, including downloadable CSV reports.
+description: Retrieve analytics reports for extensions and games, including downloadable CSV reports.
+---
 
 ## GetExtensionAnalytics
 

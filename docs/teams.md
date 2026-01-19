@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Teams API
-
-Retrieve information about Twitch teams and their members.
+description: Retrieve information about Twitch teams and their members.
+---
 
 ## GetChannelTeams
 

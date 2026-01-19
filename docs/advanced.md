@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Advanced Features
-
-This guide covers advanced features for optimizing performance and handling complex use cases.
+description: This guide covers advanced features for optimizing performance and handling complex use cases.
+---
 
 ## Overview
 

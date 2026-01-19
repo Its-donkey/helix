@@ -1,8 +1,8 @@
 ---
 layout: default
 title: EventSub Webhooks
-
-Handle EventSub webhook notifications with built-in signature verification.
+description: Handle EventSub webhook notifications with built-in signature verification.
+---
 
 ## Overview
 

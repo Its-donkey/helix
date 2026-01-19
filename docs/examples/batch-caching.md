@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Batch Operations & Caching Examples
-
-Efficient API usage with batch requests, caching, rate limiting, and middleware.
+description: Efficient API usage with batch requests, caching, rate limiting, and middleware.
+---
 
 ## Overview
 

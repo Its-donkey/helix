@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Guest Star API
-
-> **Note:** These are BETA endpoints and may be subject to changes.
+description: > **Note:** These are BETA endpoints and may be subject to changes.
+---
 
 ## GetChannelGuestStarSettings
 

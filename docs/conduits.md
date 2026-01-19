@@ -1,8 +1,8 @@
 ---
 layout: default
 title: EventSub Conduits API
-
-Manage EventSub conduits for receiving event notifications. Conduits allow you to manage multiple shards for high-availability event subscriptions.
+description: Manage EventSub conduits for receiving event notifications. Conduits allow you to manage multiple shards for high-availability event subscriptions.
+---
 
 ## GetConduits
 

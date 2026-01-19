@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Predictions API
-
-Manage Twitch predictions for a broadcaster's channel.
+description: Manage Twitch predictions for a broadcaster's channel.
+---
 
 ## GetPredictions
 

@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Bits API
-
-Retrieve Bits leaderboards and cheermote information for Twitch channels.
+description: Retrieve Bits leaderboards and cheermote information for Twitch channels.
+---
 
 ## GetBitsLeaderboard
 

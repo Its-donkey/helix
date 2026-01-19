@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Chat Bot Example
-
-Build a Twitch chat bot using the Helix API and EventSub WebSocket for real-time message handling.
+description: Build a Twitch chat bot using the Helix API and EventSub WebSocket for real-time message handling.
+---
 
 ## Overview
 

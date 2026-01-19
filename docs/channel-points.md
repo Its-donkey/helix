@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Channel Points API
-
-Manage custom Channel Points rewards and redemptions.
+description: Manage custom Channel Points rewards and redemptions.
+---
 
 ## GetCustomRewards
 

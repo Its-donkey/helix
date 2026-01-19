@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Moderation API
-
-Manage channel moderation including bans, moderators, blocked terms, AutoMod, and shield mode.
+description: Manage channel moderation including bans, moderators, blocked terms, AutoMod, and shield mode.
+---
 
 ## GetBannedUsers
 

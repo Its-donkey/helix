@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Channel Points Examples
-
-Manage custom rewards and handle redemptions.
+description: Manage custom rewards and handle redemptions.
+---
 
 ## Overview
 

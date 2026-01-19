@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Videos API
-
-Retrieve and manage Twitch videos (VODs, highlights, and uploads).
+description: Retrieve and manage Twitch videos (VODs, highlights, and uploads).
+---
 
 ## GetVideos
 

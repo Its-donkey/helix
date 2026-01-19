@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Raids & Hype Train Examples
-
-Manage channel raids and track hype train events.
+description: Manage channel raids and track hype train events.
+---
 
 ## Overview
 

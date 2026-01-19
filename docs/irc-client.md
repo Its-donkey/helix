@@ -1,8 +1,8 @@
 ---
 layout: default
 title: IRC/Chat Client
-
-The IRC client provides real-time chat functionality via Twitch's IRC (Internet Relay Chat) interface over WebSocket. This is ideal for building chat bots that need to read and send messages in Twitch channels.
+description: The IRC client provides real-time chat functionality via Twitch's IRC (Internet Relay Chat) interface over WebSocket. This is ideal for building chat bots that need to read and send messages in Twitch channels.
+---
 
 ## NewIRCClient
 
