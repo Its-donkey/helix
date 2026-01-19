@@ -2,6 +2,7 @@ package helix
 
 import (
 	"context"
+	"io"
 	"net/url"
 	"time"
 )
@@ -80,23 +81,16 @@ func (c *Client) GetChannelICalendar(ctx context.Context, broadcasterID string) 
 	q := url.Values{}
 	q.Set("broadcaster_id", broadcasterID)
 
-	req := &Request{
-		Method:   "GET",
-		Endpoint: "/schedule/icalendar",
-		Query:    q,
-	}
+	reqURL := c.baseURL + "/schedule/icalendar?" + q.Encode()
 
-	// Build URL
-	url := c.baseURL + req.Endpoint + "?" + req.Query.Encode()
-
-	httpReq, err := c.httpClient.Get(url)
+	resp, err := c.httpClient.Get(reqURL)
 	if err != nil {
 		return "", err
 	}
-	defer func() { _ = httpReq.Body.Close() }()
+	defer func() { _ = resp.Body.Close() }()
 
-	body := make([]byte, 0)
-	if _, err := httpReq.Body.Read(body); err != nil {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
 		return "", err
 	}
 	return string(body), nil

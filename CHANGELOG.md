@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `AddSuspiciousUserStatus` - Add a suspicious status to a chat user (POST /moderation/suspicious_users)
+- `RemoveSuspiciousUserStatus` - Remove a suspicious status from a chat user (DELETE /moderation/suspicious_users)
+- `ScopeModeratorManageSuspiciousUsers` scope constant for suspicious user management
 
 ### Changed
 
