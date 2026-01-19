@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"sync"
 	"time"
 )
 
@@ -73,7 +74,12 @@ func (e *ExtensionJWT) OwnerID() string {
 }
 
 // CreateToken creates a signed JWT with the given claims.
+// Returns an error if claims is nil.
 func (e *ExtensionJWT) CreateToken(claims *ExtensionJWTClaims) (string, error) {
+	if claims == nil {
+		return "", fmt.Errorf("claims cannot be nil")
+	}
+
 	// Set default expiration if not set (1 hour)
 	if claims.Exp == 0 {
 		claims.Exp = time.Now().Add(time.Hour).Unix()
@@ -158,11 +164,26 @@ func base64URLEncode(data []byte) string {
 // extensionTokenProvider is an adapter to provide extension JWT tokens.
 type extensionTokenProvider struct {
 	jwt   *ExtensionJWT
+	mu    sync.RWMutex
 	token *Token
 }
 
 // GetToken returns the current token, generating a new one if expired.
 func (p *extensionTokenProvider) GetToken() *Token {
+	// Fast path: check if token is valid with read lock
+	p.mu.RLock()
+	if p.token != nil && time.Now().Before(p.token.ExpiresAt) {
+		token := p.token
+		p.mu.RUnlock()
+		return token
+	}
+	p.mu.RUnlock()
+
+	// Slow path: generate new token with write lock
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	// Double-check after acquiring write lock
 	if p.token != nil && time.Now().Before(p.token.ExpiresAt) {
 		return p.token
 	}

@@ -216,6 +216,114 @@ func TestExtensionTokenProvider_GetToken(t *testing.T) {
 	}
 }
 
+func TestExtensionTokenProvider_GetToken_Concurrent(t *testing.T) {
+	secret := base64.StdEncoding.EncodeToString([]byte("test-secret-key-1234567890"))
+	jwt, _ := NewExtensionJWT("ext123", secret, "owner456")
+
+	provider := &extensionTokenProvider{jwt: jwt}
+
+	// Run concurrent GetToken calls to test thread safety
+	const goroutines = 50
+	done := make(chan *Token, goroutines)
+
+	for i := 0; i < goroutines; i++ {
+		go func() {
+			token := provider.GetToken()
+			done <- token
+		}()
+	}
+
+	// Collect all tokens
+	var tokens []*Token
+	for i := 0; i < goroutines; i++ {
+		token := <-done
+		if token == nil {
+			t.Error("expected token, got nil")
+		}
+		tokens = append(tokens, token)
+	}
+
+	// All tokens should be valid
+	for _, token := range tokens {
+		if token.AccessToken == "" {
+			t.Error("expected non-empty access token")
+		}
+	}
+}
+
+func TestExtensionJWT_CreateToken_DefaultExpiration(t *testing.T) {
+	secret := base64.StdEncoding.EncodeToString([]byte("test-secret-key-1234567890"))
+	jwt, _ := NewExtensionJWT("ext123", secret, "owner456")
+
+	// Create claims with Exp=0 (should use default 1 hour expiration)
+	claims := &ExtensionJWTClaims{
+		UserID: "user123",
+		Role:   ExtensionRoleExternal,
+		// Exp is 0 - should be set to default
+	}
+
+	token, err := jwt.CreateToken(claims)
+	if err != nil {
+		t.Fatalf("CreateToken failed: %v", err)
+	}
+	if token == "" {
+		t.Error("expected non-empty token")
+	}
+
+	// Verify that Exp was set
+	if claims.Exp == 0 {
+		t.Error("expected Exp to be set to default value")
+	}
+}
+
+func TestExtensionTokenProvider_GetToken_DoubleCheck(t *testing.T) {
+	secret := base64.StdEncoding.EncodeToString([]byte("test-secret-key-1234567890"))
+	jwt, _ := NewExtensionJWT("ext123", secret, "owner456")
+
+	provider := &extensionTokenProvider{jwt: jwt}
+
+	// Pre-populate with a valid token
+	provider.mu.Lock()
+	provider.token = &Token{
+		AccessToken: "pre-existing-token",
+		ExpiresAt:   time.Now().Add(time.Hour),
+	}
+	provider.mu.Unlock()
+
+	// GetToken should return the cached token (hitting the fast path)
+	token := provider.GetToken()
+	if token == nil {
+		t.Fatal("expected token, got nil")
+	}
+	if token.AccessToken != "pre-existing-token" {
+		t.Error("expected cached token to be returned")
+	}
+}
+
+func TestExtensionTokenProvider_GetToken_ExpiredThenRefreshed(t *testing.T) {
+	secret := base64.StdEncoding.EncodeToString([]byte("test-secret-key-1234567890"))
+	jwt, _ := NewExtensionJWT("ext123", secret, "owner456")
+
+	provider := &extensionTokenProvider{jwt: jwt}
+
+	// Pre-populate with an expired token
+	provider.mu.Lock()
+	provider.token = &Token{
+		AccessToken: "expired-token",
+		ExpiresAt:   time.Now().Add(-time.Hour), // Already expired
+	}
+	provider.mu.Unlock()
+
+	// GetToken should generate a new token
+	token := provider.GetToken()
+	if token == nil {
+		t.Fatal("expected token, got nil")
+	}
+	if token.AccessToken == "expired-token" {
+		t.Error("expected new token, got expired token")
+	}
+}
+
 func TestNewExtensionClient(t *testing.T) {
 	secret := base64.StdEncoding.EncodeToString([]byte("test-secret-key-1234567890"))
 	jwt, _ := NewExtensionJWT("ext123", secret, "owner456")
@@ -308,5 +416,74 @@ func TestJWTClaimsStructure(t *testing.T) {
 	}
 	if decoded["is_unlinked"] != true {
 		t.Errorf("expected is_unlinked true, got %v", decoded["is_unlinked"])
+	}
+}
+
+func TestParseExtensionJWT_InvalidClaimsBase64(t *testing.T) {
+	secret := base64.StdEncoding.EncodeToString([]byte("test-secret"))
+
+	// Create a token with invalid base64 in the claims part
+	// Use valid header but invalid claims that will fail base64 decoding
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","typ":"JWT"}`))
+	invalidClaims := "!!!invalid-base64!!!"
+	sig := base64.RawURLEncoding.EncodeToString([]byte("fake-sig"))
+
+	token := header + "." + invalidClaims + "." + sig
+
+	_, err := ParseExtensionJWT(token, secret)
+	if err == nil {
+		t.Error("expected error for invalid claims base64")
+	}
+}
+
+func TestParseExtensionJWT_InvalidClaimsJSON(t *testing.T) {
+	secret := base64.StdEncoding.EncodeToString([]byte("test-secret-key-1234567890"))
+
+	// Create a token with valid base64 but invalid JSON in claims
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","typ":"JWT"}`))
+	invalidJSON := base64.RawURLEncoding.EncodeToString([]byte(`{not valid json`))
+
+	// Create a valid signature for these parts
+	jwt, _ := NewExtensionJWT("ext123", secret, "owner456")
+	message := header + "." + invalidJSON
+	sig := base64.RawURLEncoding.EncodeToString(jwt.sign([]byte(message)))
+
+	token := message + "." + sig
+
+	_, err := ParseExtensionJWT(token, secret)
+	if err == nil {
+		t.Error("expected error for invalid claims JSON")
+	}
+	if !strings.Contains(err.Error(), "parsing claims") {
+		t.Errorf("expected 'parsing claims' error, got: %v", err)
+	}
+}
+
+func TestParseExtensionJWT_InvalidSecretBase64(t *testing.T) {
+	_, err := ParseExtensionJWT("header.claims.sig", "!!!invalid-base64!!!")
+	if err == nil {
+		t.Error("expected error for invalid secret base64")
+	}
+	if !strings.Contains(err.Error(), "decoding secret") {
+		t.Errorf("expected 'decoding secret' error, got: %v", err)
+	}
+}
+
+func TestParseExtensionJWT_InvalidSignatureBase64(t *testing.T) {
+	secret := base64.StdEncoding.EncodeToString([]byte("test-secret"))
+
+	// Create a token with invalid base64 in the signature part
+	header := base64.RawURLEncoding.EncodeToString([]byte(`{"alg":"HS256","typ":"JWT"}`))
+	claims := base64.RawURLEncoding.EncodeToString([]byte(`{"exp":9999999999,"user_id":"test","role":"external"}`))
+	invalidSig := "!!!invalid-base64!!!"
+
+	token := header + "." + claims + "." + invalidSig
+
+	_, err := ParseExtensionJWT(token, secret)
+	if err == nil {
+		t.Error("expected error for invalid signature base64")
+	}
+	if !strings.Contains(err.Error(), "decoding signature") {
+		t.Errorf("expected 'decoding signature' error, got: %v", err)
 	}
 }

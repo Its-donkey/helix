@@ -224,6 +224,11 @@ func (c *EventSubWebSocketClient) Connect(ctx context.Context) (string, error) {
 	// Wait for welcome message
 	sessionID, err := c.waitForWelcome(ctx)
 	if err != nil {
+		// Clean up state on error
+		c.mu.Lock()
+		c.conn = nil
+		c.stopChan = nil
+		c.mu.Unlock()
 		_ = conn.Close()
 		return "", err
 	}
@@ -242,9 +247,20 @@ func (c *EventSubWebSocketClient) Connect(ctx context.Context) (string, error) {
 
 // waitForWelcome waits for and processes the welcome message.
 func (c *EventSubWebSocketClient) waitForWelcome(ctx context.Context) (string, error) {
-	// Set read deadline for welcome message (10 seconds per Twitch docs)
-	_ = c.conn.SetReadDeadline(time.Now().Add(10 * time.Second))
+	// Use 10 seconds per Twitch docs, but respect context deadline if sooner
+	deadline := time.Now().Add(10 * time.Second)
+	if ctxDeadline, ok := ctx.Deadline(); ok && ctxDeadline.Before(deadline) {
+		deadline = ctxDeadline
+	}
+	_ = c.conn.SetReadDeadline(deadline)
 	defer func() { _ = c.conn.SetReadDeadline(time.Time{}) }()
+
+	// Check if context is already cancelled
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	default:
+	}
 
 	_, data, err := c.conn.ReadMessage()
 	if err != nil {
@@ -418,14 +434,17 @@ func (c *EventSubWebSocketClient) handleRevocation(msg WebSocketMessage) {
 // Close closes the WebSocket connection.
 func (c *EventSubWebSocketClient) Close() error {
 	c.mu.Lock()
-	if !c.connected {
+	// Close if connected OR if there's an in-progress connection (conn != nil)
+	if !c.connected && c.conn == nil {
 		c.mu.Unlock()
 		return nil
 	}
 
 	// Signal readLoop to stop (only once to prevent panic)
 	c.stopOnce.Do(func() {
-		close(c.stopChan)
+		if c.stopChan != nil {
+			close(c.stopChan)
+		}
 	})
 	c.connected = false
 	conn := c.conn
@@ -495,6 +514,11 @@ func (c *EventSubWebSocketClient) Reconnect(ctx context.Context, url string) (st
 	// Wait for welcome on new connection
 	sessionID, err := c.waitForWelcome(ctx)
 	if err != nil {
+		// Clean up state on error
+		c.mu.Lock()
+		c.conn = nil
+		c.stopChan = nil
+		c.mu.Unlock()
 		_ = newConn.Close()
 		return "", err
 	}
@@ -528,18 +552,60 @@ type EventSubWebSocket struct {
 
 	mu       sync.RWMutex
 	handlers map[string]func(json.RawMessage)
+
+	// User-provided handlers
+	onRevocation func(eventType string, reason string)
+	onReconnect  func()
+	onError      func(error)
 }
 
-// NewEventSubWebSocket creates a new high-level EventSub WebSocket manager.
-func NewEventSubWebSocket(helixClient *Client) *EventSubWebSocket {
-	return &EventSubWebSocket{
-		client:   helixClient,
-		handlers: make(map[string]func(json.RawMessage)),
+// EventSubWebSocketOption configures the high-level EventSub WebSocket manager.
+type EventSubWebSocketOption func(*EventSubWebSocket)
+
+// WithEventSubRevocationHandler sets the handler for subscription revocations.
+// The handler receives the event type that was revoked and the reason.
+func WithEventSubRevocationHandler(fn func(eventType string, reason string)) EventSubWebSocketOption {
+	return func(e *EventSubWebSocket) {
+		e.onRevocation = fn
 	}
 }
 
+// WithEventSubReconnectHandler sets the handler called after a successful reconnect.
+func WithEventSubReconnectHandler(fn func()) EventSubWebSocketOption {
+	return func(e *EventSubWebSocket) {
+		e.onReconnect = fn
+	}
+}
+
+// WithEventSubErrorHandler sets the handler for WebSocket errors.
+func WithEventSubErrorHandler(fn func(error)) EventSubWebSocketOption {
+	return func(e *EventSubWebSocket) {
+		e.onError = fn
+	}
+}
+
+// NewEventSubWebSocket creates a new high-level EventSub WebSocket manager.
+func NewEventSubWebSocket(helixClient *Client, opts ...EventSubWebSocketOption) *EventSubWebSocket {
+	e := &EventSubWebSocket{
+		client:   helixClient,
+		handlers: make(map[string]func(json.RawMessage)),
+	}
+	for _, opt := range opts {
+		opt(e)
+	}
+	return e
+}
+
 // Connect establishes the WebSocket connection.
+// If already connected, the existing connection is closed first.
 func (e *EventSubWebSocket) Connect(ctx context.Context) error {
+	// Close existing connection if any
+	if e.ws != nil {
+		_ = e.ws.Close()
+		e.ws = nil
+		e.sessionID = ""
+	}
+
 	e.ws = NewEventSubWebSocketClient(
 		WithWSNotificationHandler(func(sub *EventSubSubscription, event json.RawMessage) {
 			e.mu.RLock()
@@ -549,24 +615,68 @@ func (e *EventSubWebSocket) Connect(ctx context.Context) error {
 				handler(event)
 			}
 		}),
+		WithWSRevocationHandler(func(sub *EventSubSubscription) {
+			// Remove handler for revoked subscription
+			e.mu.Lock()
+			delete(e.handlers, sub.Type)
+			e.mu.Unlock()
+
+			// Notify user if handler is set
+			if e.onRevocation != nil {
+				e.onRevocation(sub.Type, sub.Status)
+			}
+		}),
+		WithWSReconnectHandler(func(reconnectURL string) {
+			// Handle reconnect automatically
+			go e.handleReconnect(reconnectURL)
+		}),
+		WithWSErrorHandler(func(err error) {
+			if e.onError != nil {
+				e.onError(err)
+			}
+		}),
 	)
 
 	sessionID, err := e.ws.Connect(ctx)
 	if err != nil {
+		e.ws = nil
 		return err
 	}
 	e.sessionID = sessionID
 	return nil
 }
 
-// Subscribe creates a subscription for the given event type.
-func (e *EventSubWebSocket) Subscribe(ctx context.Context, eventType, version string, condition map[string]string, handler func(json.RawMessage)) error {
-	// Register handler
+// handleReconnect handles the reconnect process when Twitch sends a reconnect message.
+func (e *EventSubWebSocket) handleReconnect(reconnectURL string) {
+	// Use a background context with timeout for reconnection
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	newSessionID, err := e.ws.Reconnect(ctx, reconnectURL)
+	if err != nil {
+		if e.onError != nil {
+			e.onError(fmt.Errorf("reconnect failed: %w", err))
+		}
+		return
+	}
+
 	e.mu.Lock()
-	e.handlers[eventType] = handler
+	e.sessionID = newSessionID
 	e.mu.Unlock()
 
-	// Create subscription via API
+	if e.onReconnect != nil {
+		e.onReconnect()
+	}
+}
+
+// Subscribe creates a subscription for the given event type.
+// Returns an error if not connected.
+func (e *EventSubWebSocket) Subscribe(ctx context.Context, eventType, version string, condition map[string]string, handler func(json.RawMessage)) error {
+	if e.sessionID == "" {
+		return errors.New("not connected: call Connect first")
+	}
+
+	// Create subscription via API first
 	_, err := e.client.CreateEventSubSubscription(ctx, &CreateEventSubSubscriptionParams{
 		Type:      eventType,
 		Version:   version,
@@ -576,7 +686,16 @@ func (e *EventSubWebSocket) Subscribe(ctx context.Context, eventType, version st
 			SessionID: e.sessionID,
 		},
 	})
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Only register handler after successful subscription
+	e.mu.Lock()
+	e.handlers[eventType] = handler
+	e.mu.Unlock()
+
+	return nil
 }
 
 // Close closes the WebSocket connection.

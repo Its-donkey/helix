@@ -1802,6 +1802,476 @@ func TestEventSubWebSocket_Connect_Real(t *testing.T) {
 	_ = ws.Close()
 }
 
+func TestEventSubWebSocket_Options(t *testing.T) {
+	authClient := NewAuthClient(AuthConfig{
+		ClientID: "test-client-id",
+	})
+	helixClient := NewClient("test-client-id", authClient)
+
+	revocationCalled := false
+	reconnectCalled := false
+	errorCalled := false
+
+	ws := NewEventSubWebSocket(helixClient,
+		WithEventSubRevocationHandler(func(eventType string, reason string) {
+			revocationCalled = true
+			if eventType != "test.type" {
+				t.Errorf("expected event type 'test.type', got %s", eventType)
+			}
+			if reason != "authorization_revoked" {
+				t.Errorf("expected reason 'authorization_revoked', got %s", reason)
+			}
+		}),
+		WithEventSubReconnectHandler(func() {
+			reconnectCalled = true
+		}),
+		WithEventSubErrorHandler(func(err error) {
+			errorCalled = true
+			if err == nil || err.Error() != "test error" {
+				t.Errorf("expected 'test error', got %v", err)
+			}
+		}),
+	)
+
+	if ws == nil {
+		t.Fatal("expected non-nil EventSubWebSocket")
+	}
+
+	// Test that handlers are set by invoking them
+	if ws.onRevocation != nil {
+		ws.onRevocation("test.type", "authorization_revoked")
+	}
+	if !revocationCalled {
+		t.Error("revocation handler was not called")
+	}
+
+	if ws.onReconnect != nil {
+		ws.onReconnect()
+	}
+	if !reconnectCalled {
+		t.Error("reconnect handler was not called")
+	}
+
+	if ws.onError != nil {
+		ws.onError(errors.New("test error"))
+	}
+	if !errorCalled {
+		t.Error("error handler was not called")
+	}
+}
+
+func TestEventSubWebSocket_HandleReconnect_Success(t *testing.T) {
+	sessionID := twitchWSExampleSessionID
+	newSessionID := "new-session-after-reconnect"
+	reconnectCalled := make(chan struct{})
+
+	// Old server for initial connection
+	oldServer := newMockWSServer(func(conn *websocket.Conn) {
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        twitchWSExampleWelcomeMessageID,
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      sessionID,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 1,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+		time.Sleep(500 * time.Millisecond)
+	})
+	defer oldServer.Close()
+
+	// New server for reconnect
+	newServer := newMockWSServer(func(conn *websocket.Conn) {
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "new-welcome-id",
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      newSessionID,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 1,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+		time.Sleep(500 * time.Millisecond)
+	})
+	defer newServer.Close()
+
+	authClient := NewAuthClient(AuthConfig{
+		ClientID: "test-client-id",
+	})
+	helixClient := NewClient("test-client-id", authClient)
+
+	ws := NewEventSubWebSocket(helixClient,
+		WithEventSubReconnectHandler(func() {
+			close(reconnectCalled)
+		}),
+	)
+
+	// Manually set up the internal WebSocket client
+	ws.ws = NewEventSubWebSocketClient(WithWSURL(oldServer.URL()))
+
+	ctx := context.Background()
+	sid, err := ws.ws.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	ws.sessionID = sid
+
+	// Call handleReconnect directly
+	ws.handleReconnect(newServer.URL())
+
+	// Wait for reconnect handler to be called
+	select {
+	case <-reconnectCalled:
+		// Success
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for reconnect handler")
+	}
+
+	// Verify session ID was updated
+	ws.mu.RLock()
+	gotSessionID := ws.sessionID
+	ws.mu.RUnlock()
+
+	if gotSessionID != newSessionID {
+		t.Errorf("expected session ID %s, got %s", newSessionID, gotSessionID)
+	}
+
+	_ = ws.Close()
+}
+
+func TestEventSubWebSocket_HandleReconnect_Error(t *testing.T) {
+	sessionID := twitchWSExampleSessionID
+	errorCalled := make(chan error, 1)
+
+	mock := newMockWSServer(func(conn *websocket.Conn) {
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        twitchWSExampleWelcomeMessageID,
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      sessionID,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 1,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+		time.Sleep(500 * time.Millisecond)
+	})
+	defer mock.Close()
+
+	authClient := NewAuthClient(AuthConfig{
+		ClientID: "test-client-id",
+	})
+	helixClient := NewClient("test-client-id", authClient)
+
+	ws := NewEventSubWebSocket(helixClient,
+		WithEventSubErrorHandler(func(err error) {
+			errorCalled <- err
+		}),
+	)
+
+	// Manually set up the internal WebSocket client
+	ws.ws = NewEventSubWebSocketClient(WithWSURL(mock.URL()))
+
+	ctx := context.Background()
+	sid, err := ws.ws.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	ws.sessionID = sid
+
+	// Call handleReconnect with invalid URL
+	ws.handleReconnect("ws://invalid.invalid:9999")
+
+	// Wait for error handler to be called
+	select {
+	case err := <-errorCalled:
+		if !strings.Contains(err.Error(), "reconnect failed") {
+			t.Errorf("expected 'reconnect failed' error, got: %v", err)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("timeout waiting for error handler")
+	}
+
+	_ = ws.Close()
+}
+
+func TestEventSubWebSocket_Subscribe_NotConnected(t *testing.T) {
+	authClient := NewAuthClient(AuthConfig{
+		ClientID: "test-client-id",
+	})
+	helixClient := NewClient("test-client-id", authClient)
+
+	ws := NewEventSubWebSocket(helixClient)
+
+	// Subscribe without connecting first
+	err := ws.Subscribe(context.Background(), EventSubTypeChannelFollow, "2", map[string]string{
+		"broadcaster_user_id": "12345",
+	}, func(event json.RawMessage) {})
+
+	if err == nil {
+		t.Error("expected error for subscribe when not connected")
+	}
+	if !strings.Contains(err.Error(), "not connected") {
+		t.Errorf("expected 'not connected' error, got: %v", err)
+	}
+}
+
+func TestEventSubWebSocket_Connect_CloseExisting(t *testing.T) {
+	sessionID1 := "first-session"
+	sessionID2 := "second-session"
+	connectionCount := 0
+	var mu sync.Mutex
+	closeCalled := make(chan struct{}, 1)
+
+	mock := newMockWSServer(func(conn *websocket.Conn) {
+		mu.Lock()
+		connectionCount++
+		currentSession := sessionID1
+		if connectionCount == 2 {
+			currentSession = sessionID2
+		}
+		mu.Unlock()
+
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "welcome-" + currentSession,
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      currentSession,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 1,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+
+		// Wait for close or timeout
+		time.Sleep(500 * time.Millisecond)
+	})
+	defer mock.Close()
+
+	authClient := NewAuthClient(AuthConfig{
+		ClientID: "test-client-id",
+	})
+	helixClient := NewClient("test-client-id", authClient)
+
+	ws := NewEventSubWebSocket(helixClient)
+
+	// First connection
+	ws.ws = NewEventSubWebSocketClient(WithWSURL(mock.URL()))
+	ctx := context.Background()
+	sid, err := ws.ws.Connect(ctx)
+	if err != nil {
+		t.Fatalf("First connect failed: %v", err)
+	}
+	ws.sessionID = sid
+
+	if ws.sessionID != sessionID1 {
+		t.Errorf("expected session ID %s, got %s", sessionID1, ws.sessionID)
+	}
+
+	// Store old ws to verify it was closed
+	oldWs := ws.ws
+
+	// Simulate what Connect does: close existing connection
+	// This tests the closing behavior without calling the real Connect
+	// (which would create a new ws with the default Twitch URL)
+	if ws.ws != nil {
+		_ = ws.ws.Close()
+		ws.ws = nil
+		ws.sessionID = ""
+		select {
+		case closeCalled <- struct{}{}:
+		default:
+		}
+	}
+
+	// Verify old connection was closed
+	if oldWs.IsConnected() {
+		t.Error("expected old connection to be closed")
+	}
+
+	// Create new connection (simulating second part of Connect)
+	ws.ws = NewEventSubWebSocketClient(WithWSURL(mock.URL()))
+	sid, err = ws.ws.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Second connect failed: %v", err)
+	}
+	ws.sessionID = sid
+
+	if ws.sessionID != sessionID2 {
+		t.Errorf("expected session ID %s, got %s", sessionID2, ws.sessionID)
+	}
+
+	_ = ws.Close()
+}
+
+func TestEventSubWebSocket_Connect_WithRevocationAndReconnect(t *testing.T) {
+	sessionID := twitchWSExampleSessionID
+	revocationCalled := make(chan struct{})
+	reconnectTriggered := make(chan struct{})
+
+	mock := newMockWSServer(func(conn *websocket.Conn) {
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        twitchWSExampleWelcomeMessageID,
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      sessionID,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 1,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+		time.Sleep(50 * time.Millisecond)
+
+		// Send revocation
+		revocation := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "revoke-1",
+				MessageType:      WSMessageTypeRevocation,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketNotificationPayload{
+				Subscription: EventSubSubscription{
+					ID:     "sub-123",
+					Type:   EventSubTypeStreamOnline,
+					Status: "authorization_revoked",
+				},
+			}),
+		}
+		_ = conn.WriteJSON(revocation)
+		time.Sleep(50 * time.Millisecond)
+
+		// Send reconnect
+		reconnect := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "reconnect-1",
+				MessageType:      WSMessageTypeReconnect,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketReconnectPayload{
+				Session: WebSocketSession{
+					ID:           sessionID,
+					Status:       "reconnecting",
+					ReconnectURL: "wss://eventsub.test.tv/ws",
+				},
+			}),
+		}
+		_ = conn.WriteJSON(reconnect)
+		time.Sleep(200 * time.Millisecond)
+	})
+	defer mock.Close()
+
+	authClient := NewAuthClient(AuthConfig{
+		ClientID: "test-client-id",
+	})
+	helixClient := NewClient("test-client-id", authClient)
+
+	ws := NewEventSubWebSocket(helixClient,
+		WithEventSubRevocationHandler(func(eventType, reason string) {
+			if eventType == EventSubTypeStreamOnline && reason == "authorization_revoked" {
+				close(revocationCalled)
+			}
+		}),
+	)
+
+	// Use Connect's internal setup
+	ws.ws = NewEventSubWebSocketClient(
+		WithWSURL(mock.URL()),
+		WithWSNotificationHandler(func(sub *EventSubSubscription, event json.RawMessage) {
+			ws.mu.RLock()
+			handler, ok := ws.handlers[sub.Type]
+			ws.mu.RUnlock()
+			if ok {
+				handler(event)
+			}
+		}),
+		WithWSRevocationHandler(func(sub *EventSubSubscription) {
+			ws.mu.Lock()
+			delete(ws.handlers, sub.Type)
+			ws.mu.Unlock()
+			if ws.onRevocation != nil {
+				ws.onRevocation(sub.Type, sub.Status)
+			}
+		}),
+		WithWSReconnectHandler(func(reconnectURL string) {
+			select {
+			case <-reconnectTriggered:
+			default:
+				close(reconnectTriggered)
+			}
+		}),
+	)
+
+	// Register a handler for stream.online
+	ws.mu.Lock()
+	ws.handlers[EventSubTypeStreamOnline] = func(event json.RawMessage) {}
+	ws.mu.Unlock()
+
+	ctx := context.Background()
+	sid, err := ws.ws.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	ws.sessionID = sid
+
+	// Wait for revocation
+	select {
+	case <-revocationCalled:
+		// Success
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for revocation handler")
+	}
+
+	// Verify handler was removed
+	ws.mu.RLock()
+	_, exists := ws.handlers[EventSubTypeStreamOnline]
+	ws.mu.RUnlock()
+	if exists {
+		t.Error("expected handler to be removed after revocation")
+	}
+
+	// Wait for reconnect trigger
+	select {
+	case <-reconnectTriggered:
+		// Success
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for reconnect trigger")
+	}
+
+	_ = ws.Close()
+}
+
 func TestEventSubWebSocketClient_WithOfficialTwitchExamples(t *testing.T) {
 	// Test using official Twitch example values
 	var receivedSub *EventSubSubscription

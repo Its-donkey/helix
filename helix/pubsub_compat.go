@@ -183,6 +183,7 @@ type PubSubClient struct {
 	onReconnect func()
 
 	mu sync.RWMutex
+	wg sync.WaitGroup // tracks background goroutines (e.g., reconnect)
 }
 
 // PubSubOption configures the PubSubClient.
@@ -225,7 +226,12 @@ func WithPubSubWSURL(url string) PubSubOption {
 
 // NewPubSubClient creates a new PubSub compatibility client.
 // The client uses EventSub WebSocket internally but exposes a PubSub-style API.
+// Returns nil if helixClient is nil.
 func NewPubSubClient(helixClient *Client, opts ...PubSubOption) *PubSubClient {
+	if helixClient == nil {
+		return nil
+	}
+
 	c := &PubSubClient{
 		client:     helixClient,
 		topics:     make(map[string][]string),
@@ -242,9 +248,9 @@ func NewPubSubClient(helixClient *Client, opts ...PubSubOption) *PubSubClient {
 // Connect establishes the WebSocket connection.
 func (c *PubSubClient) Connect(ctx context.Context) error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	if c.ws != nil && c.ws.IsConnected() {
+		c.mu.Unlock()
 		return nil // Already connected
 	}
 
@@ -264,13 +270,17 @@ func (c *PubSubClient) Connect(ctx context.Context) error {
 
 	sessionID, err := c.ws.Connect(ctx)
 	if err != nil {
+		c.mu.Unlock()
 		return fmt.Errorf("connecting to EventSub: %w", err)
 	}
 
 	c.sessionID = sessionID
+	onConnect := c.onConnect
+	c.mu.Unlock()
 
-	if c.onConnect != nil {
-		c.onConnect()
+	// Call handler outside of lock to prevent deadlock
+	if onConnect != nil {
+		onConnect()
 	}
 
 	return nil
@@ -361,22 +371,36 @@ func (c *PubSubClient) Unlisten(ctx context.Context, topic string) error {
 // Close closes the PubSub client and cleans up all subscriptions.
 func (c *PubSubClient) Close(ctx context.Context) error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 
-	// Delete all subscriptions
+	// Delete all subscriptions, collecting errors
+	var errs []error
 	for _, subIDs := range c.topics {
 		for _, id := range subIDs {
-			_ = c.client.DeleteEventSubSubscription(ctx, id)
+			if err := c.client.DeleteEventSubSubscription(ctx, id); err != nil {
+				errs = append(errs, fmt.Errorf("deleting subscription %s: %w", id, err))
+			}
 		}
 	}
 	c.topics = make(map[string][]string)
 	c.subToTopic = make(map[string]string)
 
 	// Close WebSocket
-	if c.ws != nil {
-		return c.ws.Close()
+	ws := c.ws
+	c.mu.Unlock()
+
+	// Wait for background goroutines to finish
+	c.wg.Wait()
+
+	if ws != nil {
+		if err := ws.Close(); err != nil {
+			errs = append(errs, fmt.Errorf("closing websocket: %w", err))
+		}
 	}
 
+	// Return combined error if any
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
 	return nil
 }
 
@@ -463,7 +487,10 @@ func (c *PubSubClient) handleRevocation(sub *EventSubSubscription) {
 
 // handleReconnect handles WebSocket reconnection requests.
 func (c *PubSubClient) handleReconnect(reconnectURL string) {
+	c.wg.Add(1)
 	go func() {
+		defer c.wg.Done()
+
 		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 		defer cancel()
 

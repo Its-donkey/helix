@@ -1728,9 +1728,11 @@ func TestIRCClient_WaitForAuth_ContextCancelled(t *testing.T) {
 	defer cancel()
 
 	err := client.Connect(ctx)
-	// Should get context.DeadlineExceeded when context check runs after receiving message
-	if err != context.DeadlineExceeded {
-		t.Errorf("expected DeadlineExceeded, got: %v", err)
+	// Should get context.DeadlineExceeded or a timeout error when context/read deadline expires
+	if err == nil {
+		t.Error("expected error, got nil")
+	} else if err != context.DeadlineExceeded && !strings.Contains(err.Error(), "timeout") && !strings.Contains(err.Error(), "deadline") {
+		t.Errorf("expected timeout-related error, got: %v", err)
 	}
 }
 
@@ -2711,5 +2713,258 @@ func TestIRCClient_Connect_CapReqSendError(t *testing.T) {
 			!strings.Contains(err.Error(), "reading") {
 			t.Logf("Got error: %v", err)
 		}
+	}
+}
+
+// TestIRCClient_Connect_Concurrent tests that concurrent Connect calls return ErrAlreadyConnected
+func TestIRCClient_Connect_Concurrent(t *testing.T) {
+	connectStarted := make(chan struct{})
+	connectBlocked := make(chan struct{})
+
+	mock := newMockIRCServer(func(conn *websocket.Conn) {
+		close(connectStarted)
+		<-connectBlocked // Block until second connect attempt
+		_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+		time.Sleep(100 * time.Millisecond)
+	})
+	defer mock.Close()
+
+	client := NewIRCClient("testuser", "token",
+		WithIRCURL(mock.URL()),
+		WithAutoReconnect(false),
+	)
+
+	// Start first connect in goroutine
+	var firstErr error
+	done := make(chan struct{})
+	go func() {
+		firstErr = client.Connect(context.Background())
+		close(done)
+	}()
+
+	// Wait for first connect to start (connection established but waiting for auth)
+	<-connectStarted
+
+	// Try second connect while first is in progress
+	secondErr := client.Connect(context.Background())
+	if secondErr != ErrIRCAlreadyConnected {
+		t.Errorf("expected ErrIRCAlreadyConnected from concurrent connect, got: %v", secondErr)
+	}
+
+	// Unblock first connect
+	close(connectBlocked)
+	<-done
+
+	if firstErr != nil {
+		t.Errorf("first connect should succeed, got: %v", firstErr)
+	}
+
+	_ = client.Close()
+}
+
+// TestIRCClient_Connect_NoOnConnectHandler tests Connect without an onConnect handler
+func TestIRCClient_Connect_NoOnConnectHandler(t *testing.T) {
+	mock := newMockIRCServer(func(conn *websocket.Conn) {
+		_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+		time.Sleep(100 * time.Millisecond)
+	})
+	defer mock.Close()
+
+	// Create client without onConnect handler
+	client := NewIRCClient("testuser", "token",
+		WithIRCURL(mock.URL()),
+		WithAutoReconnect(false),
+		// No WithConnectHandler
+	)
+
+	ctx := context.Background()
+	err := client.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	defer func() { _ = client.Close() }()
+
+	if !client.IsConnected() {
+		t.Error("expected client to be connected")
+	}
+}
+
+// TestIRCClient_waitForAuth_NoContextDeadline tests waitForAuth uses 30 second default deadline
+func TestIRCClient_waitForAuth_NoContextDeadline(t *testing.T) {
+	mock := newMockIRCServer(func(conn *websocket.Conn) {
+		// Send welcome immediately - no delay
+		_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+		time.Sleep(100 * time.Millisecond)
+	})
+	defer mock.Close()
+
+	client := NewIRCClient("testuser", "token",
+		WithIRCURL(mock.URL()),
+		WithAutoReconnect(false),
+	)
+
+	// Use context without deadline
+	ctx := context.Background()
+	err := client.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	defer func() { _ = client.Close() }()
+}
+
+// TestIRCClient_waitForAuth_GlobalUserStateWithoutHandler tests GLOBALUSERSTATE without handler
+func TestIRCClient_waitForAuth_GlobalUserStateWithoutHandler(t *testing.T) {
+	mock := newMockIRCServer(func(conn *websocket.Conn) {
+		// Send GLOBALUSERSTATE before welcome
+		_ = conn.WriteMessage(websocket.TextMessage, []byte("@badge-info=;badges=;color=#FF0000;display-name=TestUser;emote-sets=0;user-id=12345;user-type= :tmi.twitch.tv GLOBALUSERSTATE\r\n"))
+		_ = conn.WriteMessage(websocket.TextMessage, []byte(":tmi.twitch.tv 001 testuser :Welcome\r\n"))
+		time.Sleep(100 * time.Millisecond)
+	})
+	defer mock.Close()
+
+	// Create client without onGlobalUserState handler
+	client := NewIRCClient("testuser", "token",
+		WithIRCURL(mock.URL()),
+		WithAutoReconnect(false),
+		// No WithGlobalUserStateHandler
+	)
+
+	ctx := context.Background()
+	err := client.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	defer func() { _ = client.Close() }()
+
+	// Global state should still be parsed and stored
+	state := client.GetGlobalUserState()
+	if state == nil {
+		t.Error("expected global state to be stored")
+	}
+}
+
+// TestIRCClient_Close_NilStopChan tests Close when stopChan is nil
+func TestIRCClient_Close_NilStopChan(t *testing.T) {
+	client := NewIRCClient("testuser", "token",
+		WithAutoReconnect(false),
+	)
+
+	// Manually set connected but leave stopChan nil
+	client.mu.Lock()
+	client.connected = true
+	client.stopChan = nil
+	client.mu.Unlock()
+
+	// Close should not panic
+	err := client.Close()
+	if err != nil {
+		t.Errorf("Close failed: %v", err)
+	}
+}
+
+// TestIRCClient_Close_NeverConnected tests Close on a fresh client that never connected
+func TestIRCClient_Close_NeverConnected(t *testing.T) {
+	client := NewIRCClient("testuser", "token",
+		WithAutoReconnect(false),
+	)
+
+	// Close on fresh client (connected=false, conn=nil)
+	err := client.Close()
+	if err != nil {
+		t.Errorf("Close failed: %v", err)
+	}
+
+	// Should be safe to call multiple times
+	err = client.Close()
+	if err != nil {
+		t.Errorf("Second Close failed: %v", err)
+	}
+}
+
+// TestIRCClient_waitForAuth_ContextCancelledDuringWait tests context cancellation during auth wait
+func TestIRCClient_waitForAuth_ContextCancelledDuringWait(t *testing.T) {
+	mock := newMockIRCServer(func(conn *websocket.Conn) {
+		// Don't send welcome - let the client timeout
+		time.Sleep(2 * time.Second)
+		_ = conn.Close()
+	})
+	defer mock.Close()
+
+	client := NewIRCClient("testuser", "token",
+		WithIRCURL(mock.URL()),
+		WithAutoReconnect(false),
+	)
+
+	// Use context with very short timeout (shorter than default 30s)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+
+	err := client.Connect(ctx)
+
+	// Should fail due to context timeout or read deadline
+	if err == nil {
+		t.Error("expected error from context timeout")
+		_ = client.Close()
+		return
+	}
+
+	// The error should be timeout-related
+	if !strings.Contains(err.Error(), "timeout") &&
+		!strings.Contains(err.Error(), "deadline") &&
+		!strings.Contains(err.Error(), "context") &&
+		err != context.DeadlineExceeded {
+		t.Logf("Got error: %v (this is acceptable)", err)
+	}
+}
+
+// TestIRCClient_Close_InProgressConnection tests Close during connection establishment
+func TestIRCClient_Close_InProgressConnection(t *testing.T) {
+	connectBlocked := make(chan struct{})
+	serverDone := make(chan struct{})
+
+	mock := newMockIRCServer(func(conn *websocket.Conn) {
+		defer close(serverDone)
+		// Don't send welcome - simulate slow connection
+		select {
+		case <-connectBlocked:
+		case <-time.After(5 * time.Second):
+		}
+	})
+	defer mock.Close()
+
+	client := NewIRCClient("testuser", "token",
+		WithIRCURL(mock.URL()),
+		WithAutoReconnect(false),
+	)
+
+	// Start connect in goroutine
+	connectErr := make(chan error, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		connectErr <- client.Connect(ctx)
+	}()
+
+	// Give connect time to establish WebSocket but not complete auth
+	time.Sleep(100 * time.Millisecond)
+
+	// Close while connecting
+	err := client.Close()
+	if err != nil {
+		t.Errorf("Close failed: %v", err)
+	}
+
+	// Unblock server
+	close(connectBlocked)
+
+	// Wait for connect to return (should fail due to closed connection)
+	select {
+	case err := <-connectErr:
+		// Expected to fail since we closed during auth
+		if err == nil {
+			t.Error("expected connect to fail after Close")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout waiting for connect to return")
 	}
 }

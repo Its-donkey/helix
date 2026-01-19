@@ -539,6 +539,79 @@ func TestPubSubClient_Connect(t *testing.T) {
 	}
 }
 
+// TestPubSubClient_Connect_NoDeadlock verifies that the onConnect handler can
+// call back into PubSubClient methods without deadlocking. This tests the fix
+// where Connect() releases the lock before calling the onConnect callback.
+func TestPubSubClient_Connect_NoDeadlock(t *testing.T) {
+	sessionID := "pubsub-session-nodeadlock"
+
+	wsMock := newMockPubSubWSServer(func(conn *websocket.Conn) {
+		// Send welcome message
+		welcome := WebSocketMessage{
+			Metadata: WebSocketMetadata{
+				MessageID:        "welcome-1",
+				MessageType:      WSMessageTypeWelcome,
+				MessageTimestamp: time.Now(),
+			},
+			Payload: mustMarshal(WebSocketWelcomePayload{
+				Session: WebSocketSession{
+					ID:                      sessionID,
+					Status:                  "connected",
+					ConnectedAt:             time.Now(),
+					KeepaliveTimeoutSeconds: 10,
+				},
+			}),
+		}
+		_ = conn.WriteJSON(welcome)
+		time.Sleep(100 * time.Millisecond)
+	})
+	defer wsMock.Close()
+
+	helixMock := newMockHelixServer()
+	defer helixMock.Close()
+
+	helixClient := NewClient("test-client-id", nil)
+	helixClient.baseURL = helixMock.server.URL
+
+	callbackCompleted := make(chan struct{})
+	var callbackSessionID string
+	var pubsubPtr *PubSubClient
+
+	pubsub := NewPubSubClient(helixClient,
+		WithPubSubWSURL(wsMock.URL()),
+		WithPubSubConnectHandler(func() {
+			// This would deadlock if the lock wasn't released before calling onConnect
+			// Calling methods that acquire the lock from within the callback
+			_ = pubsubPtr.IsConnected()
+			_ = pubsubPtr.Topics()
+			callbackSessionID = pubsubPtr.SessionID()
+			close(callbackCompleted)
+		}),
+	)
+	pubsubPtr = pubsub
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	err := pubsub.Connect(ctx)
+	if err != nil {
+		t.Fatalf("Connect failed: %v", err)
+	}
+	defer func() { _ = pubsub.Close(ctx) }()
+
+	// Wait for callback with timeout (would hang forever if deadlocked)
+	select {
+	case <-callbackCompleted:
+		// Success - callback completed without deadlocking
+	case <-time.After(2 * time.Second):
+		t.Fatal("timeout: onConnect handler appears to be deadlocked")
+	}
+
+	if callbackSessionID != sessionID {
+		t.Errorf("callback got session ID %q, want %q", callbackSessionID, sessionID)
+	}
+}
+
 func TestPubSubClient_ListenAndUnlisten(t *testing.T) {
 	sessionID := "pubsub-session-listen"
 
@@ -1355,5 +1428,64 @@ func TestPubSubClient_CloseNotConnected(t *testing.T) {
 	err := pubsub.Close(context.Background())
 	if err != nil {
 		t.Errorf("expected no error for close when not connected, got %v", err)
+	}
+}
+
+func TestNewPubSubClient_NilClient(t *testing.T) {
+	pubsub := NewPubSubClient(nil)
+	if pubsub != nil {
+		t.Error("expected nil PubSubClient when helixClient is nil")
+	}
+}
+
+func TestTopicEventSubTypes_AllTopics(t *testing.T) {
+	tests := []struct {
+		topic    string
+		expected []string
+	}{
+		{
+			topic:    "channel-bits-badge-unlocks.12345",
+			expected: []string{EventSubTypeChannelChatNotification},
+		},
+		{
+			topic:    "automod-queue.11111.22222",
+			expected: []string{EventSubTypeAutomodMessageHold},
+		},
+		{
+			topic:    "chat_moderator_actions.11111.22222",
+			expected: []string{EventSubTypeChannelModerate},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.topic, func(t *testing.T) {
+			result := TopicEventSubTypes(tt.topic)
+
+			if len(result) != len(tt.expected) {
+				t.Errorf("expected %d types, got %d", len(tt.expected), len(result))
+				return
+			}
+
+			for i, typ := range tt.expected {
+				if result[i] != typ {
+					t.Errorf("index %d: expected %q, got %q", i, typ, result[i])
+				}
+			}
+		})
+	}
+}
+
+func TestPubSubClient_HandleErrorWithHandler(t *testing.T) {
+	client := &Client{}
+	var receivedErr error
+	pubsub := NewPubSubClient(client, WithPubSubErrorHandler(func(err error) {
+		receivedErr = err
+	}))
+
+	testErr := errors.New("test error")
+	pubsub.handleError(testErr)
+
+	if receivedErr != testErr {
+		t.Errorf("expected error %v, got %v", testErr, receivedErr)
 	}
 }

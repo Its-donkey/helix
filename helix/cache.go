@@ -41,6 +41,7 @@ func NewMemoryCache(maxSize int) *MemoryCache {
 }
 
 // Get retrieves a cached response.
+// The returned byte slice is a copy to prevent callers from mutating cached data.
 func (c *MemoryCache) Get(ctx context.Context, key string) []byte {
 	c.mu.RLock()
 	entry, ok := c.entries[key]
@@ -55,10 +56,14 @@ func (c *MemoryCache) Get(ctx context.Context, key string) []byte {
 		return nil
 	}
 
-	return entry.value
+	// Return a copy to prevent callers from mutating cached data
+	result := make([]byte, len(entry.value))
+	copy(result, entry.value)
+	return result
 }
 
 // Set stores a response in the cache.
+// The value is copied to prevent external mutations from affecting cached data.
 func (c *MemoryCache) Set(ctx context.Context, key string, value []byte, ttl time.Duration) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -72,8 +77,12 @@ func (c *MemoryCache) Set(ctx context.Context, key string, value []byte, ttl tim
 		}
 	}
 
+	// Copy value to prevent external mutations from affecting cached data
+	valueCopy := make([]byte, len(value))
+	copy(valueCopy, value)
+
 	c.entries[key] = &cacheEntry{
-		value:     value,
+		value:     valueCopy,
 		expiresAt: time.Now().Add(ttl),
 	}
 }
@@ -128,9 +137,35 @@ func (c *MemoryCache) Size() int {
 }
 
 // CacheKey generates a cache key from a request.
+// Note: This function does not include authentication context.
+// Use CacheKeyWithContext for security-sensitive applications where
+// the same cache might be shared across different tokens.
 func CacheKey(endpoint string, query string) string {
 	hash := sha256.Sum256([]byte(endpoint + "?" + query))
 	return hex.EncodeToString(hash[:])
+}
+
+// CacheKeyWithContext generates a cache key that includes authentication context.
+// This prevents cache pollution when sharing a cache across different users/tokens.
+// The baseURL ensures environment separation, and tokenHash provides user isolation.
+func CacheKeyWithContext(baseURL, endpoint, query, tokenHash string) string {
+	input := baseURL + "|" + endpoint + "?" + query
+	if tokenHash != "" {
+		input += "|" + tokenHash
+	}
+	hash := sha256.Sum256([]byte(input))
+	return hex.EncodeToString(hash[:])
+}
+
+// TokenHash generates a hash of a token for use in cache keys.
+// This avoids storing the actual token in cache keys while still
+// providing isolation between different authenticated users.
+func TokenHash(token string) string {
+	if token == "" {
+		return ""
+	}
+	hash := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(hash[:16]) // Use first 16 bytes (32 hex chars) for shorter keys
 }
 
 // WithCache sets a cache for the client.

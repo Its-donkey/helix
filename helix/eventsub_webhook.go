@@ -31,6 +31,10 @@ const (
 	EventSubHeaderSubscriptionVersion = "Twitch-Eventsub-Subscription-Version"
 )
 
+// EventSubMaxBodySize is the maximum request body size for EventSub webhooks (1 MB).
+// This prevents memory exhaustion from malicious large payloads.
+const EventSubMaxBodySize = 1 << 20 // 1 MB
+
 // EventSubWebhookMessage represents a message received from EventSub webhooks.
 type EventSubWebhookMessage struct {
 	MessageID           string
@@ -116,13 +120,18 @@ func (h *EventSubWebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// Read body
-	body, err := io.ReadAll(r.Body)
+	// Read body with size limit to prevent memory exhaustion
+	body, err := io.ReadAll(io.LimitReader(r.Body, EventSubMaxBodySize+1))
 	if err != nil {
 		http.Error(w, "Failed to read body", http.StatusBadRequest)
 		return
 	}
 	defer func() { _ = r.Body.Close() }()
+
+	if len(body) > EventSubMaxBodySize {
+		http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
+		return
+	}
 
 	// Verify signature
 	if h.secret != "" {
@@ -140,8 +149,14 @@ func (h *EventSubWebhookHandler) ServeHTTP(w http.ResponseWriter, r *http.Reques
 	}
 
 	// Check timestamp age (replay attack prevention)
+	// Reject messages that are too old
 	if time.Since(msg.MessageTimestamp) > h.maxTimestampAge {
 		http.Error(w, "Message timestamp too old", http.StatusBadRequest)
+		return
+	}
+	// Reject messages with future timestamps (clock skew tolerance of 1 minute)
+	if msg.MessageTimestamp.After(time.Now().Add(time.Minute)) {
+		http.Error(w, "Message timestamp in the future", http.StatusBadRequest)
 		return
 	}
 
@@ -264,10 +279,14 @@ func ParseEventSubEvent[T any](msg *EventSubWebhookMessage) (*T, error) {
 func EventSubMiddleware(secret string, maxAge time.Duration) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Read and buffer body
-			body, err := io.ReadAll(r.Body)
+			// Read and buffer body with size limit to prevent memory exhaustion
+			body, err := io.ReadAll(io.LimitReader(r.Body, EventSubMaxBodySize+1))
 			if err != nil {
 				http.Error(w, "Failed to read body", http.StatusBadRequest)
+				return
+			}
+			if len(body) > EventSubMaxBodySize {
+				http.Error(w, "Request body too large", http.StatusRequestEntityTooLarge)
 				return
 			}
 			r.Body = io.NopCloser(bytes.NewReader(body))
@@ -286,8 +305,17 @@ func EventSubMiddleware(secret string, maxAge time.Duration) func(http.Handler) 
 
 			// Check timestamp
 			timestamp, err := time.Parse(time.RFC3339, r.Header.Get(EventSubHeaderMessageTimestamp))
-			if err != nil || time.Since(timestamp) > maxAge {
-				http.Error(w, "Invalid or expired timestamp", http.StatusBadRequest)
+			if err != nil {
+				http.Error(w, "Invalid timestamp format", http.StatusBadRequest)
+				return
+			}
+			if time.Since(timestamp) > maxAge {
+				http.Error(w, "Message timestamp too old", http.StatusBadRequest)
+				return
+			}
+			// Reject future timestamps (with 1 minute tolerance for clock skew)
+			if timestamp.After(time.Now().Add(time.Minute)) {
+				http.Error(w, "Message timestamp in the future", http.StatusBadRequest)
 				return
 			}
 
@@ -322,18 +350,36 @@ func (d *MessageDeduplicator) IsDuplicate(messageID string) bool {
 
 	now := time.Now()
 
-	// Clean up old entries if we're at capacity
+	// Check if we've seen this message
+	if _, ok := d.seen[messageID]; ok {
+		return true
+	}
+
+	// Clean up old entries if we're at or over capacity
 	if len(d.seen) >= d.maxSize {
+		// First, remove expired entries
 		for id, seenAt := range d.seen {
 			if now.Sub(seenAt) > d.maxAge {
 				delete(d.seen, id)
 			}
 		}
-	}
 
-	// Check if we've seen this message
-	if _, ok := d.seen[messageID]; ok {
-		return true
+		// If still at capacity after removing expired entries, remove oldest entries
+		for len(d.seen) >= d.maxSize {
+			var oldestID string
+			var oldestTime time.Time
+			for id, seenAt := range d.seen {
+				if oldestID == "" || seenAt.Before(oldestTime) {
+					oldestID = id
+					oldestTime = seenAt
+				}
+			}
+			if oldestID != "" {
+				delete(d.seen, oldestID)
+			} else {
+				break // Safety: no entries to delete
+			}
+		}
 	}
 
 	// Mark as seen

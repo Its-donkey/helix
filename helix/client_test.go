@@ -738,6 +738,107 @@ func TestClient_CacheHit_NilResult(t *testing.T) {
 	}
 }
 
+func TestClient_CacheKey_WithTokenProvider(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[User]{Data: []User{{ID: "123"}}}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	// Client with tokenProvider that has a token
+	provider := &mockTokenProvider{token: &Token{AccessToken: "provider-token"}}
+	client := NewClient("test-client-id", nil, WithBaseURL(server.URL))
+	client.tokenProvider = provider
+
+	cache := NewMemoryCache(100)
+	client.cache = cache
+	client.cacheTTL = time.Minute
+	client.cacheEnabled = true
+
+	// Make a request to populate cache
+	_, err := client.GetUsers(context.Background(), &GetUsersParams{IDs: []string{"123"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify cache has an entry
+	if cache.Size() != 1 {
+		t.Errorf("expected cache size 1, got %d", cache.Size())
+	}
+}
+
+func TestClient_CacheKey_WithTokenProvider_NilToken(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[User]{Data: []User{{ID: "123"}}}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	// Client with tokenProvider that has nil token
+	provider := &mockTokenProvider{token: nil}
+	client := NewClient("test-client-id", nil, WithBaseURL(server.URL))
+	client.tokenProvider = provider
+
+	cache := NewMemoryCache(100)
+	client.cache = cache
+	client.cacheTTL = time.Minute
+	client.cacheEnabled = true
+
+	// Make a request to populate cache
+	_, err := client.GetUsers(context.Background(), &GetUsersParams{IDs: []string{"123"}})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Verify cache has an entry (even with nil token)
+	if cache.Size() != 1 {
+		t.Errorf("expected cache size 1, got %d", cache.Size())
+	}
+}
+
+func TestClient_CacheKey_Isolation(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		resp := Response[User]{Data: []User{{ID: "123"}}}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	// Shared cache
+	cache := NewMemoryCache(100)
+
+	// Client 1 with token provider
+	provider1 := &mockTokenProvider{token: &Token{AccessToken: "token1"}}
+	client1 := NewClient("test-client-id", nil, WithBaseURL(server.URL))
+	client1.tokenProvider = provider1
+	client1.cache = cache
+	client1.cacheTTL = time.Minute
+	client1.cacheEnabled = true
+
+	// Client 2 with different token provider
+	provider2 := &mockTokenProvider{token: &Token{AccessToken: "token2"}}
+	client2 := NewClient("test-client-id", nil, WithBaseURL(server.URL))
+	client2.tokenProvider = provider2
+	client2.cache = cache
+	client2.cacheTTL = time.Minute
+	client2.cacheEnabled = true
+
+	// Make requests from both clients
+	_, err := client1.GetUsers(context.Background(), &GetUsersParams{IDs: []string{"123"}})
+	if err != nil {
+		t.Fatalf("client1 request failed: %v", err)
+	}
+
+	_, err = client2.GetUsers(context.Background(), &GetUsersParams{IDs: []string{"123"}})
+	if err != nil {
+		t.Fatalf("client2 request failed: %v", err)
+	}
+
+	// Cache should have 2 entries (one per token)
+	if cache.Size() != 2 {
+		t.Errorf("expected cache size 2 (isolated by token), got %d", cache.Size())
+	}
+}
+
 func TestClient_DoOnce_MarshalError(t *testing.T) {
 	client, server := newTestClient(func(w http.ResponseWriter, r *http.Request) {
 		resp := Response[User]{Data: []User{}}

@@ -57,7 +57,8 @@ func (c *Client) SetExtensionConfigurationSegment(ctx context.Context, params *S
 
 // SetExtensionRequiredConfigurationParams contains parameters for SetExtensionRequiredConfiguration.
 type SetExtensionRequiredConfigurationParams struct {
-	ExtensionID           string `json:"-"`
+	BroadcasterID         string `json:"-"`
+	ExtensionID           string `json:"extension_id"`
 	ExtensionVersion      string `json:"extension_version"`
 	RequiredConfiguration string `json:"required_configuration"`
 }
@@ -66,7 +67,7 @@ type SetExtensionRequiredConfigurationParams struct {
 // Requires: JWT created by extension.
 func (c *Client) SetExtensionRequiredConfiguration(ctx context.Context, params *SetExtensionRequiredConfigurationParams) error {
 	q := url.Values{}
-	q.Set("broadcaster_id", params.ExtensionID)
+	q.Set("broadcaster_id", params.BroadcasterID)
 
 	return c.put(ctx, "/extensions/required_configuration", q, params, nil)
 }
